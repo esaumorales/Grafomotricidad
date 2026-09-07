@@ -14,7 +14,9 @@ models/*
 
 # logs de ejecución
 _runlog*.txt
-config/baremos.csv     # se genera desde baremos_ejemplo.csv; el oficial no va al repo
+
+# se genera desde baremos_ejemplo.csv; el baremo oficial no va al repo
+config/baremos.csv
 
 # entornos
 .venv/
