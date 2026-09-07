@@ -1,0 +1,36 @@
+# datos y modelos (nunca al repo)
+data/raw/*
+data/interim/*
+data/processed/*
+data/templates/*
+data/labels/*
+!data/labels/etiquetas_ejemplo.csv
+!**/.gitkeep
+models/*
+!models/.gitkeep
+*.parquet
+*.joblib
+*.onnx
+
+# logs de ejecución
+_runlog*.txt
+config/baremos.csv     # se genera desde baremos_ejemplo.csv; el oficial no va al repo
+
+# entornos
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# notebooks
+.ipynb_checkpoints/
+
+# SO / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

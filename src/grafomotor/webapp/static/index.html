@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Evaluación grafomotora</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <main>
+    <h1>Evaluación grafomotora infantil</h1>
+    <p class="sub">Sube las fotos de las figuras que copió el niño o la niña.
+      Recibirás un informe con lo que se le da bien, lo que le cuesta y qué hacer en el aula.</p>
+
+    <form id="f">
+      <label>Código del niño/a <input name="child_id" required placeholder="NINO_0007" /></label>
+      <label>Nombre (opcional) <input name="nombre_nino" placeholder="Ana" /></label>
+      <label>Edad en meses <input name="edad_meses" type="number" min="36" max="71" required /></label>
+      <label>IDs de figura (en el orden de las fotos)
+        <input name="figura_ids" required placeholder="F01,F02,F03,F04,F05,F06" /></label>
+      <label>Fotos de las figuras
+        <input name="fotos" type="file" accept="image/*" multiple required /></label>
+      <button type="submit">Evaluar</button>
+    </form>
+
+    <section id="aviso" hidden class="aviso"></section>
+    <section id="informe" hidden></section>
+
+    <details id="panel" hidden>
+      <summary>Panel técnico (para el especialista)</summary>
+      <pre id="panel-json"></pre>
+    </details>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

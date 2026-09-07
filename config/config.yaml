@@ -1,0 +1,70 @@
+# Configuración del proyecto. Rutas relativas a la raíz del repo.
+
+rutas:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  templates: data/templates          # figuras de referencia del CUMANIN-2 (una por figura_id)
+  labels: data/labels/etiquetas.csv
+  baremos: config/baremos.csv        # PD -> T por tramo de edad (ver docs/DATOS.md)
+  models: models
+
+preprocesamiento:
+  lado_normalizado_px: 512           # cada figura se reescala a este lienzo cuadrado
+  umbral_binarizado: adaptativo      # adaptativo | otsu
+  registro: similaridad              # similaridad | afin
+  min_area_figura_px: 400
+
+figuras:
+  # id -> nº de vértices esperado y nº de puntos de intersección esperados.
+  # Rellenar con las figuras reales de la Visopercepción del CUMANIN-2.
+  F01: { nombre: "círculo",        vertices_esperados: 0,  intersecciones_esperadas: 0 }
+  F02: { nombre: "cruz",           vertices_esperados: 12, intersecciones_esperadas: 1 }
+  F03: { nombre: "cuadrado",       vertices_esperados: 4,  intersecciones_esperadas: 0 }
+  F04: { nombre: "triángulo",      vertices_esperados: 3,  intersecciones_esperadas: 0 }
+  F05: { nombre: "cruz oblicua",   vertices_esperados: 4,  intersecciones_esperadas: 1 }
+  F06: { nombre: "rombo",          vertices_esperados: 4,  intersecciones_esperadas: 0 }
+  # F07..F15: añadir según el material
+
+indicadores:
+  usar: [precision_modelo, vertices, error_angular, cierre, intersecciones, proporcion]
+  opcionales: [rectitud, correcciones]
+
+augmentacion:
+  activar: true
+  por_figura_min_muestras: 40        # aumenta solo figuras/clases con menos de esto
+  transformaciones: [elastica_leve, grosor_trazo, brillo_contraste]
+  # PROHIBIDO: rotaciones amplias, volteos (cambian los criterios de puntuación)
+
+modelo:
+  algoritmo: xgboost
+  objetivo: binary:logistic          # puntaje por figura 0/1
+  cv:
+    tipo: grupo_por_nino             # GroupKFold sobre child_id
+    folds: 5
+  grid_search:
+    max_depth: [2, 3, 4]
+    learning_rate: [0.03, 0.05, 0.1]
+    n_estimators: [200, 400, 800]
+    subsample: [0.8, 1.0]
+    reg_lambda: [1.0, 3.0]
+  class_weight: balanced             # desbalance por figura (efecto suelo a los 3 años)
+
+scoring:
+  # Cortes del CUMANIN-2 sobre la T ajustada por edad (manual, pág. 98-99).
+  corte_bajo_T: 40                   # T <= 40  -> en riesgo (screening)
+  corte_muy_bajo_T: 30              # T <= 30  -> derivar
+  n_clases: 2                        # 2: Adecuado / En riesgo   |   3: Adecuado / Bajo / Muy bajo
+  version_baremo: "CUMANIN-2 2021 (teacorrige.com) — anotar versión exacta"
+
+explicacion:
+  publico: docente                   # docente | especialista
+  idioma: es-PE
+  max_fortalezas: 2
+  max_dificultades: 3
+  umbral_relevancia_shap: 0.03       # |shap agregado| mínimo para mencionar un indicador
+  umbral_confianza_baja: 0.60        # prob media por debajo -> avisar "revisar fotos"
+  incluir_panel_tecnico: true        # tablas/cifras/SHAP -> solo en sección aparte
+  pulido_llm:
+    activar: false                   # por defecto plantillas deterministas (reproducible)
+    modelo: ""
