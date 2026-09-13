@@ -17,14 +17,36 @@ preprocesamiento:
 
 figuras:
   # id -> nº de vértices esperado y nº de puntos de intersección esperados.
-  # Rellenar con las figuras reales de la Visopercepción del CUMANIN-2.
-  F01: { nombre: "círculo",        vertices_esperados: 0,  intersecciones_esperadas: 0 }
-  F02: { nombre: "cruz",           vertices_esperados: 12, intersecciones_esperadas: 1 }
-  F03: { nombre: "cuadrado",       vertices_esperados: 4,  intersecciones_esperadas: 0 }
-  F04: { nombre: "triángulo",      vertices_esperados: 3,  intersecciones_esperadas: 0 }
-  F05: { nombre: "cruz oblicua",   vertices_esperados: 4,  intersecciones_esperadas: 1 }
-  F06: { nombre: "rombo",          vertices_esperados: 4,  intersecciones_esperadas: 0 }
-  # F07..F15: añadir según el material
+  # Orden y nombres = Anexo 2 del CUMANIN-2 (Prueba 6, Visopercepción). Los valores
+  # vertices_esperados / intersecciones_esperadas se calculan empíricamente sobre la
+  # propia plantilla vectorial (scripts/gen_plantillas.py) con el mismo algoritmo de
+  # src/grafomotor/features/indicadores.py, para que sean consistentes con lo que el
+  # pipeline mide en inferencia. Pendiente de recalibrar cuando se sustituyan las
+  # plantillas por la digitalización oficial del manual (ver ESTADO.md).
+  # Medidos corriendo _contorno_mayor+approxPolyDP y _puntos_cruce (las mismas funciones
+  # de indicadores.py) sobre cada plantilla vs. sí misma, para que "copia perfecta -> error 0".
+  F01: { nombre: "línea recta",                vertices_esperados: 2,  intersecciones_esperadas: 0 }
+  F02: { nombre: "dos líneas horizontales",    vertices_esperados: 2,  intersecciones_esperadas: 0 }
+  F03: { nombre: "cruz",                        vertices_esperados: 8,  intersecciones_esperadas: 5 }
+  F04: { nombre: "círculo",                     vertices_esperados: 8,  intersecciones_esperadas: 0 }
+  F05: { nombre: "cuadrado",                    vertices_esperados: 4,  intersecciones_esperadas: 0 }
+  F06: { nombre: "triángulo",                   vertices_esperados: 3,  intersecciones_esperadas: 4 }
+  F07: { nombre: "x (aspa)",                    vertices_esperados: 8,  intersecciones_esperadas: 6 }
+  F08: { nombre: "línea ondulada",              vertices_esperados: 6,  intersecciones_esperadas: 0 }
+  F09: { nombre: "rectángulo con x interna",    vertices_esperados: 4,  intersecciones_esperadas: 18 }
+  F10: { nombre: "rombo",                       vertices_esperados: 4,  intersecciones_esperadas: 0 }
+  F11: { nombre: "círculo + triángulo",         vertices_esperados: 8,  intersecciones_esperadas: 7 }
+  F12: { nombre: "u",                           vertices_esperados: 8,  intersecciones_esperadas: 6 }
+  F13: { nombre: "lazo",                        vertices_esperados: 8,  intersecciones_esperadas: 4 }
+  F14: { nombre: "doble pico ondulado",         vertices_esperados: 9,  intersecciones_esperadas: 7 }
+  F15: { nombre: "cuadrado + círculo",          vertices_esperados: 8,  intersecciones_esperadas: 12 }
+  # ADVERTENCIA (hallazgo al calibrar): _puntos_cruce (indicadores.py) cuenta puntos de
+  # ramificación del esqueleto, no cruces geométricos reales -> en figuras con varias
+  # líneas gruesas que se tocan (F03, F06, F07, F09, F11, F12, F15) genera cifras
+  # infladas por artefactos de grosor de trazo (p.ej. F09 da 18 en vez de 1 cruce real).
+  # El indicador "intersecciones" queda auto-consistente (plantilla vs. sí misma = 0
+  # error) pero es sensible a temblor de trazo en estas figuras; revisar el algoritmo
+  # de _puntos_cruce antes de confiar en él para figuras con >1 intersección real.
 
 indicadores:
   usar: [precision_modelo, vertices, error_angular, cierre, intersecciones, proporcion]

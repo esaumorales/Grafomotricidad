@@ -10,11 +10,31 @@
   (`tests/test_plain_language.py`: sin jerga, frases cortas, panel técnico separado).
 - Tests: `pytest -q`.
 
+## Actualizado con las 15 figuras reales del Anexo 2 (2026-09-13)
+
+`config.yaml > figuras` y `data/templates/F01.png` … `F15.png` ya tienen las 15 figuras del
+Anexo 2 del CUMANIN-2 (Prueba 6, Visopercepción), en el orden y con los nombres reales del
+manual — antes solo había 6 figuras de relleno en un orden arbitrario. `scripts/gen_plantillas.py`
+las dibuja como **vectores fieles a la forma/topología** descrita en el criterio de corrección
+(sección 2.2 del contexto del proyecto), no como escaneo del manual (no se versiona por derechos
+de autor). Si el equipo consigue la digitalización oficial, se puede sustituir cada PNG 1:1
+(mismo nombre de archivo) sin tocar el resto del pipeline.
+
+`vertices_esperados` / `intersecciones_esperadas` en `config.yaml` se calcularon corriendo el
+mismo algoritmo de `features/indicadores.py` sobre cada plantilla contra sí misma (no a ojo),
+para que una copia perfecta dé error 0. Al hacerlo se detectó que `_puntos_cruce` (usado por el
+indicador "intersecciones") cuenta puntos de ramificación del esqueleto, no cruces geométricos
+reales: en figuras con varias líneas gruesas que se tocan (F03, F06, F07, F09, F11, F12, F15)
+esto infla el conteo con artefactos de grosor de trazo — el caso más claro es F09 (rectángulo +
+X), que da 18 en vez de 1 cruce real. El indicador queda autoconsistente pero es sensible al
+temblor de trazo en esas figuras; **revisar `_puntos_cruce` antes de confiar en "intersecciones"
+para cualquier figura con más de un cruce real**, es parte de la calibración pendiente de abajo.
+
 ## MARCADOR DE POSICIÓN — sustituir cuando tengas los datos
 
 | Qué | Archivo(s) | Cómo sustituir |
 |---|---|---|
-| Figuras de referencia | `data/templates/F01.png` … | poner las figuras oficiales de la Visopercepción (Vis) del CUMANIN‑2, mismo nombre |
+| Figuras de referencia | `data/templates/F01.png` … `F15.png` | ✅ ya son las 15 reales (ver arriba); solo sustituir por escaneo oficial si el equipo lo consigue |
 | Baremo PD → T | `config/baremos.csv` | descargar la tabla oficial por tramo de edad de teacorrige.com; anotar versión |
 | Fotos de los niños | `data/raw/<child_id>/<figura_id>.jpg` | tus fotos reales |
 | Etiquetas | `data/labels/etiquetas.csv` | corrección 0/1 del docente evaluador (ver `docs/DATOS.md`) |
@@ -42,5 +62,7 @@ python run_all.py            # sin --sinteticos
 
 - Umbrales de `preprocessing/pipeline.py` (binarizado, detección de la hoja, ECC).
 - Tolerancias de `features/indicadores.py` (px de cierre, °/45 de ángulo, escala de proporción).
+- `_puntos_cruce` en `features/indicadores.py`: cuenta ramificaciones del esqueleto como si fueran
+  cruces reales; da cifras infladas en figuras con >1 línea gruesa que se toca (ver nota arriba).
 - `explain/phrases.py`: revisar el fraseo con un docente real (comprensibilidad).
 - `explain/suggestions.py`: validar las actividades con la práctica de aula.
