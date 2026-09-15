@@ -12,6 +12,7 @@ Salida: Explicacion (dict-friendly) que report.py convierte en texto/HTML.
 """
 from __future__ import annotations
 
+import html
 from dataclasses import dataclass, field
 
 from grafomotor.explain import phrases as P
@@ -84,7 +85,9 @@ def explicar_para_docente(
     cfg: dict,
     nombre_nino: str | None = None,
 ) -> Explicacion:
-    nombre = nombre_nino or "el niño / la niña"
+    # escapado por seguridad: nombre_nino llega del formulario del docente y este
+    # texto se renderiza luego como HTML en el Dashboard (markdown -> HTML)
+    nombre = html.escape(nombre_nino) if nombre_nino else "el niño / la niña"
     umbral = float(cfg.get("umbral_relevancia_shap", 0.03))
     max_fort = int(cfg.get("max_fortalezas", 2))
     max_dif = int(cfg.get("max_dificultades", 3))
