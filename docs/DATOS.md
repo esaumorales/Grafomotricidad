@@ -29,25 +29,37 @@ data/
 Una fila por **(niño, figura)**. `00_validar_datos.py` comprueba rango de edad,
 duplicados y valores de `puntaje`, y avisa de desbalance / efecto suelo.
 
-## `config/baremos.csv` (PD → T)
+## `config/baremos.csv` (PD → Pc)
 
-Copiar de `config/baremos_ejemplo.csv` y **sustituir por la tabla oficial** de la
-Visopercepción (Vis) del CUMANIN‑2, por tramo de edad. Columnas:
+Fuente real: **Tabla B.9 "Escala de Visopercepción"**, manual **CUMANIN original**
+(Portellano Pérez, Mateos Mateos y Martínez Arias) — no CUMANIN-2 —, pág. 83.
+Transcrita a mano desde foto del equipo (2026-09-10); **pendiente de verificar línea
+a línea contra el libro físico** antes de usarla en evaluaciones reales. El archivo
+ya está gitignored (`config/baremos.csv` nunca se sube al repo).
 
 ```
 tramo_edad , pd , T , percentil
-3;0_3;3    , 0  , 28, 1
+36_42      , 0  , 48.7, 45
 ...
 ```
 
-- `tramo_edad`: tramos de **4 meses** (12 en total en el CUMANIN‑2; el estudio usa los
-  9 de 3;0 a 5;11). Formato `AA;MM_AA;MM`.
-- `pd`: puntuación directa (nº de figuras acertadas).
-- `T`: puntuación típica (media 50, DT 10). Cortes de detección: **T ≤ 40** en riesgo,
-  **T ≤ 30** derivar (manual, pág. 98‑99).
-- `percentil`: opcional (para el panel técnico).
+- `tramo_edad`: **6 tramos reales de la Tabla B.9, en meses** (no son de ancho
+  uniforme): `36_42`, `43_48`, `49_54`, `55_60`, `61_66`, `67_78`. El estudio
+  (3;0-5;11 = 36-71 meses) usa los primeros 5 completos y parte del último
+  (67-71 de los 67-78 que llegan hasta 6;6).
+- `pd`: puntuación directa (nº de figuras acertadas, 0-15).
+- `percentil`: **publicado directamente en la Tabla B.9** — es el dato real.
+- `T`: **la Tabla B.9 NO publica T para esta subescala.** La columna `T` de este CSV
+  es una estimación matemática a partir del percentil (`T = 50 + 10·Φ⁻¹(Pc/100)`,
+  asumiendo distribución normal), calculada en `scripts` de generación, no un valor
+  del manual. Los cortes "T ≤ 40 en riesgo / T ≤ 30 derivar" que usa
+  `scoring/niveles.py` (citando pág. 98-99) **no están verificados contra esta
+  edición del manual ni contra esta subescala** — el equipo no tiene todavía esas
+  páginas fotografiadas. Tratar como pendiente de validar con el asesor (ver
+  ESTADO.md), igual que el resto de la categorización de nivel global.
 
-Filas faltantes de `pd` se interpolan linealmente.
+Filas faltantes de `pd` se interpolan linealmente (aunque la Tabla B.9 ya cubre
+los 16 valores de `pd`, 0 a 15, para cada tramo).
 
 ## Anonimización y ética
 

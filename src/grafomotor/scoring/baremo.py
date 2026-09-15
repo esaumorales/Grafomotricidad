@@ -1,9 +1,15 @@
 """
-Baremo del CUMANIN-2 (Visopercepción): PD -> T por tramo de edad de 4 meses.
+Baremo del CUMANIN (Visopercepción): PD -> Pc por tramo de edad.
 
-El manual (pág. 89) define 12 baremos, 3 por año, de 3;0 a 6;11. El estudio usa
-los 9 primeros (3;0 a 5;11). La tabla real se descarga de teacorrige.com; aquí se
-carga desde un CSV (ver config/baremos_ejemplo.csv) y se anota la versión usada.
+Tramos y tabla: Tabla B.9 "Escala de Visopercepción" del manual CUMANIN original
+(Portellano Pérez, Mateos Mateos y Martínez Arias), pág. 83. Esa tabla publica el
+percentil (Pc) directo por tramo de edad EN MESES — no publica una puntuación T
+para esta subescala. El estudio usa los tramos dentro de 3;0-5;11 (36-71 meses);
+el tramo 67-78 del manual llega hasta 6;6, pero solo 67-71 cae dentro del alcance.
+
+La columna "T" del CSV (si está) es una ESTIMACIÓN matemática a partir del Pc
+(T = 50 + 10*Φ⁻¹(Pc/100), asumiendo distribución normal), no un valor publicado
+en esta tabla — usarla con cautela, ver docs/DATOS.md.
 """
 from __future__ import annotations
 
@@ -12,18 +18,25 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# límites inferiores (en meses) de cada tramo de 4 meses
-_LIM = list(range(36, 72, 4))  # 36,40,44,48,52,56,60,64,68  -> hasta 5;11
+# tramos reales de la Tabla B.9 (límite inferior, límite superior, etiqueta)
+_TRAMOS = [
+    (36, 42, "36_42"),
+    (43, 48, "43_48"),
+    (49, 54, "49_54"),
+    (55, 60, "55_60"),
+    (61, 66, "61_66"),
+    (67, 78, "67_78"),
+]
 
 
 def tramo_de_edad(edad_meses: int) -> str:
-    """Devuelve el tramo tipo '4;0_4;3' para una edad en meses."""
+    """Devuelve la etiqueta de tramo (p.ej. '49_54') de la Tabla B.9 para una edad en meses."""
     if not 36 <= edad_meses <= 71:
         raise ValueError(f"edad_meses={edad_meses} fuera de 3;0–5;11 (36–71)")
-    base = max(m for m in _LIM if m <= edad_meses)
-    a0, m0 = divmod(base, 12)
-    a1, m1 = divmod(base + 3, 12)
-    return f"{a0};{m0}_{a1};{m1}"
+    for lo, hi, label in _TRAMOS:
+        if lo <= edad_meses <= hi:
+            return label
+    raise ValueError(f"edad_meses={edad_meses} no cae en ningún tramo de la Tabla B.9")
 
 
 def cargar_baremo(path: str | Path) -> pd.DataFrame:

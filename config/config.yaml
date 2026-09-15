@@ -8,6 +8,7 @@ rutas:
   labels: data/labels/etiquetas.csv
   baremos: config/baremos.csv        # PD -> T por tramo de edad (ver docs/DATOS.md)
   models: models
+  db: data/app.db                    # sesiones evaluadas desde el Dashboard Docente (SQLite)
 
 preprocesamiento:
   lado_normalizado_px: 512           # cada figura se reescala a este lienzo cuadrado
@@ -36,9 +37,9 @@ figuras:
   F09: { nombre: "rectángulo con x interna",    vertices_esperados: 4,  intersecciones_esperadas: 18 }
   F10: { nombre: "rombo",                       vertices_esperados: 4,  intersecciones_esperadas: 0 }
   F11: { nombre: "círculo + triángulo",         vertices_esperados: 8,  intersecciones_esperadas: 7 }
-  F12: { nombre: "u",                           vertices_esperados: 8,  intersecciones_esperadas: 6 }
+  F12: { nombre: "u",                           vertices_esperados: 9,  intersecciones_esperadas: 6 }
   F13: { nombre: "lazo",                        vertices_esperados: 8,  intersecciones_esperadas: 4 }
-  F14: { nombre: "doble pico ondulado",         vertices_esperados: 9,  intersecciones_esperadas: 7 }
+  F14: { nombre: "doble pico ondulado",         vertices_esperados: 9,  intersecciones_esperadas: 10 }
   F15: { nombre: "cuadrado + círculo",          vertices_esperados: 8,  intersecciones_esperadas: 12 }
   # ADVERTENCIA (hallazgo al calibrar): _puntos_cruce (indicadores.py) cuenta puntos de
   # ramificación del esqueleto, no cruces geométricos reales -> en figuras con varias
@@ -77,7 +78,7 @@ scoring:
   corte_bajo_T: 40                   # T <= 40  -> en riesgo (screening)
   corte_muy_bajo_T: 30              # T <= 30  -> derivar
   n_clases: 2                        # 2: Adecuado / En riesgo   |   3: Adecuado / Bajo / Muy bajo
-  version_baremo: "CUMANIN-2 2021 (teacorrige.com) — anotar versión exacta"
+  version_baremo: "CUMANIN original, Tabla B.9 pág.83 — transcrita 2026-09-10, sin verificar contra el libro"
 
 explicacion:
   publico: docente                   # docente | especialista

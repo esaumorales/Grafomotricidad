@@ -30,15 +30,32 @@ X), que da 18 en vez de 1 cruce real. El indicador queda autoconsistente pero es
 temblor de trazo en esas figuras; **revisar `_puntos_cruce` antes de confiar en "intersecciones"
 para cualquier figura con más de un cruce real**, es parte de la calibración pendiente de abajo.
 
+## Corrección de instrumento: CUMANIN original, no CUMANIN-2 (2026-09-10/13)
+
+El equipo aclaró que la corrección se basa en el **CUMANIN original** (Portellano
+Pérez, Mateos Mateos y Martínez Arias), no en CUMANIN-2 — el alcance sigue siendo
+solo la escala de Visopercepción. Con fotos del equipo del Apéndice C (criterios
+letra por letra de las 15 figuras) y la Tabla B.9 (pág. 83) se corrigió:
+
+- `config/baremos.csv`: ahora es la Tabla B.9 real (PD → **percentil**, no T — esa
+  tabla no publica T para esta subescala). 6 tramos de edad reales en meses
+  (`36_42`…`67_78`), no los 9 tramos de 4 meses que se habían asumido. La columna
+  `T` del CSV es una estimación matemática desde el percentil, no un dato oficial.
+- **Sin verificar todavía:** los cortes `T ≤ 40` / `T ≤ 30` y la Tabla 5.2 de
+  `scoring/niveles.py` citan "manual, pág. 98-99", pero el equipo no ha fotografiado
+  esas páginas ni confirmado que correspondan a esta edición/subescala. No se han
+  tocado en código; siguen siendo la misma categorización pendiente de validar con
+  el asesor que ya señalaba el PPI, ahora con una razón adicional para revisarla.
+
 ## MARCADOR DE POSICIÓN — sustituir cuando tengas los datos
 
 | Qué | Archivo(s) | Cómo sustituir |
 |---|---|---|
 | Figuras de referencia | `data/templates/F01.png` … `F15.png` | ✅ ya son las 15 reales (ver arriba); solo sustituir por escaneo oficial si el equipo lo consigue |
-| Baremo PD → T | `config/baremos.csv` | descargar la tabla oficial por tramo de edad de teacorrige.com; anotar versión |
+| Baremo PD → Pc | `config/baremos.csv` | ✅ transcrito de la Tabla B.9 real (CUMANIN original, pág. 83) — **pendiente de verificar línea a línea contra el libro físico** antes de usarlo en evaluaciones reales (ver docs/DATOS.md) |
 | Fotos de los niños | `data/raw/<child_id>/<figura_id>.jpg` | tus fotos reales |
 | Etiquetas | `data/labels/etiquetas.csv` | corrección 0/1 del docente evaluador (ver `docs/DATOS.md`) |
-| Config de figuras | `config.yaml > figuras` | ids, nombres, `vertices_esperados`, `intersecciones_esperadas` reales; añadir F07…F15 |
+| Config de figuras | `config.yaml > figuras` | ✅ ya tiene F01…F15 reales; solo recalibrar `vertices_esperados`/`intersecciones_esperadas` si se sustituyen las plantillas por el escaneo oficial |
 | Nº de clases del nivel | `config.yaml > scoring > n_clases` | 2 (por defecto) o 3 según la distribución real |
 | Test de contrato | `tests/test_contract_inferencia.py` → `CASOS_FIJOS` | rellenar con vectores reales tras entrenar |
 

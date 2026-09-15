@@ -127,16 +127,15 @@ def circulo_triangulo() -> np.ndarray:
 
 # F12 --------------------------------------------------------------------- #
 def u_forma() -> np.ndarray:
+    """Apéndice C, Figura 12: una recta + una curva CÓNCAVA, tangentes en un punto
+    (no superpuestas). Dos trazos en total -> una sola U, no dos lados rectos + arco."""
     im = _lienzo()
     y_base = L - M - 30
     cv2.line(im, (M, y_base), (L - M, y_base), 255, G)
     cx = L // 2
-    r = 70
-    bottom_y = y_base - 40
-    top_y = bottom_y - 110
-    cv2.line(im, (cx - r, top_y), (cx - r, bottom_y), 255, G)
-    cv2.line(im, (cx + r, top_y), (cx + r, bottom_y), 255, G)
-    cv2.ellipse(im, (cx, bottom_y), (r, 40), 0, 0, 180, 255, G)
+    r = 95
+    cy = y_base - r
+    cv2.ellipse(im, (cx, cy), (r, r), 0, 0, 180, 255, G)
     return im
 
 
@@ -152,16 +151,19 @@ def lazo() -> np.ndarray:
 
 # F14 --------------------------------------------------------------------- #
 def doble_pico_ondulado() -> np.ndarray:
+    """Apéndice C, Figura 14: 2 rectas convergentes arriba (pico) + 1 curva de
+    TRES ondulaciones (laterales convexas, central cóncava) secante a cada recta
+    en un punto (2 cruces en total, no más)."""
     im = _lienzo()
     apex = (L // 2, M + 35)
     left_end = (M + 20, M + 150)
     right_end = (L - M - 20, M + 150)
     cv2.line(im, left_end, apex, 255, G)
     cv2.line(im, apex, right_end, 255, G)
-    xs = np.linspace(M, L - M, 200)
-    y_mid = M + 150
-    amp = 55
-    ys = y_mid + amp * np.sin((xs - M) / (L - 2 * M) * 2 * np.pi)
+    xs = np.linspace(M, L - M, 240)
+    y_mid = M + 105  # dentro del rango vertical del pico (apex..extremos) para que sea secante
+    amp = 50
+    ys = y_mid + amp * np.sin(3 * np.pi * (xs - M) / (L - 2 * M))
     pts = np.stack([xs, ys], axis=1).astype(np.int32)
     cv2.polylines(im, [pts], False, 255, G)
     return im

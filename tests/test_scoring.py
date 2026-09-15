@@ -2,12 +2,13 @@ from grafomotor.scoring.baremo import tramo_de_edad
 from grafomotor.scoring.niveles import nivel_desde_T
 
 
-def test_tramos_4_meses():
-    assert tramo_de_edad(36) == "3;0_3;3"
-    assert tramo_de_edad(38) == "3;0_3;3"
-    assert tramo_de_edad(40) == "3;4_3;7"
-    assert tramo_de_edad(60) == "5;0_5;3"
-    assert tramo_de_edad(71) == "5;8_5;11"
+def test_tramos_tabla_b9():
+    """Tramos reales de la Tabla B.9 (CUMANIN, pág. 83): no son de ancho uniforme."""
+    assert tramo_de_edad(36) == "36_42"
+    assert tramo_de_edad(42) == "36_42"
+    assert tramo_de_edad(43) == "43_48"
+    assert tramo_de_edad(60) == "55_60"
+    assert tramo_de_edad(71) == "67_78"
 
 
 def test_tramo_fuera_de_rango():
