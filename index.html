@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trazo</title>
+</head>
+<body>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #FDF8F1; --surface: #FFFFFF; --surface-alt: #FFF3E6; --border: #F0E2CC;
+    --text: #4A3B2F; --text-muted: #7A6754;
+    --peach: #F2966B; --peach-dark: #A84F22; --peach-icon: #D97847; --peach-light: #FBE0D0;
+    --mint: #6FBE9A; --mint-light: #DFF2E8; --mint-dark: #2F6E52; --mint-icon: #4F9C7A;
+    --sky: #7EB8D9; --sky-light: #E6F2F9; --sky-dark: #2E6483; --sky-icon: #5A9BC0;
+    --yellow: #EBB24E; --yellow-light: #FCF0D9; --yellow-dark: #8F5E12;
+    --tech-bg: #F2EDE6; --tech-border: #DFD5C6;
+    --sidebar: #F8E4CC;
+    --radius-lg: 22px; --radius-md: 14px; --radius-sm: 10px;
+    --shadow: 0 10px 28px rgba(190, 130, 80, 0.14);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #241C16; --surface: #2F251D; --surface-alt: #3A2C21; --border: #4A3928;
+      --text: #F5EDE3; --text-muted: #C7A98C;
+      --peach: #F2966B; --peach-dark: #FFBB8E; --peach-icon: #E08553; --peach-light: #46301F;
+      --mint: #6FBE9A; --mint-dark: #85E5BB; --mint-icon: #4F9C7A; --mint-light: #1E3A2E;
+      --sky: #7EB8D9; --sky-dark: #93D3F5; --sky-icon: #5A9BC0; --sky-light: #1B3240;
+      --yellow: #EBB24E; --yellow-dark: #F6C976; --yellow-light: #3E2F10;
+      --tech-bg: #2A2119; --tech-border: #4A3928;
+      --sidebar: #2E2318;
+      --shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #241C16; --surface: #2F251D; --surface-alt: #3A2C21; --border: #4A3928;
+    --text: #F5EDE3; --text-muted: #C7A98C;
+    --peach: #F2966B; --peach-dark: #FFBB8E; --peach-icon: #E08553; --peach-light: #46301F;
+    --mint: #6FBE9A; --mint-dark: #85E5BB; --mint-icon: #4F9C7A; --mint-light: #1E3A2E;
+    --sky: #7EB8D9; --sky-dark: #93D3F5; --sky-icon: #5A9BC0; --sky-light: #1B3240;
+    --yellow: #EBB24E; --yellow-dark: #F6C976; --yellow-light: #3E2F10;
+    --tech-bg: #2A2119; --tech-border: #4A3928;
+    --sidebar: #2E2318;
+    --shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'Nunito', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--peach-dark); text-decoration: none; }
+  h1, h2, h3 { font-family: 'Baloo 2', system-ui, sans-serif; margin: 0; color: var(--text); text-wrap: balance; }
+  button { font-family: 'Nunito', system-ui, sans-serif; cursor: pointer; border: none; background: none; color: inherit; }
+  button:disabled { cursor: not-allowed; opacity: .5; }
+  input { font-family: 'Nunito', system-ui, sans-serif; }
+  fieldset { border: none; padding: 0; margin: 0; }
+  ::selection { background: var(--peach-light); }
+
+  a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+    outline: 3px solid var(--sky-dark); outline-offset: 2px; border-radius: 6px;
+  }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+
+  .demo-flag {
+    position: fixed; top: 14px; right: 14px; z-index: 50;
+    background: var(--text); color: var(--bg); font-family: 'Baloo 2', system-ui, sans-serif;
+    font-weight: 700; font-size: 12px; letter-spacing: .04em; padding: 7px 14px 7px 12px;
+    border-radius: 99px; display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow);
+    opacity: .92;
+  }
+  .demo-flag svg { flex-shrink: 0; }
+
+  .app-shell { display: flex; min-height: 100vh; background: var(--bg); }
+  .main-content { flex: 1; padding: 44px 56px 60px; display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  .sidebar { display: flex; flex-direction: column; width: 248px; min-width: 248px; background: var(--sidebar); padding: 28px 20px; gap: 32px; }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 6px; }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: var(--radius-md);
+    font-weight: 700; color: var(--text-muted);
+  }
+  .sidebar-link.activo { font-weight: 800; color: var(--peach-dark); background: var(--surface); box-shadow: var(--shadow); }
+  .sidebar-footer { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--surface); border-radius: var(--radius-md); }
+
+  .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 28px 32px; }
+  .btn-primary {
+    background: var(--peach); color: var(--text); font-weight: 800; font-size: 15px; padding: 15px 32px;
+    border-radius: var(--radius-md); box-shadow: 0 8px 20px rgba(217, 120, 71, .35);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-secondary {
+    width: 100%; text-align: left; display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+    border-radius: var(--radius-sm); background: var(--bg); border: 2px solid var(--border);
+    font-weight: 700; font-size: 14px; color: var(--text);
+  }
+  .badge-pill { font-weight: 800; font-size: 12.5px; padding: 6px 14px; border-radius: 99px; display: inline-block; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .campo { display: flex; flex-direction: column; gap: 6px; }
+  .campo label, .campo legend {
+    font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em;
+  }
+  .input {
+    padding: 12px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 14px; color: var(--text); background: var(--bg); width: 100%;
+  }
+  .mano-toggle { display: flex; gap: 8px; }
+  .mano-btn { flex: 1; text-align: center; padding: 11px 0; border-radius: var(--radius-sm); font-weight: 700; background: var(--bg); color: var(--text-muted); border: 2px solid var(--border); }
+  .mano-btn.activo { font-weight: 800; background: var(--peach); color: var(--text); border: none; }
+
+  .dropzone {
+    border-radius: var(--radius-lg); border: 3px dashed var(--peach); background: var(--peach-light);
+    padding: 28px 32px; display: flex; align-items: center; gap: 22px; margin-bottom: 26px; flex-wrap: wrap;
+  }
+  .dropzone-icono { width: 56px; height: 56px; border-radius: 50%; background: var(--peach-icon); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: white; }
+
+  .figuras-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .figura-slot {
+    width: 100%; border-radius: var(--radius-md); padding: 14px; position: relative; min-height: 128px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    border: 2.5px dashed var(--border); background: transparent; transition: background .2s, border-color .2s;
+  }
+  .figura-slot.lista { border: 2px solid var(--mint-light); background: var(--mint-light); align-items: flex-start; text-align: left; }
+  .figura-slot .check {
+    position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--mint-icon); display: flex; align-items: center; justify-content: center; color: white;
+    transform: scale(0); transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .figura-slot.lista .check { transform: scale(1); }
+
+  .nivel-card { border-radius: var(--radius-lg); padding: 32px 36px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+  .nivel-icono { width: 88px; height: 88px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: white; }
+
+  .resultado-figura {
+    border-radius: var(--radius-md); padding: 14px; text-align: center; width: 100%;
+  }
+
+  .comparacion-ia {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; background: var(--surface-alt);
+    border: 1.5px dashed var(--peach); border-radius: var(--radius-md); padding: 14px 18px; font-size: 13.5px;
+  }
+
+  .informe-layout { display: flex; gap: 24px; align-items: flex-start; }
+  .informe-principal { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  .informe-lateral { width: 296px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; }
+
+  .informe-md h3 { font-size: 19px; }
+  .informe-md ul { margin: 0 0 20px; padding-left: 22px; font-size: 15px; line-height: 1.65; }
+  .informe-md li { margin-bottom: 8px; }
+  .informe-heading { display: flex; align-items: center; gap: 10px; margin: 22px 0 14px; }
+  .informe-heading:first-child { margin-top: 0; }
+  .informe-heading-icon { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: white; }
+  .aviso-confianza { margin: 0 0 16px; padding: 12px 16px; background: var(--yellow-light); color: var(--yellow-dark); border-radius: var(--radius-sm); font-weight: 700; font-size: 14px; }
+  .cautela { color: var(--text-muted); font-size: 13px; border-top: 1px solid var(--border); margin-top: 20px; padding-top: 14px; }
+
+  .comparar-grid { display: flex; gap: 28px; margin-top: 6px; }
+  .comparar-columna { flex: 1; min-width: 0; }
+  .comparar-panel { height: 360px; border-radius: var(--radius-md); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
+
+  .historial-fila {
+    display: grid; grid-template-columns: 44px 2fr 1fr 1fr 1fr 140px; align-items: center; gap: 16px;
+    padding: 16px 18px; border-radius: var(--radius-md); color: var(--text);
+  }
+  .historial-fila:hover { background: var(--surface-alt); }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: 'Baloo 2', system-ui, sans-serif; font-size: 13px; flex-shrink: 0; }
+
+  @media (max-width: 900px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { width: 100%; min-width: 0; flex-direction: row; align-items: center; padding: 14px 20px; gap: 16px; flex-wrap: wrap; }
+    .sidebar-nav { flex-direction: row; gap: 8px; }
+    .sidebar-footer { margin-top: 0; margin-left: auto; }
+    .main-content { padding: 26px 20px 40px; gap: 18px; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .figuras-grid { grid-template-columns: repeat(3, 1fr); }
+    .informe-layout { flex-direction: column; }
+    .informe-lateral { width: 100%; }
+    .comparar-grid { flex-direction: column; }
+    .historial-fila { grid-template-columns: 40px 2fr 1fr; }
+    .historial-fila .col-fecha, .historial-fila .col-accion { display: none; }
+    .demo-flag { top: auto; bottom: 14px; }
+  }
+  @media (max-width: 560px) {
+    .main-content { padding: 18px 14px 32px; }
+    .card { padding: 20px; }
+    .sidebar-footer-texto, .sidebar-link .nav-label { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+    .figuras-grid { grid-template-columns: repeat(2, 1fr); }
+    .demo-flag span { display: none; }
+    .historial-fila { grid-template-columns: 34px 1fr auto; }
+    .historial-fila .col-edad { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+</style>
+
+<div class="demo-flag">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+  <span>Prototipo — datos de ejemplo</span>
+</div>
+
+<div id="app"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------------ */
+  /* Datos de ejemplo (no son niños reales — solo para mostrar el flujo)  */
+  /* ------------------------------------------------------------------ */
+  var FIGURAS = [
+    { id: "F01", n: 1,  nombre: "Línea recta",              path: '<path d="M20 8v24"/>' },
+    { id: "F02", n: 2,  nombre: "Dos líneas",                path: '<path d="M8 15h24M8 25h18"/>' },
+    { id: "F03", n: 3,  nombre: "Cruz",                       path: '<path d="M20 8v24M8 20h24"/>' },
+    { id: "F04", n: 4,  nombre: "Círculo",                     path: '<ellipse cx="20" cy="20" rx="12" ry="10"/>' },
+    { id: "F05", n: 5,  nombre: "Cuadrado",                     path: '<rect x="9" y="9" width="22" height="22" rx="2"/>' },
+    { id: "F06", n: 6,  nombre: "Triángulo",                     path: '<polygon points="20,8 32,31 8,31"/>' },
+    { id: "F07", n: 7,  nombre: "X (aspa)",                       path: '<path d="M9 9l22 22M31 9 9 31"/>' },
+    { id: "F08", n: 8,  nombre: "Línea ondulada",                  path: '<path d="M7 20c3-8 7-8 10 0s7 8 10 0 7-8 10 0"/>' },
+    { id: "F09", n: 9,  nombre: "Rectángulo con X interna",          path: '<rect x="6" y="12" width="28" height="16"/><line x1="6" y1="12" x2="34" y2="28"/><line x1="34" y1="12" x2="6" y2="28"/>' },
+    { id: "F10", n: 10, nombre: "Rombo",                              path: '<polygon points="20,8 32,20 20,32 8,20"/>' },
+    { id: "F11", n: 11, nombre: "Círculo + triángulo",                 path: '<circle cx="20" cy="13" r="6"/><polygon points="20,19 30,35 10,35"/>' },
+    { id: "F12", n: 12, nombre: "U",                                    path: '<path d="M9 30h22M13 14v9a7 7 0 0 0 14 0v-9"/>' },
+    { id: "F13", n: 13, nombre: "Lazo",                                  path: '<path d="M12 12c-6 4-6 12 0 16c3-8 1-16-8-16m24 0c6 4 6 12 0 16c-3-8-1-16 8-16"/>' },
+    { id: "F14", n: 14, nombre: "Doble pico ondulado",                    path: '<path d="M9 17 20 8l11 9"/><path d="M6 24c3-6 6-6 9 0s6 6 9 0 6-6 9 0"/>' },
+    { id: "F15", n: 15, nombre: "Cuadrado + círculo",                      path: '<rect x="6" y="6" width="18" height="18" rx="2"/><circle cx="26" cy="26" r="9"/>' }
+  ];
+  var NECESITA_APOYO = { F07: 1, F09: 1, F12: 1, F14: 1 };
+
+  function figurasDemo(dificiles) {
+    return FIGURAS.map(function (f) {
+      var mal = dificiles.indexOf(f.id) !== -1;
+      return {
+        figura_id: f.id, nombre: f.nombre, puntaje: mal ? 0 : 1, puntaje_docente: null,
+        prob: mal ? (0.28 + Math.random() * 0.18) : (0.74 + Math.random() * 0.2)
+      };
+    });
+  }
+
+  var SESIONES = {
+    1: { id: 1, child_id: "NINO_0034", nombre_nino: "Valentina", edad_meses: 51, fecha: "2026-09-17T09:10:00",
+         figuras: figurasDemo(["F07", "F09", "F12", "F14"]) },
+    2: { id: 2, child_id: "NINO_0031", nombre_nino: "Mateo Huamán Rojas", edad_meses: 45, fecha: "2026-09-15T11:00:00",
+         figuras: figurasDemo(["F03", "F07", "F08", "F09", "F11", "F12", "F14", "F15"]) },
+    3: { id: 3, child_id: "NINO_0029", nombre_nino: "Camila Quispe Huanca", edad_meses: 61, fecha: "2026-09-13T10:20:00",
+         figuras: figurasDemo(["F09", "F14"]) },
+    4: { id: 4, child_id: "NINO_0027", nombre_nino: "Joaquín Vargas Ttito", edad_meses: 54, fecha: "2026-09-10T09:40:00",
+         figuras: figurasDemo(["F07", "F12"]) },
+    5: { id: 5, child_id: "NINO_0022", nombre_nino: "Sebastián Mamani Ccama", edad_meses: 47, fecha: "2026-09-07T08:55:00",
+         figuras: figurasDemo(["F02", "F03", "F07", "F09", "F10", "F12", "F13", "F14"]) },
+    6: { id: 6, child_id: "NINO_0018", nombre_nino: "Ana Sofía Quispe Mamani", edad_meses: 56, fecha: "2026-08-29T09:05:00",
+         figuras: figurasDemo(["F07", "F09"]) }
+  };
+  var SIGUIENTE_ID = 7;
+
+  var NOMBRES_FIGURA = {};
+  FIGURAS.forEach(function (f) { NOMBRES_FIGURA[f.id] = f.nombre; });
+
+  function calcularResumen(figuras) {
+    var pd = figuras.reduce(function (a, f) { return a + (f.puntaje_docente != null ? f.puntaje_docente : f.puntaje); }, 0);
+    var pdIa = figuras.reduce(function (a, f) { return a + f.puntaje; }, 0);
+    var adecuado = pd >= 8, adecuadoIa = pdIa >= 8;
+    return {
+      pd: pd, pdIa: pdIa,
+      nivel: adecuado ? "Adecuado" : "En riesgo", nivelIa: adecuadoIa ? "Adecuado" : "En riesgo",
+      accion: adecuado ? "ninguna" : "reforzar_y_revaluar",
+      percentil: adecuado ? 55 + pd : 8 + pd * 2,
+      tramoEdad: "49_54",
+      corregida: figuras.some(function (f) { return f.puntaje_docente != null; })
+    };
+  }
+
+  var SUGERENCIA = {
+    ninguna: "No hace falta ninguna acción específica por ahora.",
+    reforzar_y_revaluar: "Reforzar en el aula y volver a evaluar en 4 a 6 semanas.",
+    derivar: "Conversar con la familia y considerar derivar a un especialista."
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Iconos                                                                */
+  /* ------------------------------------------------------------------ */
+  function icon(paths, opts) {
+    opts = opts || {};
+    var w = opts.size || 20, sw = opts.sw || 2.2;
+    return '<svg width="' + w + '" height="' + w + '" viewBox="0 0 24 24" fill="none" stroke="' + (opts.color || "currentColor") +
+      '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+  }
+  var ICONS = {
+    mas: icon('<path d="M12 5v14M5 12h14"/>'),
+    reloj: icon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>'),
+    flechaIzq: function (o) { return icon('<path d="M15 6l-6 6 6 6"/>', o); },
+    flechaDer: function (o) { return icon('<path d="M5 12h14M13 6l6 6-6 6"/>', o); },
+    check: function (o) { return icon('<path d="M20 6 9 17l-5-5"/>', Object.assign({ sw: 3 }, o)); },
+    alerta: function (o) { return icon('<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.8 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L14 3.8a2 2 0 0 0-3.4 0Z"/>', Object.assign({ sw: 3 }, o)); },
+    bombilla: function (o) { return icon('<path d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2Z"/><path d="M9 21h6"/>', Object.assign({ sw: 3 }, o)); },
+    barras: icon('<path d="M12 20V10M18 20V4M6 20v-4"/>'),
+    chevronUp: icon('<path d="M18 15 12 9l-6 6"/>', { sw: 3 }),
+    chevronDown: icon('<path d="M6 9l6 6 6-6"/>', { sw: 3 }),
+    descargar: icon('<path d="M12 15V3M7 10l5 5 5-5"/><path d="M4 17v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>'),
+    lapiz: icon('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"/>'),
+    comparar: icon('<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h.01M9 15l2-2 2 2 3-3"/>'),
+    buscar: icon('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'),
+    subir: icon('<path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 9l5-5 5 5"/><path d="M12 4v13"/>', { size: 28, sw: 2.3 })
+  };
+  function logoSvg() {
+    return '<svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">' +
+      '<circle cx="17" cy="17" r="16" fill="var(--peach)"/>' +
+      '<path d="M10 20 C13 12, 16 24, 19 15 C21 9, 23 13, 24 17" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+      '</svg>';
+  }
+  function figIcon(figId, size, color, sw) {
+    var f = FIGURAS.filter(function (x) { return x.id === figId; })[0];
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 40 40" fill="none" stroke="' + color +
+      '" stroke-width="' + (sw || 2.4) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + f.path + '</svg>';
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function iniciales(nombre) {
+    return nombre.split(" ").filter(Boolean).slice(0, 2).map(function (p) { return p[0].toUpperCase(); }).join("");
+  }
+  function fechaCorta(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" });
+  }
+  function edadTexto(meses) { return Math.floor(meses / 12) + " años " + (meses % 12) + " meses"; }
+  function edadCorta(meses) { return Math.floor(meses / 12) + " a. " + (meses % 12) + " m."; }
+
+  /* ------------------------------------------------------------------ */
+  /* Estado + ruteo                                                       */
+  /* ------------------------------------------------------------------ */
+  var state = { subidos: {}, subiendo: false, panelAbierto: false, corrigiendo: false };
+
+  function parseHash() {
+    var h = location.hash.replace(/^#\/?/, "");
+    var parts = h.split("/").filter(Boolean);
+    if (parts[0] === "resultados") return { view: "resultados", id: Number(parts[1]) };
+    if (parts[0] === "informe") return { view: "informe", id: Number(parts[1]) };
+    if (parts[0] === "comparar") return { view: "comparar", id: Number(parts[1]), figuraId: parts[2] };
+    if (parts[0] === "historial") return { view: "historial" };
+    return { view: "nueva" };
+  }
+  function go(hash) { location.hash = hash; }
+
+  function route() {
+    var r = parseHash();
+    if (r.view === "nueva") { state.subidos = {}; state.subiendo = false; renderNueva(); }
+    else if (r.view === "resultados") renderResultados(SESIONES[r.id]);
+    else if (r.view === "informe") { state.panelAbierto = false; state.corrigiendo = false; renderInforme(SESIONES[r.id]); }
+    else if (r.view === "comparar") renderComparar(SESIONES[r.id], r.figuraId);
+    else if (r.view === "historial") renderHistorial();
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", route);
+
+  /* ------------------------------------------------------------------ */
+  /* Layout compartido                                                    */
+  /* ------------------------------------------------------------------ */
+  function shell(activo, innerHtml) {
+    var items = [
+      { href: "#/", label: "Nueva evaluación", icon: ICONS.mas, match: activo === "nueva" },
+      { href: "#/historial", label: "Historial", icon: ICONS.reloj, match: activo === "historial" }
+    ];
+    var nav = items.map(function (it) {
+      return '<a class="sidebar-link' + (it.match ? " activo" : "") + '" href="' + it.href + '"' +
+        (it.match ? ' aria-current="page"' : "") + '>' + it.icon + '<span class="nav-label">' + it.label + "</span></a>";
+    }).join("");
+
+    return '<div class="app-shell">' +
+      '<nav class="sidebar" aria-label="Navegación principal">' +
+        '<a href="#/" style="display:flex;align-items:center;gap:10px;padding:0 6px;">' + logoSvg() +
+          '<div style="font-family:\'Baloo 2\';font-weight:800;font-size:22px;color:var(--peach-dark);">Trazo</div></a>' +
+        '<div class="sidebar-nav">' + nav + '</div>' +
+        '<div class="sidebar-footer">' +
+          '<div aria-hidden="true" style="width:36px;height:36px;border-radius:50%;background:var(--mint-icon);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-family:\'Baloo 2\';flex-shrink:0;">MR</div>' +
+          '<div class="sidebar-footer-texto"><div style="font-weight:800;font-size:13px;">Milagros Rojas</div><div style="font-size:11px;color:var(--text-muted);">Docente de inicial</div></div>' +
+        '</div>' +
+      '</nav>' +
+      '<main class="main-content">' + innerHtml + '</main>' +
+    '</div>';
+  }
+
+  function render(html) { document.getElementById("app").innerHTML = html; }
+
+  /* ------------------------------------------------------------------ */
+  /* Vista: Nueva evaluación                                              */
+  /* ------------------------------------------------------------------ */
+  function renderNueva() {
+    var subidasN = Object.keys(state.subidos).length;
+    var slots = FIGURAS.map(function (f) {
+      var lista = Boolean(state.subidos[f.id]);
+      return '<button type="button" class="figura-slot' + (lista ? " lista" : "") + '" data-slot="' + f.id + '" ' +
+        'aria-label="Figura ' + f.n + ', ' + f.nombre + (lista ? ": foto cargada" : ": pendiente") + '">' +
+        '<span class="check">' + ICONS.check({ size: 13, sw: 3, color: "white" }) + '</span>' +
+        (lista
+          ? figIcon(f.id, 34, "var(--mint-dark)") + '<div style="font-size:11px;font-weight:800;color:var(--text-muted);margin-top:6px;">Figura ' + f.n + '</div><div style="font-size:12.5px;font-weight:700;">' + esc(f.nombre) + '</div>'
+          : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' +
+            '<div style="font-size:11px;font-weight:800;color:var(--text-muted);">Figura ' + f.n + ' · ' + esc(f.nombre) + '</div><div style="font-size:11px;font-weight:700;color:var(--text-muted);">Pendiente</div>')
+        + "</button>";
+    }).join("");
+
+    var listo = subidasN === 15 && !state.subiendo;
+
+    render(shell("nueva",
+      '<div><h1 style="font-size:32px;">Nueva evaluación</h1>' +
+        '<p style="margin:6px 0 0;color:var(--text-muted);font-size:15px;">Completa los datos del niño o la niña y sube las 15 fotos de las figuras que copió.</p></div>' +
+      '<div class="card">' +
+        '<h2 style="font-size:18px;margin-bottom:20px;">Datos del niño o la niña</h2>' +
+        '<div class="form-grid">' +
+          '<div class="campo"><label for="c-id">Código del niño/a</label><input id="c-id" class="input" value="NINO_0034"/></div>' +
+          '<fieldset class="campo"><legend>Edad</legend><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+            '<label for="c-anios" class="visually-hidden">Años</label><input id="c-anios" type="number" class="input" style="width:64px;" value="4" min="3" max="5"/>' +
+            '<span style="color:var(--text-muted);font-size:13px;font-weight:700;">años</span>' +
+            '<label for="c-meses" class="visually-hidden">Meses</label><input id="c-meses" type="number" class="input" style="width:64px;" value="3" min="0" max="11"/>' +
+            '<span style="color:var(--text-muted);font-size:13px;font-weight:700;">meses</span></div></fieldset>' +
+          '<fieldset class="campo"><legend>Mano usada</legend><div class="mano-toggle">' +
+            '<button type="button" class="mano-btn activo" data-mano="D" aria-pressed="true">Derecha</button>' +
+            '<button type="button" class="mano-btn" data-mano="I" aria-pressed="false">Izquierda</button></div></fieldset>' +
+          '<div style="grid-column:1/-1;" class="campo"><label for="c-nombre">Nombre (opcional, solo para tu referencia)</label>' +
+            '<input id="c-nombre" class="input" style="max-width:340px;" value="Valentina"/></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card" style="flex:1;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">' +
+          '<h2 style="font-size:18px;">Fotos de las 15 figuras</h2>' +
+          '<div id="contador-fotos" style="font-size:13px;font-weight:800;color:var(--mint-dark);" aria-live="polite">' + subidasN + ' de 15 fotos subidas</div>' +
+        '</div>' +
+        '<div role="progressbar" aria-valuenow="' + subidasN + '" aria-valuemin="0" aria-valuemax="15" aria-label="Fotos subidas" style="height:8px;border-radius:99px;background:var(--border);overflow:hidden;margin-bottom:22px;">' +
+          '<div id="barra-fotos" style="width:' + (subidasN / 15 * 100) + '%;height:100%;background:var(--mint-icon);border-radius:99px;transition:width .25s;"></div>' +
+        '</div>' +
+        '<div class="dropzone" id="dropzone">' +
+          '<div class="dropzone-icono">' + ICONS.subir + '</div>' +
+          '<div style="flex:1;min-width:200px;"><div style="font-weight:800;font-size:16.5px;">Arrastra aquí las 15 fotos, todas a la vez</div>' +
+            '<div style="font-size:13.5px;color:var(--text-muted);margin-top:3px;font-weight:600;">O haz clic para elegirlas juntas desde tu galería. No importa el orden en que las sueltes: las acomodamos solas por figura y puedes corregir cualquiera abajo.</div></div>' +
+          '<button type="button" id="btn-elegir" class="btn-primary" style="background:var(--peach);box-shadow:none;padding:13px 26px;font-size:14.5px;">' + (state.subiendo ? "Subiendo…" : "Elegir fotos") + '</button>' +
+        '</div>' +
+        '<div style="font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:12px;">Revisa que cada foto quedó en su figura</div>' +
+        '<div class="figuras-grid">' + slots + '</div>' +
+        '<div style="display:flex;justify-content:flex-end;margin-top:28px;">' +
+          '<button type="button" id="btn-evaluar" class="btn-primary"' + (listo ? "" : " disabled") + '>' +
+            (state.subiendo ? "Evaluando…" : "Evaluar ahora") + (listo ? ICONS.flechaDer({ color: "var(--text)" }) : "") +
+          '</button>' +
+        '</div>' +
+      '</div>'
+    ));
+
+    document.getElementById("btn-elegir").addEventListener("click", simularSubida);
+    var dz = document.getElementById("dropzone");
+    dz.addEventListener("dragover", function (e) { e.preventDefault(); });
+    dz.addEventListener("drop", function (e) { e.preventDefault(); simularSubida(); });
+    Array.prototype.forEach.call(document.querySelectorAll(".mano-btn"), function (b) {
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(document.querySelectorAll(".mano-btn"), function (o) { o.classList.remove("activo"); o.setAttribute("aria-pressed", "false"); });
+        b.classList.add("activo"); b.setAttribute("aria-pressed", "true");
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".figura-slot"), function (b) {
+      b.addEventListener("click", function () { marcarSubida(b.getAttribute("data-slot")); });
+    });
+    var btnEvaluar = document.getElementById("btn-evaluar");
+    if (listo) btnEvaluar.addEventListener("click", evaluarDemo);
+  }
+
+  function marcarSubida(fid) {
+    if (state.subidos[fid]) return;
+    state.subidos[fid] = true;
+    var n = Object.keys(state.subidos).length;
+    var slot = document.querySelector('.figura-slot[data-slot="' + fid + '"]');
+    var f = FIGURAS.filter(function (x) { return x.id === fid; })[0];
+    slot.classList.add("lista");
+    slot.innerHTML = '<span class="check">' + ICONS.check({ size: 13, sw: 3, color: "white" }) + '</span>' +
+      figIcon(f.id, 34, "var(--mint-dark)") + '<div style="font-size:11px;font-weight:800;color:var(--text-muted);margin-top:6px;">Figura ' + f.n + '</div><div style="font-size:12.5px;font-weight:700;">' + esc(f.nombre) + '</div>';
+    document.getElementById("contador-fotos").textContent = n + " de 15 fotos subidas";
+    document.getElementById("barra-fotos").style.width = (n / 15 * 100) + "%";
+    if (n === 15) {
+      var btn = document.getElementById("btn-evaluar");
+      btn.removeAttribute("disabled");
+      btn.innerHTML = "Evaluar ahora" + ICONS.flechaDer({ color: "var(--text)" });
+      btn.addEventListener("click", evaluarDemo);
+    }
+  }
+
+  function simularSubida() {
+    if (state.subiendo) return;
+    state.subiendo = true;
+    document.getElementById("btn-elegir").textContent = "Subiendo…";
+    var pendientes = FIGURAS.map(function (f) { return f.id; }).filter(function (id) { return !state.subidos[id]; });
+    var i = 0;
+    (function paso() {
+      if (i >= pendientes.length) {
+        state.subiendo = false;
+        var be = document.getElementById("btn-elegir"); if (be) be.textContent = "Elegir fotos";
+        return;
+      }
+      marcarSubida(pendientes[i]);
+      i++;
+      setTimeout(paso, 90);
+    })();
+  }
+
+  function evaluarDemo() {
+    var btn = document.getElementById("btn-evaluar");
+    btn.setAttribute("disabled", "disabled");
+    btn.textContent = "Evaluando…";
+    setTimeout(function () { go("#/resultados/1"); }, 700);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Vista: Resultados                                                    */
+  /* ------------------------------------------------------------------ */
+  function renderResultados(sesion) {
+    var r = calcularResumen(sesion.figuras);
+    var adecuado = r.accion === "ninguna";
+    var logradas = sesion.figuras.filter(function (f) { return (f.puntaje_docente != null ? f.puntaje_docente : f.puntaje) === 1; }).length;
+
+    var grid = sesion.figuras.map(function (f, i) {
+      var p = f.puntaje_docente != null ? f.puntaje_docente : f.puntaje;
+      var lograda = p === 1;
+      return '<a class="resultado-figura" href="#/comparar/' + sesion.id + '/' + f.figura_id + '" style="background:' + (lograda ? "var(--mint-light)" : "var(--yellow-light)") + ';color:var(--text);" aria-label="Figura ' + (i + 1) + ", " + esc(f.nombre) + ": " + (lograda ? "lograda" : "necesita apoyo") + '. Ver comparación.">' +
+        figIcon(f.figura_id, 34, lograda ? "var(--mint-dark)" : "var(--yellow-dark)") +
+        '<div style="font-size:11px;font-weight:800;margin-top:8px;">' + (i + 1) + ' · ' + esc(f.nombre) + '</div>' +
+        (lograda
+          ? '<div style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:800;color:var(--mint-dark);margin-top:4px;">' + ICONS.check({ size: 11, sw: 4 }) + ' Lograda</div>'
+          : '<div style="font-size:11px;font-weight:800;color:var(--yellow-dark);margin-top:4px;">Necesita apoyo</div>') +
+      "</a>";
+    }).join("");
+
+    render(shell("nueva",
+      '<div><a href="#/" style="font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;">' + ICONS.flechaIzq() + ' Volver</a>' +
+        '<div style="display:flex;align-items:baseline;gap:14px;margin-top:10px;flex-wrap:wrap;"><h1 style="font-size:30px;">' + esc(sesion.nombre_nino) + '</h1>' +
+          '<span style="color:var(--text-muted);font-size:15px;font-weight:700;">' + sesion.child_id + ' · ' + edadTexto(sesion.edad_meses) + '</span></div></div>' +
+      (r.corregida ? '<div class="comparacion-ia"><span style="font-weight:800;color:var(--peach-dark);">Con correcciones del docente:</span>' +
+        '<span style="color:var(--text-muted);">IA: <strong style="color:var(--text);">' + r.pdIa + '/15 · ' + r.nivelIa + '</strong> &rarr; Docente: <strong style="color:var(--text);">' + r.pd + '/15 · ' + r.nivel + '</strong></span></div>' : "") +
+      '<div class="nivel-card" style="background:' + (adecuado ? "var(--mint-light)" : "var(--yellow-light)") + ';">' +
+        '<div class="nivel-icono" aria-hidden="true" style="background:' + (adecuado ? "var(--mint-icon)" : "var(--yellow-dark)") + ';">' + ICONS.check({ size: 44, sw: 2.8, color: "white" }) + '</div>' +
+        '<div><div style="font-size:13px;font-weight:800;color:' + (adecuado ? "var(--mint-dark)" : "var(--yellow-dark)") + ';text-transform:uppercase;letter-spacing:.04em;">Nivel de desempeño grafomotor</div>' +
+          '<h2 style="font-size:32px;color:' + (adecuado ? "var(--mint-dark)" : "var(--yellow-dark)") + ';margin-top:4px;">' + r.nivel + '</h2>' +
+          '<div style="font-size:14px;color:var(--text-muted);margin-top:6px;font-weight:700;">' + logradas + ' de 15 figuras copiadas correctamente · percentil ' + r.percentil + ' (tramo ' + r.tramoEdad + ')</div></div>' +
+      '</div>' +
+      '<div class="card"><h2 style="font-size:18px;margin-bottom:20px;">Resultado por figura</h2><div class="figuras-grid">' + grid + '</div>' +
+        '<div style="display:flex;justify-content:flex-end;margin-top:26px;"><a class="btn-primary" href="#/informe/' + sesion.id + '">Ver informe detallado' + ICONS.flechaDer({ color: "var(--text)" }) + '</a></div></div>'
+    ));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Vista: Informe                                                       */
+  /* ------------------------------------------------------------------ */
+  var TEXTO_INFORME = {
+    encabezadoAdecuado: function (n) { return "El desempeño grafomotor de " + n + " es <strong>adecuado para su edad</strong>. No se observan señales de alerta."; },
+    encabezadoRiesgo: function (n) { return "El desempeño grafomotor de " + n + " está <strong>por debajo de lo esperado</strong> para su edad en esta evaluación."; },
+    bien: [
+      "Copia con buena precisión las figuras cerradas simples, como el círculo, el cuadrado y el rombo.",
+      "Mantiene una proporción adecuada entre el tamaño de las distintas partes de cada figura.",
+      "Dibuja con trazo firme y seguro."
+    ],
+    cuesta: [
+      "Le cuesta cerrar bien las figuras donde dos líneas se cruzan, como la X y el rectángulo con X.",
+      "En figuras que combinan una parte curva con una recta (como la U o el doble pico), los ángulos salen algo imprecisos."
+    ],
+    aula: [
+      "Juegos de cruzar líneas con plastilina o palitos de madera, para sentir el punto donde se tocan.",
+      "Trazos punteados para practicar \"cerrar\" figuras sin dejar espacios abiertos.",
+      "Dibujar a mano alzada figuras que combinen curva y recta (como una sombrilla o una ola)."
+    ]
+  };
+
+  function renderInforme(sesion) {
+    var r = calcularResumen(sesion.figuras);
+    var adecuado = r.accion === "ninguna";
+
+    var bloqueBien = '<div class="informe-heading"><span class="informe-heading-icon" style="background:var(--mint-icon);">' + ICONS.check({ color: "white" }) + '</span><h3 style="color:var(--mint-dark);">Lo que se le da bien</h3></div><ul>' +
+      TEXTO_INFORME.bien.slice(0, 2).map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>";
+
+    var bloqueCuesta = adecuado ? "" : '<div class="informe-heading"><span class="informe-heading-icon" style="background:var(--yellow-dark);">' + ICONS.alerta({ color: "white" }) + '</span><h3 style="color:var(--yellow-dark);">Lo que le cuesta más</h3></div><ul>' +
+      TEXTO_INFORME.cuesta.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>";
+
+    var bloqueAula = '<div class="informe-heading"><span class="informe-heading-icon" style="background:var(--sky-icon);">' + ICONS.bombilla({ color: "white" }) + '</span><h3 style="color:var(--sky-dark);">Qué puedes hacer en el aula</h3></div><ul>' +
+      TEXTO_INFORME.aula.slice(0, adecuado ? 2 : 3).map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>";
+
+    var filasProb = sesion.figuras.map(function (f) {
+      return '<div style="display:flex;justify-content:space-between;font-size:12.5px;"><span style="color:var(--text-muted);">' + f.figura_id + ' · ' + esc(f.nombre) + '</span><span>' + f.prob.toFixed(3) + '</span></div>';
+    }).join("");
+
+    var panelTecnico = !state.panelAbierto ? "" :
+      '<div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;">' +
+        '<div><div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:10px;">Resumen de la sesión</div>' +
+          filaTecnica("Puntuación T", (40 + r.pd * 2).toFixed(1)) + filaTecnica("PD (0-15)", r.pd) + filaTecnica("Percentil", r.percentil) +
+          filaTecnica("Tramo de edad", r.tramoEdad) + filaTecnica("Confianza media", "0.81") + filaTecnica("Descriptor", adecuado ? "Medio" : "Medio-bajo") + "</div>" +
+        '<div><div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:10px;">Probabilidad por figura</div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;">' + filasProb + '</div>' +
+          '<div style="font-size:12.5px;color:var(--text-muted);line-height:1.8;margin-top:14px;">Baremo: CUMANIN, Tabla B.9 (demo)<br/>Modelo: xgb_demo</div></div>' +
+      "</div>";
+
+    var listaCorreccion = !state.corrigiendo ? "" :
+      '<div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;border-top:1px solid var(--border);padding-top:12px;">' +
+      sesion.figuras.map(function (f) {
+        var actual = f.puntaje_docente != null ? f.puntaje_docente : f.puntaje;
+        return '<div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;gap:8px;"><span>' + f.figura_id + ' · ' + esc(f.nombre) + '</span>' +
+          '<button type="button" data-corregir="' + f.figura_id + '" aria-label="' + esc(f.nombre) + ': marcada como ' + (actual === 1 ? "lograda" : "no lograda") + '. Cambiar." style="font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;flex-shrink:0;background:' + (actual === 1 ? "var(--mint-light)" : "var(--yellow-light)") + ';color:' + (actual === 1 ? "var(--mint-dark)" : "var(--yellow-dark)") + ';">' + (actual === 1 ? "Lograda" : "No lograda") + "</button></div>";
+      }).join("") + "</div>";
+
+    render(shell("nueva",
+      '<div><a href="#/resultados/' + sesion.id + '" style="font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;">' + ICONS.flechaIzq() + ' Volver a resultados</a>' +
+        '<h1 style="font-size:28px;margin-top:8px;">Informe para ' + esc(sesion.nombre_nino) + '</h1></div>' +
+      (r.corregida ? '<div class="comparacion-ia"><span style="font-weight:800;color:var(--peach-dark);">Con correcciones del docente:</span>' +
+        '<span style="color:var(--text-muted);">IA: <strong style="color:var(--text);">' + r.pdIa + '/15 · ' + r.nivelIa + '</strong> &rarr; Docente: <strong style="color:var(--text);">' + r.pd + '/15 · ' + r.nivel + '</strong></span></div>' : "") +
+      '<div class="informe-layout">' +
+        '<div class="informe-principal">' +
+          '<div class="card" style="padding:30px 34px;">' +
+            '<h2 style="font-size:22px;margin-bottom:14px;">Informe grafomotor — ' + esc(sesion.nombre_nino) + '</h2>' +
+            '<p style="margin:0 0 20px;font-size:15px;line-height:1.6;">' + (adecuado ? TEXTO_INFORME.encabezadoAdecuado(esc(sesion.nombre_nino)) : TEXTO_INFORME.encabezadoRiesgo(esc(sesion.nombre_nino))) + "</p>" +
+            bloqueBien + bloqueCuesta + bloqueAula +
+            '<p class="cautela">Este informe es una ayuda para el docente, no un diagnóstico. La decisión final corresponde a un profesional (psicólogo o especialista).</p>' +
+          "</div>" +
+          '<div style="background:var(--tech-bg);border:1.5px solid var(--tech-border);border-radius:var(--radius-lg);padding:22px 30px;">' +
+            '<button type="button" id="btn-panel" aria-expanded="' + state.panelAbierto + '" style="display:flex;width:100%;align-items:center;justify-content:space-between;text-align:left;">' +
+              '<span style="display:flex;align-items:center;gap:10px;">' + ICONS.barras + '<span style="font-weight:800;font-size:14.5px;color:var(--text-muted);">Panel técnico (para especialistas)</span></span>' +
+              '<span style="font-size:13px;font-weight:800;color:var(--peach-dark);display:flex;align-items:center;gap:4px;">' + (state.panelAbierto ? "Ocultar" + ICONS.chevronUp : "Mostrar" + ICONS.chevronDown) + "</span>" +
+            "</button>" + panelTecnico +
+          "</div>" +
+        "</div>" +
+        '<div class="informe-lateral">' +
+          '<div style="background:var(--yellow-light);border-radius:var(--radius-lg);padding:22px 24px;"><div style="font-size:12px;font-weight:800;color:var(--yellow-dark);text-transform:uppercase;letter-spacing:.03em;">Sugerencia</div>' +
+            '<div style="font-size:15px;font-weight:800;margin-top:6px;line-height:1.4;">' + SUGERENCIA[r.accion] + "</div></div>" +
+          '<div class="card" style="padding:20px 22px;display:flex;flex-direction:column;gap:12px;"><div style="font-size:13px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;">Acciones</div>' +
+            '<button type="button" class="btn-secondary" id="btn-exportar">' + ICONS.descargar + " Exportar informe</button>" +
+            '<button type="button" class="btn-secondary" id="btn-corregir" aria-expanded="' + state.corrigiendo + '">' + ICONS.lapiz + " Corregir un puntaje</button>" +
+            '<a class="btn-secondary" href="#/comparar/' + sesion.id + "/" + sesion.figuras[0].figura_id + '">' + ICONS.comparar + " Comparar figuras</a>" +
+            listaCorreccion +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    ));
+
+    document.getElementById("btn-panel").addEventListener("click", function () { state.panelAbierto = !state.panelAbierto; renderInforme(sesion); });
+    document.getElementById("btn-corregir").addEventListener("click", function () { state.corrigiendo = !state.corrigiendo; renderInforme(sesion); });
+    document.getElementById("btn-exportar").addEventListener("click", function () { window.print(); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-corregir]"), function (b) {
+      b.addEventListener("click", function () {
+        var fid = b.getAttribute("data-corregir");
+        var fig = sesion.figuras.filter(function (f) { return f.figura_id === fid; })[0];
+        var actual = fig.puntaje_docente != null ? fig.puntaje_docente : fig.puntaje;
+        fig.puntaje_docente = actual === 1 ? 0 : 1;
+        renderInforme(sesion);
+      });
+    });
+  }
+  function filaTecnica(etiqueta, valor) {
+    return '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:8px;"><span style="color:var(--text-muted);">' + etiqueta + '</span><span style="font-weight:700;">' + valor + "</span></div>";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Vista: Comparar figura                                               */
+  /* ------------------------------------------------------------------ */
+  function renderComparar(sesion, figuraId) {
+    var idx = sesion.figuras.map(function (f) { return f.figura_id; }).indexOf(figuraId);
+    var figura = sesion.figuras[idx];
+    var meta = FIGURAS.filter(function (f) { return f.id === figuraId; })[0];
+    var puntaje = figura.puntaje_docente != null ? figura.puntaje_docente : figura.puntaje;
+    var lograda = puntaje === 1;
+    var anterior = sesion.figuras[idx - 1], siguiente = sesion.figuras[idx + 1];
+
+    render(shell("nueva",
+      '<div><a href="#/informe/' + sesion.id + '" style="font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;">' + ICONS.flechaIzq() + ' Volver al informe</a>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:12px;">' +
+          '<h1 style="font-size:28px;">Comparar figura · ' + esc(sesion.nombre_nino) + '</h1>' +
+          '<div style="display:flex;align-items:center;gap:14px;background:var(--surface);border-radius:99px;padding:8px 10px;box-shadow:var(--shadow);">' +
+            navBtn(anterior, "#/comparar/" + sesion.id + "/" + (anterior ? anterior.figura_id : ""), ICONS.flechaIzq({ color: "var(--peach-dark)" }), "Figura anterior", false) +
+            '<div style="font-weight:800;font-size:14px;" aria-live="polite">Figura ' + (idx + 1) + " de " + sesion.figuras.length + "</div>" +
+            navBtn(siguiente, "#/comparar/" + sesion.id + "/" + (siguiente ? siguiente.figura_id : ""), icon('<path d="M9 6l6 6-6 6"/>', { sw: 3, color: "white" }), "Figura siguiente", true) +
+          "</div></div></div>" +
+      '<div><span class="badge-pill" style="background:' + (lograda ? "var(--mint-light)" : "var(--yellow-light)") + ";color:" + (lograda ? "var(--mint-dark)" : "var(--yellow-dark)") + ';">' + esc(meta.nombre) + " · " + (lograda ? "Lograda" : "Necesita apoyo") + "</span></div>" +
+      '<div class="comparar-grid">' +
+        '<div class="comparar-columna"><div style="font-size:13px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:12px;">Dibujo de ' + esc(sesion.nombre_nino) + '</div>' +
+          '<div class="card" style="padding:18px;transform:rotate(-.6deg);"><div class="comparar-panel" style="background:var(--bg);">' +
+            '<svg width="200" height="200" viewBox="0 0 40 40" fill="none" stroke="var(--text)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#trazo-wobble)" role="img" aria-label="Dibujo de ' + esc(sesion.nombre_nino) + " — " + esc(meta.nombre) + '">' + meta.path + "</svg>" +
+          "</div></div></div>" +
+        '<div class="comparar-columna"><div style="font-size:13px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:12px;">Plantilla de referencia</div>' +
+          '<div class="card" style="padding:18px;"><div class="comparar-panel" style="background:var(--sky-light);">' +
+            '<svg width="150" height="150" viewBox="0 0 40 40" fill="none" stroke="var(--sky-dark)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Plantilla de referencia — ' + esc(meta.nombre) + '">' + meta.path + "</svg>" +
+          "</div></div></div>" +
+      "</div>" +
+      '<svg width="0" height="0" style="position:absolute;"><filter id="trazo-wobble" x="-20%" y="-20%" width="140%" height="140%">' +
+        '<feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="7" result="n"/>' +
+        '<feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/></filter></svg>'
+    ));
+  }
+  function navBtn(disponible, href, iconHtml, label, activo) {
+    var bg = activo ? "var(--peach-icon)" : "var(--peach-light)";
+    if (!disponible) return '<span aria-hidden="true" style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--border);opacity:.5;flex-shrink:0;">' + iconHtml.replace('stroke="white"', 'stroke="var(--text-muted)"').replace('var(--peach-dark)', 'var(--text-muted)') + "</span>";
+    return '<a href="' + href + '" aria-label="' + label + '" style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:' + bg + ';flex-shrink:0;">' + iconHtml + "</a>";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Vista: Historial                                                     */
+  /* ------------------------------------------------------------------ */
+  var AVATAR_COLORES = [
+    { bg: "var(--peach-light)", color: "var(--peach-dark)" },
+    { bg: "var(--sky-light)", color: "var(--sky-dark)" }
+  ];
+  function renderHistorial() {
+    var lista = Object.keys(SESIONES).map(function (k) { return SESIONES[k]; })
+      .sort(function (a, b) { return new Date(b.fecha) - new Date(a.fecha); });
+
+    var filas = lista.map(function (s, i) {
+      var r = calcularResumen(s.figuras);
+      var av = AVATAR_COLORES[i % 2];
+      var adecuado = r.accion === "ninguna";
+      return '<a class="historial-fila" href="#/informe/' + s.id + '">' +
+        '<div class="avatar" aria-hidden="true" style="background:' + av.bg + ";color:" + av.color + ';">' + iniciales(s.nombre_nino) + "</div>" +
+        '<div><div style="font-weight:800;font-size:14.5px;">' + esc(s.nombre_nino) + '</div><div style="font-size:12px;color:var(--text-muted);">' + s.child_id + "</div></div>" +
+        '<div class="col-edad" style="font-size:14px;color:var(--text-muted);font-weight:700;">' + edadCorta(s.edad_meses) + "</div>" +
+        '<div class="col-fecha" style="font-size:14px;color:var(--text-muted);font-weight:700;">' + fechaCorta(s.fecha) + "</div>" +
+        '<div><span class="badge-pill" style="background:' + (adecuado ? "var(--mint-light)" : "var(--yellow-light)") + ";color:" + (adecuado ? "var(--mint-dark)" : "var(--yellow-dark)") + ';">' + r.nivel + "</span></div>" +
+        '<span class="col-accion" style="font-weight:800;font-size:13.5px;text-align:right;">Ver informe &rarr;</span>' +
+      "</a>";
+    }).join("");
+
+    render(shell("historial",
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">' +
+        '<div><h1 style="font-size:32px;">Historial de evaluaciones</h1><p style="margin:6px 0 0;color:var(--text-muted);font-size:15px;">Vuelve a ver el informe de cualquier evaluación anterior.</p></div>' +
+        '<div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:2px solid var(--border);border-radius:99px;padding:11px 18px;width:280px;">' + ICONS.buscar +
+          '<label for="buscar" class="visually-hidden">Buscar por nombre o código</label>' +
+          '<input id="buscar" placeholder="Buscar por nombre o código…" style="border:none;outline:none;background:transparent;font-size:14px;font-weight:600;width:100%;color:var(--text);"/></div>' +
+      "</div>" +
+      '<div class="card" id="tabla-historial" style="padding:14px 18px;">' +
+        '<div class="historial-fila" style="color:var(--text-muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:6px 18px 14px;">' +
+          "<span></span><span>Niño / a</span><span class=\"col-edad\">Edad</span><span class=\"col-fecha\">Fecha</span><span>Nivel</span><span class=\"col-accion\"></span></div>" +
+        filas +
+      "</div>"
+    ));
+
+    document.getElementById("buscar").addEventListener("input", function (e) {
+      var q = e.target.value.trim().toLowerCase();
+      Array.prototype.forEach.call(document.querySelectorAll("#tabla-historial a.historial-fila"), function (fila) {
+        fila.style.display = fila.textContent.toLowerCase().indexOf(q) !== -1 ? "" : "none";
+      });
+    });
+  }
+
+  route();
+})();
+</script>
+
+</body>
+</html>
