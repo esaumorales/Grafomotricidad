@@ -20,8 +20,8 @@ from grafomotor.features.extract import extraer_indicadores
 from grafomotor.model.predict import agregar_sesion, predecir_figura
 from grafomotor.model.registry import cargar_modelo
 from grafomotor.preprocessing import preprocesar_figura
-from grafomotor.scoring.baremo import cargar_baremo, pd_a_T
-from grafomotor.scoring.niveles import nivel_desde_T
+from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
+from grafomotor.scoring.niveles import nivel_desde_percentil
 from grafomotor.webapp import db
 
 
@@ -92,12 +92,12 @@ class Servicio:
             X.append([vec.valores[k] for k in ORDEN])
 
         sesion = agregar_sesion(child_id, edad_meses, preds)
-        tT = pd_a_T(sesion.PD, edad_meses, self.baremo)
-        nivel = nivel_desde_T(
-            tT["T"],
+        tPc = pd_a_percentil(sesion.PD, edad_meses, self.baremo)
+        nivel = nivel_desde_percentil(
+            tPc["percentil"],
             n_clases=int(self.sco_cfg.get("n_clases", 2)),
-            corte_bajo=int(self.sco_cfg.get("corte_bajo_T", 40)),
-            corte_muy_bajo=int(self.sco_cfg.get("corte_muy_bajo_T", 30)),
+            corte_bajo=int(self.sco_cfg.get("corte_bajo_pc", 16)),
+            corte_muy_bajo=int(self.sco_cfg.get("corte_muy_bajo_pc", 2)),
         )
 
         shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), list(ORDEN))
@@ -110,7 +110,7 @@ class Servicio:
 
         panel = informe.panel_tecnico
         panel["resumen"].update({
-            "PD": sesion.PD, "percentil": tT["percentil"], "tramo_edad": tT["tramo"],
+            "PD": sesion.PD, "percentil": tPc["percentil"], "tramo_edad": tPc["tramo"],
             "nivel": nivel.nivel,
             # instantánea de la IA, no se vuelve a tocar aunque el docente corrija después
             "PD_ia": sesion.PD, "nivel_ia": nivel.nivel,
@@ -148,6 +148,9 @@ class Servicio:
     def listar_sesiones(self) -> list[dict]:
         return db.listar_sesiones(self.db_path)
 
+    def listar_sesiones_de_nino(self, child_id: str) -> list[dict]:
+        return db.listar_sesiones_de_nino(self.db_path, child_id)
+
     def obtener_sesion(self, sesion_id: int) -> dict | None:
         return db.obtener_sesion(self.db_path, sesion_id)
 
@@ -169,17 +172,17 @@ class Servicio:
             (f["puntaje_docente"] if f["puntaje_docente"] is not None else f["puntaje"])
             for f in resultado["figuras"]
         )
-        tT = pd_a_T(pd_total, resultado["edad_meses"], self.baremo)
-        nivel = nivel_desde_T(
-            tT["T"],
+        tPc = pd_a_percentil(pd_total, resultado["edad_meses"], self.baremo)
+        nivel = nivel_desde_percentil(
+            tPc["percentil"],
             n_clases=int(self.sco_cfg.get("n_clases", 2)),
-            corte_bajo=int(self.sco_cfg.get("corte_bajo_T", 40)),
-            corte_muy_bajo=int(self.sco_cfg.get("corte_muy_bajo_T", 30)),
+            corte_bajo=int(self.sco_cfg.get("corte_bajo_pc", 16)),
+            corte_muy_bajo=int(self.sco_cfg.get("corte_muy_bajo_pc", 2)),
         )
 
         resultado["accion"] = nivel.accion
         resultado["panel_tecnico"]["resumen"].update({
-            "PD": pd_total, "T": nivel.T, "percentil": tT["percentil"], "tramo_edad": tT["tramo"],
+            "PD": pd_total, "percentil": tPc["percentil"], "tramo_edad": tPc["tramo"],
             "nivel": nivel.nivel, "descriptor_verbal": nivel.descriptor_verbal,
         })
 

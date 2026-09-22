@@ -16,12 +16,12 @@ import numpy as np
 def _demo_simulada(accion: str, nombre: str) -> None:
     from grafomotor.explain import construir_informe, explicar_para_docente
     from grafomotor.model.predict import PrediccionFigura, agregar_sesion
-    from grafomotor.scoring.niveles import nivel_desde_T
+    from grafomotor.scoring.niveles import nivel_desde_percentil
 
     rng = np.random.default_rng(7)
     figuras = {"F01": "círculo", "F02": "cruz", "F03": "cuadrado",
                "F04": "triángulo", "F05": "cruz oblicua", "F06": "rombo"}
-    T = {"ninguna": 52, "reforzar_y_revaluar": 37, "derivar": 27}[accion]
+    pc = {"ninguna": 60, "reforzar_y_revaluar": 10, "derivar": 1}[accion]
 
     # indicadores más bajos en cierre/ángulos para el caso con dificultades
     preds = []
@@ -39,7 +39,7 @@ def _demo_simulada(accion: str, nombre: str) -> None:
         preds.append(PrediccionFigura(fid, int(prob >= .5), round(prob, 3), ind))
 
     sesion = agregar_sesion("DEMO", 40, preds)
-    nivel = nivel_desde_T(T, n_clases=2)
+    nivel = nivel_desde_percentil(pc, n_clases=2)
 
     # SHAP simulado coherente: cierre y ángulos con contribución negativa
     agg = {"precision_modelo": .01, "vertices": .04, "error_angular": -.06,

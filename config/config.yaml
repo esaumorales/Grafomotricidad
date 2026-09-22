@@ -74,11 +74,15 @@ modelo:
   class_weight: balanced             # desbalance por figura (efecto suelo a los 3 años)
 
 scoring:
-  # Cortes del CUMANIN-2 sobre la T ajustada por edad (manual, pág. 98-99).
-  corte_bajo_T: 40                   # T <= 40  -> en riesgo (screening)
-  corte_muy_bajo_T: 30              # T <= 30  -> derivar
+  # Cortes sobre el PERCENTIL (Tabla B.9, pág. 83 — dato verificado contra el libro
+  # físico). Los cortes T>=41/31-40/<=30 (manual, pág. 98-99) NO están verificados
+  # todavía (ver ESTADO.md) y se dejaron de usar; estos cortes de percentil son la
+  # convención estándar en psicometría (~ -1 DE / -2 DE). Sustituir por los cortes
+  # oficiales del CUMANIN si se consigue verificar la pág. 98-99.
+  corte_bajo_pc: 16                  # Pc <= 16  -> en riesgo (screening), ~ -1 DE
+  corte_muy_bajo_pc: 2               # Pc <= 2   -> derivar, ~ -2 DE
   n_clases: 2                        # 2: Adecuado / En riesgo   |   3: Adecuado / Bajo / Muy bajo
-  version_baremo: "CUMANIN original, Tabla B.9 pág.83 — transcrita 2026-09-10, sin verificar contra el libro"
+  version_baremo: "CUMANIN original, Tabla B.9 pág.83 — transcrita de foto del libro físico 2026-09-15"
 
 explicacion:
   publico: docente                   # docente | especialista

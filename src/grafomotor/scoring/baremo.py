@@ -7,9 +7,10 @@ percentil (Pc) directo por tramo de edad EN MESES — no publica una puntuación
 para esta subescala. El estudio usa los tramos dentro de 3;0-5;11 (36-71 meses);
 el tramo 67-78 del manual llega hasta 6;6, pero solo 67-71 cae dentro del alcance.
 
-La columna "T" del CSV (si está) es una ESTIMACIÓN matemática a partir del Pc
-(T = 50 + 10*Φ⁻¹(Pc/100), asumiendo distribución normal), no un valor publicado
-en esta tabla — usarla con cautela, ver docs/DATOS.md.
+No se deriva una T a partir del percentil: la fórmula T = 50 + 10·Φ⁻¹(Pc/100)
+(asumiendo distribución normal) no es un dato publicado en el manual y se descartó
+como fuente de error (ver ESTADO.md) — el sistema clasifica directamente sobre el
+percentil real, que es el único dato verificado contra el libro físico.
 """
 from __future__ import annotations
 
@@ -40,21 +41,20 @@ def tramo_de_edad(edad_meses: int) -> str:
 
 
 def cargar_baremo(path: str | Path) -> pd.DataFrame:
-    """CSV con columnas: tramo_edad, pd, T, percentil. Ignora líneas '#'."""
+    """CSV con columnas: tramo_edad, pd, percentil. Ignora líneas '#'."""
     df = pd.read_csv(path, comment="#")
-    faltan = {"tramo_edad", "pd", "T"} - set(df.columns)
+    faltan = {"tramo_edad", "pd", "percentil"} - set(df.columns)
     if faltan:
         raise ValueError(f"Baremo sin columnas: {faltan}")
     return df
 
 
-def pd_a_T(pd_valor: int, edad_meses: int, baremo: pd.DataFrame) -> dict:
-    """Convierte una Puntuación Directa en T y percentil usando el tramo de la edad."""
+def pd_a_percentil(pd_valor: int, edad_meses: int, baremo: pd.DataFrame) -> dict:
+    """Convierte una Puntuación Directa en percentil usando el tramo de la edad."""
     tramo = tramo_de_edad(edad_meses)
     sub = baremo[baremo["tramo_edad"] == tramo].sort_values("pd")
     if sub.empty:
         raise KeyError(f"El baremo no tiene el tramo '{tramo}'. Añádelo desde teacorrige.com.")
     # interpolación lineal por si falta ese PD exacto
-    T = float(np.interp(pd_valor, sub["pd"], sub["T"]))
-    pc = float(np.interp(pd_valor, sub["pd"], sub["percentil"])) if "percentil" in sub else float("nan")
-    return {"tramo": tramo, "PD": int(pd_valor), "T": round(T, 1), "percentil": round(pc, 1)}
+    pc = float(np.interp(pd_valor, sub["pd"], sub["percentil"]))
+    return {"tramo": tramo, "PD": int(pd_valor), "percentil": round(pc, 1)}

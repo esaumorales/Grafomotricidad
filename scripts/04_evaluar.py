@@ -19,8 +19,8 @@ from grafomotor.evaluation import (
 from grafomotor.io import cargar_etiquetas
 from grafomotor.model.dataset import construir
 from grafomotor.model.registry import cargar_modelo
-from grafomotor.scoring.baremo import cargar_baremo, pd_a_T
-from grafomotor.scoring.niveles import nivel_desde_T
+from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
+from grafomotor.scoring.niveles import nivel_desde_percentil
 
 
 def main() -> int:
@@ -50,13 +50,13 @@ def main() -> int:
     filas = []
     for cid, g in dfp.groupby("child_id"):
         edad = int(g["edad"].iloc[0])
-        T_real = pd_a_T(int(g["y"].sum()), edad, baremo)["T"]
-        T_pred = pd_a_T(int(g["yhat"].sum()), edad, baremo)["T"]
+        pc_real = pd_a_percentil(int(g["y"].sum()), edad, baremo)["percentil"]
+        pc_pred = pd_a_percentil(int(g["yhat"].sum()), edad, baremo)["percentil"]
         n_cl = int(sco.get("n_clases", 2))
         filas.append({
             "child_id": cid, "PD_real": int(g["y"].sum()), "PD_pred": int(g["yhat"].sum()),
-            "nivel_real": nivel_desde_T(T_real, n_cl).nivel,
-            "nivel_pred": nivel_desde_T(T_pred, n_cl).nivel,
+            "nivel_real": nivel_desde_percentil(pc_real, n_cl).nivel,
+            "nivel_pred": nivel_desde_percentil(pc_pred, n_cl).nivel,
         })
     niv = pd.DataFrame(filas)
     etiquetas_nivel = (["Adecuado", "En riesgo"] if sco.get("n_clases", 2) == 2

@@ -155,7 +155,7 @@ def explicar_para_docente(
         sugerencias=sugerencias_para([d.indicador for d in dificultades]),
         cautela=P.CAUTELA,
         tecnico={
-            "T": nivel.T,
+            "percentil": nivel.percentil,
             "nivel": nivel.nivel,
             "descriptor_verbal": nivel.descriptor_verbal,
             "PD": sesion.PD,

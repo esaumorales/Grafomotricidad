@@ -1,57 +1,69 @@
 """
-T -> nivel de desempeño grafomotor, según los puntos de corte del CUMANIN-2
-(manual, pág. 98-99):
+Percentil -> nivel de desempeño grafomotor.
 
-    T >= 41  -> Adecuado
-    31-40    -> Bajo (en riesgo / screening)
-    <= 30    -> Muy bajo (derivar a especialista)
+Los cortes T>=41/31-40/<=30 que citaba una versión anterior (manual, pág. 98-99)
+NO están verificados: el equipo no ha confirmado que esas páginas correspondan a
+esta edición del manual ni a la subescala de Visopercepción (ver ESTADO.md).
+Mientras esas páginas no se verifiquen, el sistema clasifica directamente sobre
+el PERCENTIL, que es el único dato confirmado contra el libro físico (Tabla B.9,
+pág. 83 — ver `scoring/baremo.py`).
 
-`n_clases`:
-  2 -> {Adecuado, En riesgo}      (En riesgo = T <= 40; recomendado por defecto)
-  3 -> {Adecuado, Bajo, Muy bajo}
+Los cortes de percentil son la convención estándar en psicometría para definir
+bandas de riesgo a partir de una distribución normal (Pc ≈ percentil equivalente
+a -1 y -2 desviaciones típicas):
 
-Tabla 5.2 (7 descriptores) disponible en `descriptor_verbal()` para el panel técnico.
+    Pc > 16   -> Adecuado
+    Pc 3-16   -> Bajo (en riesgo / screening)   [~ -1 DE]
+    Pc <= 2   -> Muy bajo (derivar)              [~ -2 DE]
+
+Si el equipo consigue verificar las páginas 98-99 del manual original, estos
+cortes deben sustituirse por los oficiales del CUMANIN (documentar la fuente
+exacta al hacerlo).
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-CORTE_BAJO = 40
-CORTE_MUY_BAJO = 30
+CORTE_BAJO_PC = 16
+CORTE_MUY_BAJO_PC = 2
 
-# Tabla 5.2 del manual (descriptor -> (T_min, T_max))
-TABLA_5_2 = [
-    ("Muy alto", 70, 999),
-    ("Alto", 60, 69),
-    ("Medio-alto", 55, 59),
-    ("Medio", 46, 54),
-    ("Medio-bajo", 41, 45),
-    ("Bajo", 31, 40),
-    ("Muy bajo", -999, 30),
+# Bandas descriptivas por percentil (convención estándar en psicometría,
+# equivalente aprox. a bandas de -2/-1/0/+1/+2 desviaciones típicas).
+# NO proviene de una tabla del manual CUMANIN: es una convención general,
+# para el panel técnico del especialista.
+_BANDAS_DESCRIPTIVAS = [
+    ("Muy alto", 98, 100),
+    ("Alto", 91, 97),
+    ("Medio-alto", 75, 90),
+    ("Medio", 25, 74),
+    ("Medio-bajo", 9, 24),
+    ("Bajo", 3, 8),
+    ("Muy bajo", 0, 2),
 ]
 
 
 @dataclass
 class NivelResultado:
-    T: float
+    percentil: float
     nivel: str                 # etiqueta según n_clases
     accion: str                # "ninguna" | "reforzar_y_revaluar" | "derivar"
-    descriptor_verbal: str     # de la Tabla 5.2 (para el especialista)
+    descriptor_verbal: str     # banda descriptiva (para el especialista)
     n_clases: int
 
 
-def descriptor_verbal(T: float) -> str:
-    for nombre, lo, hi in TABLA_5_2:
-        if lo <= T <= hi:
+def descriptor_verbal(percentil: float) -> str:
+    for nombre, lo, hi in _BANDAS_DESCRIPTIVAS:
+        if lo <= percentil <= hi:
             return nombre
     return "Medio"
 
 
-def nivel_desde_T(T: float, n_clases: int = 2,
-                  corte_bajo: int = CORTE_BAJO, corte_muy_bajo: int = CORTE_MUY_BAJO) -> NivelResultado:
-    if T <= corte_muy_bajo:
+def nivel_desde_percentil(percentil: float, n_clases: int = 2,
+                           corte_bajo: int = CORTE_BAJO_PC,
+                           corte_muy_bajo: int = CORTE_MUY_BAJO_PC) -> NivelResultado:
+    if percentil <= corte_muy_bajo:
         accion = "derivar"
-    elif T <= corte_bajo:
+    elif percentil <= corte_bajo:
         accion = "reforzar_y_revaluar"
     else:
         accion = "ninguna"
@@ -59,12 +71,12 @@ def nivel_desde_T(T: float, n_clases: int = 2,
     if n_clases == 3:
         nivel = {"derivar": "Muy bajo", "reforzar_y_revaluar": "Bajo", "ninguna": "Adecuado"}[accion]
     else:
-        nivel = "En riesgo" if T <= corte_bajo else "Adecuado"
+        nivel = "En riesgo" if percentil <= corte_bajo else "Adecuado"
 
     return NivelResultado(
-        T=round(float(T), 1),
+        percentil=round(float(percentil), 1),
         nivel=nivel,
         accion=accion,
-        descriptor_verbal=descriptor_verbal(T),
+        descriptor_verbal=descriptor_verbal(percentil),
         n_clases=n_clases,
     )
