@@ -86,19 +86,18 @@ export default function Historial() {
             const av = AVATAR_COLORES[i % 2]
             const adecuado = s.accion === 'ninguna'
             return (
-              <Link
+              <div
                 key={s.id}
-                to={`/informe/${s.id}`}
                 className="historial-fila"
                 style={{ padding: '16px 18px', borderRadius: 'var(--radius-md)', color: 'var(--text)' }}
               >
                 <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', background: av.bg, color: av.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontFamily: "'Baloo 2'", fontSize: 13, flexShrink: 0 }}>
                   {iniciales(nombre)}
                 </div>
-                <div>
+                <Link to={`/ninos/${encodeURIComponent(s.child_id)}`} title="Ver seguimiento de este niño / a" style={{ color: 'var(--text)' }}>
                   <div style={{ fontWeight: 800, fontSize: 14.5 }}>{nombre}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.child_id}</div>
-                </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.child_id} · seguimiento →</div>
+                </Link>
                 <div className="col-edad" style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 700 }}>
                   {Math.floor(s.edad_meses / 12)} a. {s.edad_meses % 12} m.
                 </div>
@@ -108,8 +107,8 @@ export default function Historial() {
                     {s.nivel}
                   </span>
                 </div>
-                <span className="col-accion" style={{ fontWeight: 800, fontSize: 13.5, textAlign: 'right' }}>Ver informe →</span>
-              </Link>
+                <Link to={`/informe/${s.id}`} className="col-accion" style={{ fontWeight: 800, fontSize: 13.5, textAlign: 'right', color: 'var(--text)' }}>Ver informe →</Link>
+              </div>
             )
           })}
         </div>

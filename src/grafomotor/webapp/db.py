@@ -77,6 +77,26 @@ def listar_sesiones(db_path: str | Path) -> list[dict]:
         return [dict(f) for f in filas]
 
 
+def listar_sesiones_de_nino(db_path: str | Path, child_id: str) -> list[dict]:
+    """Evaluaciones de UN niño, ordenadas de la más antigua a la más reciente
+    (para poder dibujar la evolución en el tiempo). Incluye el percentil de cada
+    sesión (sacado del informe completo) para el gráfico de evolución."""
+    with _conectar(db_path) as con:
+        filas = con.execute(
+            """SELECT id, child_id, nombre_nino, edad_meses, fecha, pd_total, nivel, accion,
+                      resultado_json
+               FROM sesiones WHERE child_id = ? ORDER BY fecha ASC""",
+            (child_id,),
+        ).fetchall()
+        out = []
+        for f in filas:
+            fila = dict(f)
+            resultado = json.loads(fila.pop("resultado_json"))
+            fila["percentil"] = resultado.get("panel_tecnico", {}).get("resumen", {}).get("percentil")
+            out.append(fila)
+        return out
+
+
 def obtener_sesion(db_path: str | Path, sesion_id: int) -> dict | None:
     with _conectar(db_path) as con:
         fila = con.execute(

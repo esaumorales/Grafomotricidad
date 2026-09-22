@@ -4,6 +4,7 @@ API FastAPI para el Dashboard Docente.
   GET   /api/salud                              -> estado del servicio
   POST  /api/evaluar                             -> evalúa una sesión (fotos -> informe), la guarda
   GET   /api/sesiones                            -> historial (resumen)
+  GET   /api/ninos/{child_id}/sesiones           -> evaluaciones de un niño en el tiempo (seguimiento)
   GET   /api/sesiones/{id}                       -> informe completo de una sesión guardada
   PATCH /api/sesiones/{id}/figuras/{figura_id}   -> corrección manual del docente
   GET   /api/imagenes/{child_id}/{figura_id}     -> foto subida por el docente (para comparar)
@@ -80,6 +81,12 @@ async def evaluar(
 @app.get("/api/sesiones", response_model=list[SesionResumen])
 def listar_sesiones() -> list[SesionResumen]:
     return [SesionResumen(**r) for r in servicio().listar_sesiones()]
+
+
+@app.get("/api/ninos/{child_id}/sesiones", response_model=list[SesionResumen])
+def listar_sesiones_de_nino(child_id: str) -> list[SesionResumen]:
+    """Evaluaciones de un niño a lo largo del tiempo (seguimiento longitudinal)."""
+    return [SesionResumen(**r) for r in servicio().listar_sesiones_de_nino(child_id)]
 
 
 @app.get("/api/sesiones/{sesion_id}", response_model=EvaluarOut)
