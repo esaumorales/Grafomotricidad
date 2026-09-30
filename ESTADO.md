@@ -45,6 +45,11 @@ orientativos); curva de aprendizaje (`curva-aprendizaje`); validación externa p
 (`comparacion.agrupar_por: colegio`, columna `colegio` en etiquetas.csv). Con ~300 niños de
 varios colegios, correr `validar` y la curva de aprendizaje para confirmar que alcanzan.
 
+Niveles del niño (30/09/2026): criterio único y configurable (`scoring.niveles` en
+config.yaml: base percentil o T, cortes, acción y fuente). Hoy PROVISIONAL (base T, cortes
+40/30, mismos resultados que antes); pendiente sustituirlo por los cortes oficiales en
+percentil que aporte el equipo, con su fuente.
+
 Pendiente en este frente:
 - **Doble foto por hoja (URGENTE, antes del 12/10):** decidir si se toma. Sin ella la
   robustez solo se mide con degradaciones sintéticas. El código ya la soporta

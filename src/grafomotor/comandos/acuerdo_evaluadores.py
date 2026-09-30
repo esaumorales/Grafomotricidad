@@ -26,6 +26,7 @@ from grafomotor.evaluation.reporte import evaluar_oof, resumen_corto
 from grafomotor.io import cargar_etiquetas, guardar_json
 from grafomotor.logs import obtener_logger
 from grafomotor.scoring.baremo import cargar_baremo
+from grafomotor.scoring.niveles import CriterioNiveles
 
 AYUDA = "acuerdo entre dos evaluadores expertos (techo humano de la concordancia)"
 log = obtener_logger(__name__)
@@ -61,7 +62,7 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     n_ninos, total = df["child_id"].nunique(), etiquetas["child_id"].nunique()
 
     rep = evaluar_oof(df, cargar_baremo(cfg.ruta("baremos")),
-                      int(cfg.get("scoring", "n_clases", default=2)))
+                      CriterioNiveles.de_config(cfg))
     rep["cobertura"] = {"ninos": n_ninos, "de": total, "fraccion": round(n_ninos / total, 3)}
     guardar_json(rep, Artefactos.de_config(cfg).acuerdo_evaluadores)
     corto = {k: v for k, v in resumen_corto(rep).items() if k != "tasa_fallos"}

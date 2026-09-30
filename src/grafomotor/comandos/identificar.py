@@ -25,6 +25,7 @@ from grafomotor.evaluation.identificacion import curva_selectiva, evaluar_identi
 from grafomotor.io import guardar_json
 from grafomotor.logs import obtener_logger
 from grafomotor.scoring.baremo import cargar_baremo
+from grafomotor.scoring.niveles import CriterioNiveles
 
 AYUDA = "identificación de niños en riesgo (con zona gris) y evaluación selectiva por figura"
 log = obtener_logger(__name__)
@@ -71,8 +72,8 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     oof["prob_cal"] = platt_cruzado(oof)
 
     cfg_i = cfg.get("identificacion", default={})
-    corte = float(cfg.get("scoring", "corte_bajo_T", default=40))
-    rep, ninos = evaluar_identificacion(oof, cargar_baremo(cfg.ruta("baremos")), corte,
+    rep, ninos = evaluar_identificacion(oof, cargar_baremo(cfg.ruta("baremos")),
+                                        CriterioNiveles.de_config(cfg),
                                         float(cfg_i.get("umbral_bajo", 0.2)),
                                         float(cfg_i.get("umbral_alto", 0.8)))
     rep["calibracion"] = {"metodo": "Platt cruzado por fold",

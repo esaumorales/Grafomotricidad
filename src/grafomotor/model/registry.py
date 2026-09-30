@@ -9,6 +9,8 @@ from pathlib import Path
 
 import joblib
 
+from grafomotor.scoring.niveles import CriterioNiveles
+
 
 @dataclass
 class Manifiesto:
@@ -54,6 +56,6 @@ def nuevo_manifiesto(res, cfg) -> Manifiesto:
         feature_names=res.feature_names,
         mejores_params=res.mejores_params,
         cv_f1_macro=round(res.cv_f1_macro, 4),
-        n_clases_nivel=int(cfg.get("scoring", "n_clases", default=2)),
+        n_clases_nivel=len(CriterioNiveles.de_config(cfg).etiquetas),
         version_baremo=str(cfg.get("scoring", "version_baremo", default="")),
     )

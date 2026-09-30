@@ -33,6 +33,7 @@ from grafomotor.evaluation.reporte import evaluar_oof, resumen_corto
 from grafomotor.io import cargar_etiquetas, guardar_json
 from grafomotor.logs import obtener_logger
 from grafomotor.scoring.baremo import cargar_baremo
+from grafomotor.scoring.niveles import CriterioNiveles
 
 AYUDA = "modelo B: entrena la red (2 fases) por fold -> oof_dl_<variante>.parquet"
 log = obtener_logger(__name__)
@@ -96,7 +97,7 @@ def entrenar_variante(cfg: Config, cfg_dl: dict, variante: str, df: pd.DataFrame
                  art.historial_dl(variante))
 
     rep = evaluar_oof(oof, cargar_baremo(cfg.ruta("baremos")),
-                      int(cfg.get("scoring", "n_clases", default=2)))
+                      CriterioNiveles.de_config(cfg))
     rep["modelo"] = {"variante": variante, "cfg": cfg_dl, "dispositivo": str(disp),
                      "segundos_entrenamiento_cv": segundos}
     guardar_json(rep, art.evaluacion_dl(variante))

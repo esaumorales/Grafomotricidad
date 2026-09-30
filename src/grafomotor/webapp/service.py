@@ -21,7 +21,7 @@ from grafomotor.model.predict import agregar_sesion, predecir_figura
 from grafomotor.model.registry import cargar_modelo
 from grafomotor.preprocessing import preprocesar_figura
 from grafomotor.scoring.baremo import cargar_baremo, pd_a_T
-from grafomotor.scoring.niveles import NivelResultado, nivel_desde_T
+from grafomotor.scoring.niveles import CriterioNiveles, NivelResultado
 from grafomotor.webapp import db
 
 
@@ -36,6 +36,7 @@ class Servicio:
         self.figuras_meta = self.cfg.figuras
         self.exp_cfg = self.cfg.get("explicacion", default={})
         self.sco_cfg = self.cfg.get("scoring", default={})
+        self.criterio = CriterioNiveles.de_config(self.cfg)
         self.db_path = self.cfg.ruta("db")
         db.iniciar_db(self.db_path)
 
@@ -44,15 +45,9 @@ class Servicio:
         return p if p.exists() else None
 
     def _nivel(self, pd_total: int, edad_meses: int) -> tuple[dict, NivelResultado]:
-        """PD -> (tramo, percentil, T) -> nivel, con los cortes de config.yaml."""
+        """PD -> (tramo, percentil, T) -> nivel, con el criterio de config.yaml."""
         tT = pd_a_T(pd_total, edad_meses, self.baremo)
-        nivel = nivel_desde_T(
-            tT["T"],
-            n_clases=int(self.sco_cfg.get("n_clases", 2)),
-            corte_bajo=int(self.sco_cfg.get("corte_bajo_T", 40)),
-            corte_muy_bajo=int(self.sco_cfg.get("corte_muy_bajo_T", 30)),
-        )
-        return tT, nivel
+        return tT, self.criterio.clasificar(pd_total, edad_meses, self.baremo)
 
     def guardar_foto(self, child_id: str, figura_id: str, contenido: bytes, sufijo: str) -> Path:
         """Guarda la foto subida en data/raw/<child_id>/<figura_id>.<sufijo> (persistente,

@@ -36,3 +36,52 @@ def test_descriptor_verbal_tabla_5_2():
     assert nivel_desde_T(72).descriptor_verbal == "Muy alto"
     assert nivel_desde_T(50).descriptor_verbal == "Medio"
     assert nivel_desde_T(25).descriptor_verbal == "Muy bajo"
+
+
+# --- criterio de niveles configurable -------------------------------------------------
+def _baremo():
+    import pandas as pd
+
+    filas = [{"tramo_edad": "49_54", "pd": p, "percentil": pc, "T": t}
+             for p, pc, t in [(0, 1, 27), (3, 2, 30), (5, 10, 37), (7, 16, 40), (9, 50, 50),
+                              (15, 99, 73)]]
+    return pd.DataFrame(filas)
+
+
+def test_criterio_por_T_equivale_al_historico():
+    from grafomotor.scoring.niveles import CriterioNiveles
+
+    c = CriterioNiveles.por_T(2)
+    b = _baremo()
+    for pd_ in (0, 3, 5, 7, 9, 15):
+        from grafomotor.scoring.baremo import pd_a_T
+
+        historico = nivel_desde_T(pd_a_T(pd_, 50, b)["T"], n_clases=2)
+        nuevo = c.clasificar(pd_, 50, b)
+        assert (nuevo.nivel, nuevo.accion) == (historico.nivel, historico.accion)
+
+
+def test_criterio_por_percentil_con_tres_niveles():
+    from grafomotor.scoring.niveles import Corte, CriterioNiveles
+
+    c = CriterioNiveles("percentil", (Corte("Muy bajo", 2, "derivar"),
+                                      Corte("Bajo", 16, "reforzar_y_revaluar"),
+                                      Corte("Adecuado", 100, "ninguna")), fuente="prueba")
+    b = _baremo()
+    assert c.clasificar(3, 50, b).nivel == "Muy bajo"      # percentil 2
+    assert c.clasificar(7, 50, b).nivel == "Bajo"          # percentil 16
+    assert c.clasificar(9, 50, b).nivel == "Adecuado"      # percentil 50
+    assert c.etiquetas == ["Adecuado", "Bajo", "Muy bajo"]
+    assert c.en_riesgo(7, 50, b) and not c.en_riesgo(9, 50, b)
+
+
+def test_criterio_rechaza_cortes_desordenados():
+    import pytest
+
+    from grafomotor.scoring.niveles import Corte, CriterioNiveles
+
+    with pytest.raises(ValueError):
+        CriterioNiveles("percentil", (Corte("Adecuado", 100, "ninguna"),
+                                      Corte("Bajo", 16, "reforzar_y_revaluar")))
+    with pytest.raises(ValueError):
+        CriterioNiveles("z", (Corte("Adecuado", 100, "ninguna"),))

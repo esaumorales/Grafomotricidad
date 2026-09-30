@@ -16,6 +16,7 @@ from grafomotor.evaluation.reporte import evaluar_oof, validar_oof
 from grafomotor.io import guardar_json
 from grafomotor.logs import obtener_logger
 from grafomotor.scoring.baremo import cargar_baremo
+from grafomotor.scoring.niveles import CriterioNiveles
 
 AYUDA = "compara el modelo A con una variante de B (métricas, McNemar+Holm, bootstrap)"
 log = obtener_logger(__name__)
@@ -79,8 +80,8 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
         return 1
 
     baremo = cargar_baremo(cfg.ruta("baremos"))
-    n_clases = int(cfg.get("scoring", "n_clases", default=2))
-    rep_a, rep_b = evaluar_oof(oof_a, baremo, n_clases), evaluar_oof(oof_b, baremo, n_clases)
+    criterio = CriterioNiveles.de_config(cfg)
+    rep_a, rep_b = evaluar_oof(oof_a, baremo, criterio), evaluar_oof(oof_b, baremo, criterio)
     comp = comparar(oof_a, oof_b, int(cfg.get("comparacion", "n_boot", default=2000)))
 
     guardar_json({"A_xgboost": rep_a, f"B_{variante}": rep_b, "comparacion": comp},

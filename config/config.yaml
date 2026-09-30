@@ -80,11 +80,28 @@ modelo:                              # MODELO A: indicadores + XGBoost + SHAP
   class_weight: balanced             # desbalance por figura (efecto suelo a los 3 años)
 
 scoring:
-  # Cortes sobre la T estimada desde el percentil (manual, pág. 98-99).
-  # PENDIENTE: validar con el asesor; no verificados contra la edición del CUMANIN original.
-  corte_bajo_T: 40                   # T <= 40  -> en riesgo (screening)
-  corte_muy_bajo_T: 30              # T <= 30  -> derivar
-  n_clases: 2                        # 2: Adecuado / En riesgo   |   3: Adecuado / Bajo / Muy bajo
+  # NIVELES DEL NIÑO: de la PD y la edad -> percentil (Tabla B.9) o T -> nivel.
+  # Los cortes van del PEOR nivel al MEJOR; el niño cae en el primero cuyo `maximo`
+  # alcance. Varios cortes pueden compartir nombre con distinta acción.
+  # acciones: ninguna | reforzar_y_revaluar | derivar  (todo lo que no sea "ninguna"
+  # cuenta como "en riesgo" para la identificación).
+  #
+  # PROVISIONAL: base T (estimada, NO publicada para esta escala) con cortes 40/30 citados
+  # de pág. 98-99 sin verificar. SUSTITUIR por los cortes oficiales en PERCENTIL y su fuente,
+  # por ejemplo:
+  #   base: percentil
+  #   fuente: "Manual CUMANIN (2002), pág. __"
+  #   cortes:
+  #     - {nombre: "Muy bajo",  maximo: 2,   accion: derivar}
+  #     - {nombre: "Bajo",      maximo: 16,  accion: reforzar_y_revaluar}
+  #     - {nombre: "Adecuado",  maximo: 100, accion: ninguna}
+  niveles:
+    base: T
+    fuente: "PROVISIONAL: cortes T 40/30 (pág. 98-99) sin verificar para el CUMANIN original"
+    cortes:
+      - {nombre: "En riesgo", maximo: 30,  accion: derivar}
+      - {nombre: "En riesgo", maximo: 40,  accion: reforzar_y_revaluar}
+      - {nombre: "Adecuado",  maximo: 999, accion: ninguna}
   version_baremo: "CUMANIN original, Tabla B.9 pág.83 — transcrita 2026-09-10, sin verificar contra el libro"
 
   # PD: en la aplicación grupal no se aplica la regla de parada. Se guardan las 15

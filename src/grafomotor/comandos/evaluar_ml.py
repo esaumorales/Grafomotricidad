@@ -20,6 +20,7 @@ from grafomotor.logs import obtener_logger
 from grafomotor.model.registry import cargar_modelo
 from grafomotor.predictores import modelos_ml_por_fold
 from grafomotor.scoring.baremo import cargar_baremo
+from grafomotor.scoring.niveles import CriterioNiveles
 
 AYUDA = "modelo A: evaluación out-of-fold ANIDADA con las particiones compartidas"
 log = obtener_logger(__name__)
@@ -60,7 +61,7 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     oof.to_parquet(art.oof_ml, index=False)
 
     rep = evaluar_oof(oof, cargar_baremo(cfg.ruta("baremos")),
-                      int(cfg.get("scoring", "n_clases", default=2)))
+                      CriterioNiveles.de_config(cfg))
     rep["modelo"] = cargar_modelo(art.dir_modelo_ml)[1]
     rep["validacion"] = {"anidada": bool(cfg.get("modelo", "cv", "anidada", default=True)),
                          "hiperparametros_por_fold": params}

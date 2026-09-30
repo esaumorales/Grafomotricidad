@@ -21,19 +21,25 @@ from grafomotor.evaluation.metrics import (
     metricas_por_figura,
 )
 from grafomotor.evaluation.stratified import edad_en_anios, estratificar_por_edad
-from grafomotor.scoring.baremo import pd_a_T
-from grafomotor.scoring.niveles import nivel_desde_T
+from grafomotor.scoring.niveles import CriterioNiveles
 from grafomotor.scoring.pd import pd_completa, pd_manual
 
 COLUMNAS_OOF = ["child_id", "figura_id", "edad_meses", "fold", "y", "yhat", "prob"]
 
 
-def etiquetas_nivel(n_clases: int) -> list[str]:
-    return ["Adecuado", "En riesgo"] if n_clases == 2 else ["Adecuado", "Bajo", "Muy bajo"]
+def a_criterio(criterio: CriterioNiveles | int) -> CriterioNiveles:
+    """Acepta un CriterioNiveles o, por compatibilidad, el antiguo n_clases (cortes T)."""
+    return criterio if isinstance(criterio, CriterioNiveles) else CriterioNiveles.por_T(criterio)
 
 
-def tabla_por_nino(oof: pd.DataFrame, baremo: pd.DataFrame, n_clases: int = 2) -> pd.DataFrame:
+def etiquetas_nivel(criterio: CriterioNiveles | int) -> list[str]:
+    return a_criterio(criterio).etiquetas
+
+
+def tabla_por_nino(oof: pd.DataFrame, baremo: pd.DataFrame,
+                   criterio: CriterioNiveles | int = 2) -> pd.DataFrame:
     """Una fila por niño: PD completa y del manual (experto y modelo) y nivel."""
+    criterio = a_criterio(criterio)
     filas = []
     for cid, g in oof.groupby("child_id"):
         g = g.sort_values("figura_id")
@@ -45,29 +51,30 @@ def tabla_por_nino(oof: pd.DataFrame, baremo: pd.DataFrame, n_clases: int = 2) -
             pr, pp = fn(y), fn(yhat)
             fila[f"PD_{nombre}_experto"], fila[f"PD_{nombre}_modelo"] = pr, pp
             for quien, valor in (("experto", pr), ("modelo", pp)):
-                T = pd_a_T(valor, edad, baremo)["T"]
-                fila[f"nivel_{nombre}_{quien}"] = nivel_desde_T(T, n_clases).nivel
+                fila[f"nivel_{nombre}_{quien}"] = criterio.clasificar(valor, edad, baremo).nivel
         filas.append(fila)
     return pd.DataFrame(filas)
 
 
-def _bloque_pd(ninos: pd.DataFrame, variante: str, n_clases: int) -> dict:
+def _bloque_pd(ninos: pd.DataFrame, variante: str, criterio: CriterioNiveles) -> dict:
     a, b = ninos[f"PD_{variante}_experto"], ninos[f"PD_{variante}_modelo"]
     return {
         "cci_acuerdo_absoluto": icc_acuerdo_absoluto(a, b),
         "bland_altman": bland_altman(a, b),
         "nivel": metricas_nivel(ninos[f"nivel_{variante}_experto"],
-                                ninos[f"nivel_{variante}_modelo"], etiquetas_nivel(n_clases)),
+                                ninos[f"nivel_{variante}_modelo"], criterio.etiquetas),
     }
 
 
-def evaluar_oof(oof: pd.DataFrame, baremo: pd.DataFrame, n_clases: int = 2) -> dict:
+def evaluar_oof(oof: pd.DataFrame, baremo: pd.DataFrame,
+                criterio: CriterioNiveles | int = 2) -> dict:
     faltan = [c for c in COLUMNAS_OOF if c not in oof.columns]
     if faltan:
         raise ValueError(f"predicciones OOF sin columnas {faltan}")
     medidas = oof[oof["yhat"].notna()]
     y, yhat = medidas["y"].astype(int), medidas["yhat"].astype(int)
-    ninos = tabla_por_nino(oof, baremo, n_clases)
+    criterio = a_criterio(criterio)
+    ninos = tabla_por_nino(oof, baremo, criterio)
 
     por_edad_pd = {}
     anios = edad_en_anios(ninos["edad_meses"])
@@ -90,8 +97,10 @@ def evaluar_oof(oof: pd.DataFrame, baremo: pd.DataFrame, n_clases: int = 2) -> d
             "figura": estratificar_por_edad(y, yhat, medidas["edad_meses"]),
             "PD": por_edad_pd,
         },
-        "PD_completa": _bloque_pd(ninos, "completa", n_clases),
-        "PD_manual_regla_4_fallos": _bloque_pd(ninos, "manual", n_clases),
+        "criterio_niveles": {"base": criterio.base, "fuente": criterio.fuente,
+                             "niveles": criterio.etiquetas},
+        "PD_completa": _bloque_pd(ninos, "completa", criterio),
+        "PD_manual_regla_4_fallos": _bloque_pd(ninos, "manual", criterio),
     }
 
 

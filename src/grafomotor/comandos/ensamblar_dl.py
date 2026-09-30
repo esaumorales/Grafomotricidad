@@ -29,6 +29,7 @@ from grafomotor.evaluation.reporte import evaluar_oof, resumen_corto
 from grafomotor.io import guardar_json
 from grafomotor.logs import obtener_logger
 from grafomotor.scoring.baremo import cargar_baremo
+from grafomotor.scoring.niveles import CriterioNiveles
 
 AYUDA = "modelo B: ensamble de semillas + TTA con los modelos ya entrenados (sin reentrenar)"
 log = obtener_logger(__name__)
@@ -81,7 +82,7 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     salida.to_parquet(art.oof_dl(nombre), index=False)
 
     rep = evaluar_oof(salida, cargar_baremo(cfg.ruta("baremos")),
-                      int(cfg.get("scoring", "n_clases", default=2)))
+                      CriterioNiveles.de_config(cfg))
     rep["modelo"] = {"variante": nombre, "ensamble_de": variantes, "tta": tta}
     guardar_json(rep, art.evaluacion_dl(nombre))
     print(json.dumps({"variante": nombre, **resumen_corto(rep)}, indent=2, ensure_ascii=False))

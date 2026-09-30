@@ -53,10 +53,15 @@ Documentación: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) ·
 
 ## Nivel de desempeño
 
-PD → percentil por tramo de edad en meses (**Tabla B.9**, pág. 83) → T estimada desde el
-percentil → nivel. Cortes: **T ≥ 41** Adecuado · **31–40** En riesgo · **≤ 30** Derivar
-(`corte_bajo_T: 40`, `corte_muy_bajo_T: 30`; **pendientes de validar con el asesor**).
-2 clases por defecto (Adecuado / En riesgo).
+PD → percentil por tramo de edad en meses (**Tabla B.9**, pág. 83) → nivel. Los niveles,
+sus cortes, la acción de cada uno y la **fuente** se declaran en
+`config.yaml > scoring > niveles` (`CriterioNiveles`), y todo el sistema los usa: reportes,
+identificación y app web. Se pueden definir por **percentil** (el dato que publica la
+Tabla B.9, recomendado) o por T.
+
+**Provisional:** base T con cortes 40/30 (T ≥ 41 Adecuado · ≤ 40 En riesgo · ≤ 30 derivar),
+citados de pág. 98-99 sin verificar para esta edición. **Sustituir por los cortes oficiales
+en percentil y su fuente** (plantilla en el propio config.yaml).
 
 ## Puesta en marcha
 

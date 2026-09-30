@@ -27,6 +27,7 @@ from grafomotor.evaluation.reporte import evaluar_oof, resumen_corto
 from grafomotor.io import cargar_etiquetas, guardar_json
 from grafomotor.logs import obtener_logger
 from grafomotor.scoring.baremo import cargar_baremo
+from grafomotor.scoring.niveles import CriterioNiveles
 
 AYUDA = "curva de aprendizaje: rendimiento según cuántos niños se usan para entrenar"
 log = obtener_logger(__name__)
@@ -101,7 +102,7 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
         datos, entrenar_predecir = _predictor_ml(cfg, art, etiquetas)
     datos = datos.assign(fold=folds_de(datos["child_id"], particiones))
     baremo = cargar_baremo(cfg.ruta("baremos"))
-    n_clases = int(cfg.get("scoring", "n_clases", default=2))
+    criterio = CriterioNiveles.de_config(cfg)
 
     resultados = []
     for frac in FRACCIONES:
@@ -115,7 +116,7 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
             prob = entrenar_predecir(entreno, prueba)
             partes.append(prueba[["child_id", "figura_id", "edad_meses", "fold"]].assign(
                 y=prueba["puntaje"].to_numpy(), prob=prob, yhat=(prob >= 0.5).astype(float)))
-        corto = resumen_corto(evaluar_oof(pd.concat(partes), baremo, n_clases))
+        corto = resumen_corto(evaluar_oof(pd.concat(partes), baremo, criterio))
         fila = {"fraccion": frac, "ninos_entrenamiento_media": round(float(np.mean(n_train)), 1),
                 "kappa_figura": corto["kappa_figura"], "cci_PD": corto["cci_PD"],
                 "exactitud_balanceada": corto["exactitud_balanceada"]}

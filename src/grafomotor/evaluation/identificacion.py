@@ -3,8 +3,8 @@ IDENTIFICACIÓN de niños en riesgo (tamizaje), además de la evaluación figura
 
 La decisión es por niño. Con las 15 probabilidades calibradas de sus figuras, su PD es
 una variable aleatoria de Poisson-binomial: se calcula exactamente la probabilidad de que
-la PD quede en la zona de riesgo de su edad (T <= corte). Así, un error suelto en una
-figura no decide por sí solo, y los casos dudosos se reconocen como tales.
+la PD quede en un nivel que pida alguna acción según el criterio de niveles. Así, un error
+suelto en una figura no decide por sí solo, y los casos dudosos se reconocen como tales.
 
 Triaje en tres zonas (umbrales en config.yaml > identificacion):
 
@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from grafomotor.scoring.baremo import pd_a_T
+from grafomotor.scoring.niveles import CriterioNiveles
 
 N_FIGURAS_MAX = 15
 
@@ -34,11 +34,11 @@ def distribucion_pd(probs) -> np.ndarray:
     return dist
 
 
-def pd_maxima_en_riesgo(edad_meses: int, baremo: pd.DataFrame, corte_T: float,
+def pd_maxima_en_riesgo(edad_meses: int, baremo: pd.DataFrame, criterio: CriterioNiveles,
                         n_figuras: int = N_FIGURAS_MAX) -> int:
-    """La PD más alta que a esa edad todavía queda en riesgo (T <= corte). -1 si ninguna."""
+    """La PD más alta que a esa edad todavía pide alguna acción (en riesgo). -1 si ninguna."""
     en_riesgo = [pd_ for pd_ in range(n_figuras + 1)
-                 if pd_a_T(pd_, edad_meses, baremo)["T"] <= corte_T]
+                 if criterio.en_riesgo(pd_, edad_meses, baremo)]
     return max(en_riesgo) if en_riesgo else -1
 
 
@@ -52,13 +52,13 @@ def wilson(aciertos: int, n: int, z: float = 1.96) -> list[float]:
     return [round(float(centro - margen), 3), round(float(centro + margen), 3)]
 
 
-def tabla_ninos(oof: pd.DataFrame, baremo: pd.DataFrame, corte_T: float,
+def tabla_ninos(oof: pd.DataFrame, baremo: pd.DataFrame, criterio: CriterioNiveles,
                 col_prob: str = "prob_cal") -> pd.DataFrame:
     """Por niño: riesgo real (experto), P(riesgo) del modelo y PD esperada."""
     filas = []
     for cid, g in oof.groupby("child_id"):
         edad = int(g["edad_meses"].iloc[0])
-        corte_pd = pd_maxima_en_riesgo(edad, baremo, corte_T)
+        corte_pd = pd_maxima_en_riesgo(edad, baremo, criterio)
         # figura no medida -> se trata como 0 (criterio conservador, igual que en la PD)
         probs = g[col_prob].fillna(0.0).to_numpy()
         dist = distribucion_pd(probs)
@@ -108,14 +108,15 @@ def triaje(ninos: pd.DataFrame, umbral_bajo: float, umbral_alto: float) -> dict:
     }
 
 
-def evaluar_identificacion(oof: pd.DataFrame, baremo: pd.DataFrame, corte_T: float,
-                           umbral_bajo: float, umbral_alto: float) -> dict:
-    ninos = tabla_ninos(oof, baremo, corte_T)
+def evaluar_identificacion(oof: pd.DataFrame, baremo: pd.DataFrame, criterio: CriterioNiveles,
+                           umbral_bajo: float, umbral_alto: float) -> tuple[dict, pd.DataFrame]:
+    ninos = tabla_ninos(oof, baremo, criterio)
     real = ninos["riesgo_real"]
     auc = (round(float(roc_auc_score(real, ninos["p_riesgo"])), 3)
            if real.nunique() == 2 else float("nan"))
     return {
-        "corte_T": corte_T,
+        "criterio_riesgo": {"base": criterio.base, "fuente": criterio.fuente,
+                            "niveles": criterio.etiquetas},
         "prevalencia_riesgo": round(float(real.mean()), 3),
         "auc_p_riesgo": auc,
         "sin_zona_gris_umbral_0.5": metricas_tamizaje(real, ninos["p_riesgo"] >= 0.5),
