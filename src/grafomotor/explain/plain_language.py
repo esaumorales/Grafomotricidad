@@ -147,7 +147,7 @@ def explicar_para_docente(
 
     return Explicacion(
         nombre_nino=nombre,
-        encabezado=P.ENCABEZADO[nivel.accion].format(nombre=nombre),
+        encabezado=P.contraer(P.ENCABEZADO[nivel.accion].format(nombre=nombre)),
         accion=nivel.accion,
         aviso_confianza=aviso,
         fortalezas=fortalezas,

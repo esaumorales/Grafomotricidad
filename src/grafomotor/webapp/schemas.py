@@ -20,8 +20,10 @@ class EvaluarOut(BaseModel):
     edad_meses: int
     # --- para el docente ---
     informe_docente_md: str
-    accion: str = Field(description="ninguna | reforzar_y_revaluar | derivar (con correcciones aplicadas)")
-    accion_ia: str | None = Field(default=None, description="acción original de la IA, sin correcciones del docente")
+    accion: str = Field(
+        description="ninguna | reforzar_y_revaluar | derivar (con correcciones aplicadas)")
+    accion_ia: str | None = Field(
+        default=None, description="acción original de la IA, sin correcciones del docente")
     aviso_confianza: str | None = None
     # --- para el especialista (panel aparte) ---
     panel_tecnico: dict

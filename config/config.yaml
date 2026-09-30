@@ -4,9 +4,11 @@ rutas:
   raw: data/raw
   interim: data/interim
   processed: data/processed
-  templates: data/templates          # figuras de referencia del CUMANIN-2 (una por figura_id)
+  templates: data/templates          # figuras de referencia del CUMANIN original (una por figura_id)
   labels: data/labels/etiquetas.csv
-  baremos: config/baremos.csv        # PD -> T por tramo de edad (ver docs/DATOS.md)
+  baremos: config/baremos.csv        # PD -> Pc (Tabla B.9) por tramo de edad (ver docs/DATOS.md)
+  interim_dl: data/interim_dl        # recortes 224x224 en gris para el modelo B (DL)
+  fotos_aula: data/labels/fotos_aula.csv   # opcional: 2.ª foto de cada hoja, en condiciones de aula
   models: models
   db: data/app.db                    # sesiones evaluadas desde el Dashboard Docente (SQLite)
 
@@ -18,7 +20,8 @@ preprocesamiento:
 
 figuras:
   # id -> nº de vértices esperado y nº de puntos de intersección esperados.
-  # Orden y nombres = Anexo 2 del CUMANIN-2 (Prueba 6, Visopercepción). Los valores
+  # Orden y nombres = escala de Visopercepción del CUMANIN original (Apéndice C, criterios
+  # de corrección; las 15 figuras son prácticamente iguales en ambas ediciones). Los valores
   # vertices_esperados / intersecciones_esperadas se calculan empíricamente sobre la
   # propia plantilla vectorial (scripts/gen_plantillas.py) con el mismo algoritmo de
   # src/grafomotor/features/indicadores.py, para que sean consistentes con lo que el
@@ -59,7 +62,7 @@ augmentacion:
   transformaciones: [elastica_leve, grosor_trazo, brillo_contraste]
   # PROHIBIDO: rotaciones amplias, volteos (cambian los criterios de puntuación)
 
-modelo:
+modelo:                              # MODELO A: indicadores + XGBoost + SHAP
   algoritmo: xgboost
   objetivo: binary:logistic          # puntaje por figura 0/1
   cv:
@@ -74,11 +77,42 @@ modelo:
   class_weight: balanced             # desbalance por figura (efecto suelo a los 3 años)
 
 scoring:
-  # Cortes del CUMANIN-2 sobre la T ajustada por edad (manual, pág. 98-99).
+  # Cortes sobre la T estimada desde el percentil (manual, pág. 98-99).
+  # PENDIENTE: validar con el asesor; no verificados contra la edición del CUMANIN original.
   corte_bajo_T: 40                   # T <= 40  -> en riesgo (screening)
   corte_muy_bajo_T: 30              # T <= 30  -> derivar
   n_clases: 2                        # 2: Adecuado / En riesgo   |   3: Adecuado / Bajo / Muy bajo
   version_baremo: "CUMANIN original, Tabla B.9 pág.83 — transcrita 2026-09-10, sin verificar contra el libro"
+
+  # PD: en la aplicación grupal no se aplica la regla de parada. Se guardan las 15
+  # puntuaciones y se reportan dos PD: completa y "del manual" (parar tras 4 fallos
+  # seguidos, aplicado a posteriori). Cuál es la oficial: pendiente con el asesor.
+  n_fallos_parada: 4
+
+dl:                                  # MODELO B: ResNet-18 + Grad-CAM
+  arquitectura: resnet18             # resnet18 (principal) | efficientnet_b0 (alternativa). No más de 2.
+  aumento: moderado                  # moderado | robusto (más sombra, desenfoque y luz; ver dl/aumentos.py)
+  semilla: 20260930
+  lado_px: 224
+  lote: 64
+  epocas_fase1: 8                    # red congelada, solo las 15 cabezas
+  epocas_fase2: 15                   # se descongelan las últimas capas
+  lr_fase1: 0.001
+  lr_fase2_red: 0.0001               # tasa baja para el ajuste fino
+  lr_fase2_cabezas: 0.0003
+  peso_decaimiento: 0.0001
+  paciencia: 5                       # parada temprana (validación interna por niño)
+  fraccion_validacion: 0.15
+  # aumento de datos: brillo, contraste, sombra, desenfoque leve, perspectiva leve,
+  # rotación ±7°. PROHIBIDO: volteos y rotaciones grandes (ver dl/aumentos.py).
+
+comparacion:                         # reglas comunes A vs B
+  folds: 5                           # StratifiedGroupKFold por niño -> data/processed/particiones.csv
+  n_boot: 2000                       # bootstrap por niño (IC 95 % de la diferencia de kappa y CCI)
+  robustez:
+    degradaciones: [sombra, desenfoque, inclinacion, brillo]
+    niveles: [leve, moderada, fuerte]
+    muestra_ninos: 40                # niños (de todos los folds) evaluados con degradaciones; 0 = todos
 
 explicacion:
   publico: docente                   # docente | especialista

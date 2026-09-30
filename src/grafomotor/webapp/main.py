@@ -54,7 +54,7 @@ def salud() -> dict:
         s = servicio()
         return {"ok": True, "modelo": s.manifiesto.get("git_hash"),
                 "baremo": s.manifiesto.get("version_baremo")}
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return {"ok": False, "error": str(e)}
 
 
@@ -63,13 +63,16 @@ async def evaluar(
     child_id: str = Form(...),
     edad_meses: int = Form(...),
     nombre_nino: str | None = Form(None),
-    figura_ids: str = Form(..., description="ids separados por coma, en el mismo orden que los archivos"),
+    figura_ids: str = Form(
+        ..., description="ids separados por coma, en el mismo orden que los archivos"),
     fotos: list[UploadFile] = File(...),
 ) -> EvaluarOut:
     ids = [x.strip() for x in figura_ids.split(",") if x.strip()]
+    if len(ids) != len(fotos):
+        raise HTTPException(400, f"llegaron {len(fotos)} fotos pero {len(ids)} ids de figura")
     s = servicio()
     rutas: dict[str, str] = {}
-    for fid, up in zip(ids, fotos):
+    for fid, up in zip(ids, fotos, strict=True):
         sufijo = Path(up.filename or "").suffix or ".jpg"
         destino = s.guardar_foto(child_id, fid, await up.read(), sufijo)
         rutas[fid] = str(destino)

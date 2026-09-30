@@ -1,6 +1,7 @@
 # datos y modelos (nunca al repo)
 data/raw/*
 data/interim/*
+data/interim_dl/*
 data/processed/*
 data/templates/*
 data/labels/*

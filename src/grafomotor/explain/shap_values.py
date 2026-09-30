@@ -20,7 +20,7 @@ def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str]) -> 
         sv = sv[1]
     sv = np.asarray(sv, dtype=float)
 
-    por_figura = [dict(zip(feature_names, row)) for row in sv]
+    por_figura = [dict(zip(feature_names, row, strict=True)) for row in sv]
     agg_signed = {f: float(np.mean([pf[f] for pf in por_figura])) for f in feature_names}
     agg_abs = {f: float(np.mean([abs(pf[f]) for pf in por_figura])) for f in feature_names}
     base = explainer.expected_value

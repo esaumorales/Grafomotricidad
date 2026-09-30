@@ -6,12 +6,14 @@ Convierte los valores SHAP + los indicadores geométricos en:
     sugerencias de actividad),
   - un PANEL TÉCNICO aparte (cifras, T, percentil, tabla SHAP) para el especialista.
 """
-from grafomotor.explain.plain_language import explicar_para_docente, Hallazgo
-from grafomotor.explain.report import construir_informe, InformeCompleto
+from grafomotor.explain.plain_language import Hallazgo, explicar_para_docente
+from grafomotor.explain.report import InformeCompleto, construir_informe
 from grafomotor.explain.shap_values import shap_por_sesion
 
 __all__ = [
-    "explicar_para_docente", "Hallazgo",
-    "construir_informe", "InformeCompleto",
+    "Hallazgo",
+    "InformeCompleto",
+    "construir_informe",
+    "explicar_para_docente",
     "shap_por_sesion",
 ]

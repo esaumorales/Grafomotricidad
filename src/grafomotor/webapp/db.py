@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 _SCHEMA = """
@@ -58,7 +58,7 @@ def guardar_sesion(db_path: str | Path, resultado: dict) -> int:
                 resultado["child_id"],
                 resultado.get("nombre_nino"),
                 resultado["edad_meses"],
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(UTC).isoformat(),
                 tecnico.get("PD", 0),
                 tecnico.get("nivel", ""),
                 resultado["accion"],

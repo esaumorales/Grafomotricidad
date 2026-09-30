@@ -1,6 +1,6 @@
-"""Evaluación grafomotora infantil por visión computacional + XGBoost + explicación para docentes."""
+"""Evaluación grafomotora infantil (Visopercepción del CUMANIN): ML clásico vs. DL explicables."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Los 6 indicadores geométricos (Tabla 1 del PPI) y su nombre para el docente.
 INDICADORES = {

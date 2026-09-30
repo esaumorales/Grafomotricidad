@@ -1,6 +1,7 @@
 """
-T -> nivel de desempeño grafomotor, según los puntos de corte del CUMANIN-2
-(manual, pág. 98-99):
+T -> nivel de desempeño grafomotor. Cortes citados del manual (pág. 98-99),
+PENDIENTES DE VALIDAR con el asesor para el CUMANIN original (la T de esta
+subescala es una estimación desde el percentil de la Tabla B.9):
 
     T >= 41  -> Adecuado
     31-40    -> Bajo (en riesgo / screening)
@@ -47,8 +48,8 @@ def descriptor_verbal(T: float) -> str:
     return "Medio"
 
 
-def nivel_desde_T(T: float, n_clases: int = 2,
-                  corte_bajo: int = CORTE_BAJO, corte_muy_bajo: int = CORTE_MUY_BAJO) -> NivelResultado:
+def nivel_desde_T(T: float, n_clases: int = 2, corte_bajo: int = CORTE_BAJO,
+                  corte_muy_bajo: int = CORTE_MUY_BAJO) -> NivelResultado:
     if T <= corte_muy_bajo:
         accion = "derivar"
     elif T <= corte_bajo:
@@ -57,7 +58,8 @@ def nivel_desde_T(T: float, n_clases: int = 2,
         accion = "ninguna"
 
     if n_clases == 3:
-        nivel = {"derivar": "Muy bajo", "reforzar_y_revaluar": "Bajo", "ninguna": "Adecuado"}[accion]
+        nivel = {"derivar": "Muy bajo", "reforzar_y_revaluar": "Bajo",
+                 "ninguna": "Adecuado"}[accion]
     else:
         nivel = "En riesgo" if T <= corte_bajo else "Adecuado"
 

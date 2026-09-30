@@ -1,8 +1,9 @@
 # Arquitectura de la metodología
 
-Sistema de evaluación grafomotora infantil por **visión computacional + XGBoost**, con
-una capa de **explicación en lenguaje natural para el docente**. Niños de **3 a 5 años**,
-prueba **Visopercepción (Vis) del CUMANIN‑2**.
+Diseño comparativo (decisión del 30/09/2026): **modelo A** (visión clásica + 6 indicadores
++ XGBoost + SHAP) frente a **modelo B** (ResNet-18 + Grad-CAM), con los mismos datos.
+Niños de **3 a 5 años**, escala de **Visopercepción del CUMANIN original**. Las secciones
+1–3 describen el modelo A y la app; la sección 1b, el modelo B y la comparación.
 
 ---
 
@@ -11,16 +12,16 @@ prueba **Visopercepción (Vis) del CUMANIN‑2**.
 ```mermaid
 flowchart TD
     subgraph REC["1 · Recolección"]
-        A1["Aplicación de la prueba<br/>Visopercepción del CUMANIN-2"] --> A2["Foto de la hoja<br/>(por figura, condiciones controladas)"]
+        A1["Aplicación de la prueba<br/>Visopercepción del CUMANIN original"] --> A2["Foto de la hoja<br/>(por figura, condiciones controladas)"]
         A1 --> A3["Puntaje 0/1 por figura<br/>del docente evaluador<br/>(criterios del manual)"]
     end
 
     subgraph PRE["2 · Preprocesamiento de imágenes  (OpenCV / scikit-image)"]
-        B1["Orientar (EXIF)"] --> B2["Corregir perspectiva<br/>e inclinación"] --> B3["Normalizar iluminación<br/>+ contraste"] --> B4["Binarizar el trazo"] --> B5["Aislar la figura"] --> B6["Registrar a la<br/>plantilla del CUMANIN-2"]
+        B1["Orientar (EXIF)"] --> B2["Corregir perspectiva<br/>e inclinación"] --> B3["Normalizar iluminación<br/>+ contraste"] --> B4["Binarizar el trazo"] --> B5["Aislar la figura"] --> B6["Registrar a la<br/>plantilla de la figura"]
         B6 --> BQ{{"Control de calidad<br/>(nitidez, registro OK)"}}
     end
 
-    subgraph FEA["3 · Indicadores geométricos  (6, alineados a criterios CUMANIN-2)"]
+    subgraph FEA["3 · Indicadores geométricos  (6, alineados a los criterios del CUMANIN)"]
         C1["Parecido general con el modelo"]
         C2["Esquinas de la figura"]
         C3["Inclinación de los ángulos"]
@@ -37,7 +38,7 @@ flowchart TD
     end
 
     subgraph SCO["5 · Scoring"]
-        E1["Suma de figuras → PD"] --> E2["Baremo por tramo<br/>de 4 meses (3;0–5;11)"] --> E3["Puntuación T + percentil"] --> E4["Nivel:<br/>T≥41 Adecuado · 31–40 En riesgo · ≤30 Derivar"]
+        E1["Suma de figuras → PD<br/>(completa y regla 4 fallos)"] --> E2["Baremo Tabla B.9<br/>por tramo de edad (meses)"] --> E3["Percentil + T estimada"] --> E4["Nivel:<br/>T≥41 Adecuado · 31–40 En riesgo · ≤30 Derivar"]
     end
 
     subgraph EXP["6 · Explicación  (lo central)"]
@@ -70,6 +71,59 @@ flowchart TD
     F7 --> H1
     G1 --> H1
 ```
+
+---
+
+## 1b. Modelo B y comparación A vs B
+
+```mermaid
+flowchart TD
+    R["Fotos + puntaje 0/1 del evaluador experto"] --> P["particiones.csv<br/>StratifiedGroupKFold por niño<br/>(compartido)"]
+
+    subgraph A["Modelo A · ML clásico"]
+        A1["Pipeline de visión clásica<br/>(perspectiva, iluminación, binarizado,<br/>aislar trazo, registro a plantilla)"] --> A2["6 indicadores"] --> A3["XGBoost"] --> A4["SHAP:<br/>qué criterio falló"]
+    end
+
+    subgraph B["Modelo B · DL  (dl/)"]
+        B1["Preprocesamiento mínimo<br/>perspectiva + recorte 224×224, gris→3 canales"] --> B2["ResNet-18 preentrenada<br/>red común + 15 cabezas"]
+        B2 --> B3["Fase 1: red congelada, solo cabezas<br/>Fase 2: últimas capas, lr baja<br/>pesos por clase y figura"]
+        B3 --> B4["Grad-CAM:<br/>dónde miró la red"]
+        AUG["Aumento moderado:<br/>brillo, contraste, sombra, desenfoque,<br/>perspectiva leve, ±7°<br/>SIN volteos ni rotaciones grandes"] -.-> B3
+    end
+
+    P --> A1
+    P --> B1
+    A3 --> OA["oof_ml.parquet"]
+    B3 --> OB["oof_dl_resnet18.parquet"]
+
+    subgraph C["Evaluación común  (evaluation/)"]
+        C1["Por figura: κ de Cohen, exact. balanceada,<br/>F1 macro, sensibilidad, especificidad"]
+        C2["PD completa y PD del manual:<br/>CCI + Bland-Altman"]
+        C3["Nivel: κ ponderado"]
+        C4["Por edad: 3, 4, 5 años"]
+        C5["A vs B: McNemar por figura,<br/>bootstrap por niño de Δκ y ΔCCI"]
+        C6["Robustez: doble foto de aula +<br/>sombra / desenfoque / inclinación / brillo"]
+        C7["Practicidad: pasos, s/hoja, fallos"]
+        C8["Explicabilidad: SHAP vs Grad-CAM<br/>(¿mira el trazo o el borde?)"]
+    end
+    OA --> C1
+    OB --> C1
+    A4 --> C8
+    B4 --> C8
+```
+
+| Paso | Script | Salida |
+|---|---|---|
+| OOF del modelo A | `04_evaluar.py` | `oof_ml.parquet`, `evaluacion_ml.json` |
+| Recortes para la red | `07_dl_preparar.py` | `data/interim_dl/` |
+| Entrenar B (5 folds + final) | `08_dl_entrenar.py` | `models/dl/<arq>/fold*.pt`, `oof_dl_<arq>.parquet` |
+| Comparar | `09_comparar.py` | `comparacion_<arq>.{json,md}` |
+| Robustez | `10_robustez.py` | `robustez_<arq>.{json,md}` |
+| Grad-CAM | `11_gradcam.py` | `gradcam_<arq>.json` + ejemplos PNG |
+| Practicidad | `12_practicidad.py` | `practicidad_<arq>.json` |
+
+Extensión opcional (solo si el asesor la pide): cuello de botella de conceptos (Koh et al.,
+2020): la red predice los 6 indicadores y luego la puntuación. No está implementada.
 
 ---
 
@@ -129,8 +183,12 @@ flowchart LR
     rep --> svc["webapp/service.py"]
     pred --> svc
     svc --> api["webapp/main.py (FastAPI)"]
-    ds --> ev["evaluation/<br/>metrics.py · stratified.py"]
+    ds --> ev["evaluation/<br/>metrics · particiones · reporte ·<br/>comparacion · degradaciones"]
     reg --> ev
+    dl["dl/<br/>imagen · aumentos · modelo ·<br/>entrenar · gradcam"] --> ev
+    pr["predictores.py<br/>A y B: foto → probabilidad"] --> ev
+    cli["cli.py + comandos/<br/>un comando por paso"] --> pr
+    art["artefactos.py<br/>nombres de archivos"] -.-> cli
 ```
 
 ---
@@ -142,8 +200,8 @@ flowchart LR
 | Comprensión del negocio | evaluación grafomotora objetiva y accesible en aula | — |
 | Comprensión de los datos | `00_validar_datos.py` (desbalance, efecto suelo, tramos) | `io.py` |
 | Preparación de los datos | preprocesamiento de imágenes + 6 indicadores + aumento seguro | `preprocessing/`, `features/`, `augment/` |
-| Modelado | XGBoost por figura, CV agrupada por niño, Grid Search | `model/` |
-| Evaluación | F1 por figura, QWK del nivel, Bland‑Altman de PD, estratificado por tramo | `evaluation/` |
+| Modelado | A: XGBoost por figura · B: ResNet-18 multicabeza; mismas particiones por niño | `model/`, `dl/` |
+| Evaluación | κ por figura, CCI y Bland‑Altman de la PD, κ ponderado del nivel, por edad; McNemar y bootstrap A vs B; robustez | `evaluation/` |
 | Despliegue | app web + informe en lenguaje natural para el docente | `explain/`, `webapp/` |
 
 ---
@@ -151,12 +209,15 @@ flowchart LR
 ## 5. Decisiones clave
 
 - **Target de entrenamiento = 0/1 por figura** (no el nivel global): ~1 500 etiquetas
-  en vez de ~150. El nivel se **deriva** (PD → baremo por edad → T → banda del CUMANIN‑2).
+  en vez de ~150. El nivel se **deriva** (PD → baremo por edad → T → banda de nivel; cortes pendientes de validar).
 - **2 clases por defecto** (Adecuado / En riesgo, corte T ≤ 40); 3 clases si "Muy bajo"
   reúne suficientes casos. Se decide con la distribución real.
-- **CV agrupada por niño**: ningún niño en train y test a la vez.
+- **CV agrupada por niño** y **compartida** entre A y B (`particiones.csv`): ningún niño en
+  train y test a la vez, y los dos modelos se prueban con los mismos niños.
+- **Kappa de Cohen sin ponderar por figura** (la puntuación es 0/1); ponderado solo para el
+  nivel ordinal.
 - **Aumento de datos que preserva la etiqueta**: nada de rotaciones amplias ni volteos
-  (cambiarían los criterios de puntuación del CUMANIN‑2).
+  (cambiarían los criterios de puntuación del CUMANIN).
 - **Explicación determinista por plantillas** (reproducible para la tesis); *hook* de
   pulido por LLM desactivado.
 - **Separación estricta**: narrativa para el docente ≠ panel técnico (T, percentil, SHAP).

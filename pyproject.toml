@@ -4,17 +4,77 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grafomotor"
-version = "0.1.0"
-description = "Evaluación grafomotora infantil por visión computacional + XGBoost + explicación para docentes"
+version = "0.2.0"
+description = "Evaluación grafomotora infantil (Visopercepción, CUMANIN): ML clásico (indicadores + XGBoost + SHAP) vs DL (ResNet-18 + Grad-CAM)"
 requires-python = ">=3.11"
 readme = "README.md"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyyaml>=6.0",
+    "pyarrow>=15.0",
+    "opencv-python-headless>=4.9",
+    "scikit-image>=0.22",
+    "Pillow>=10.2",
+    "scikit-learn>=1.4",
+    "xgboost>=2.0",
+    "shap>=0.45",
+    "scipy>=1.12",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "python-multipart>=0.0.9",
+    "jinja2>=3.1",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+# Modelo B. PyTorch con CUDA se instala desde el índice de PyTorch: ver requirements-dl.txt
+dl = ["torch>=2.4", "torchvision>=0.19", "timm>=1.0", "grad-cam>=1.5"]
+dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.7"]
+
+[project.scripts]
+grafomotor = "grafomotor.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# --------------------------------------------------------------------------- #
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["frontend", "notebooks"]
 
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # orden de imports
+    "B",        # bugbear
+    "UP",       # sintaxis moderna
+    "SIM",      # simplificaciones
+    "RUF",      # reglas propias de ruff
+]
+ignore = [
+    "RUF001", "RUF002", "RUF003",   # caracteres ambiguos: el proyecto está en español (±, ×, –)
+    "E741",                         # nombres como `l` en fórmulas cortas
+    "SIM300",                       # confunde `T` (puntuación T) con una constante
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011", "E402"]                  # importorskip antes de importar torch
+"src/grafomotor/webapp/main.py" = ["B008"]    # File(...)/Form(...) es el idioma de FastAPI
+"src/grafomotor/explain/phrases.py" = ["E501"]  # banco de frases: textos largos a propósito
+
+[tool.ruff.lint.isort]
+known-first-party = ["grafomotor"]
+
+# --------------------------------------------------------------------------- #
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "dl: requiere PyTorch/timm (modelo B); se salta si no están instalados",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:timm.*",
+]

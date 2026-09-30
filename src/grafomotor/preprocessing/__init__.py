@@ -1,4 +1,4 @@
 """Preprocesamiento de imágenes: foto de la hoja -> figura limpia y registrada a la plantilla."""
-from grafomotor.preprocessing.pipeline import preprocesar_figura, PreprocResultado
+from grafomotor.preprocessing.pipeline import PreprocResultado, preprocesar_figura, preprocesar_gris
 
-__all__ = ["preprocesar_figura", "PreprocResultado"]
+__all__ = ["PreprocResultado", "preprocesar_figura", "preprocesar_gris"]

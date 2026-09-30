@@ -5,11 +5,14 @@
 ```
 data/
 ├── raw/            fotos originales:  raw/<child_id>/<figura_id>.jpg
-├── interim/        figuras binarias registradas: <child_id>__<figura_id>.png
-├── processed/      features.parquet, evaluacion.json
+├── interim/        modelo A: figuras binarias registradas <child_id>__<figura_id>.png
+├── interim_dl/     modelo B: recortes 224×224 en gris <child_id>__<figura_id>.png
+├── processed/      features.parquet, particiones.csv, oof_*.parquet, evaluacion_*.json,
+│                   comparacion_*, robustez_*, gradcam_*, practicidad_*
 ├── templates/      plantilla de referencia por figura: <figura_id>.png (binaria)
 └── labels/
-    └── etiquetas.csv   (copiar de etiquetas_ejemplo.csv y rellenar)
+    ├── etiquetas.csv   (copiar de etiquetas_ejemplo.csv y rellenar)
+    └── fotos_aula.csv  (opcional) 2.ª foto de la misma hoja en condiciones de aula
 ```
 
 ## `labels/etiquetas.csv`
@@ -20,11 +23,32 @@ data/
 | `edad_meses` | sí | edad en meses el día de la prueba. **36–71** (3;0–5;11) |
 | `figura_id` | sí | id de la figura (`F01`…), coherente con `config.yaml > figuras` |
 | `imagen_path` | sí | ruta de la foto relativa a `data/` (`raw/NINO_0007/F03.jpg`) |
-| `puntaje` | sí | **0 / 1** — corrección del docente evaluador según criterios del CUMANIN‑2 |
-| `sexo` | no | `F` / `M` (los baremos del CUMANIN‑2 no distinguen sexo) |
+| `puntaje` | sí | **0 / 1** — corrección del **evaluador experto (el equipo)**, no de la docente, según los criterios del Apéndice C del CUMANIN original |
+| `sexo` | no | `F` / `M` (la Tabla B.9 no distingue sexo) |
 | `evaluador` | no | código del evaluador (para acuerdo inter‑evaluador) |
 | `fecha` | no | ISO `AAAA‑MM‑DD` |
-| `version_baremo` | no | versión exacta usada (teacorrige.com) |
+| `version_baremo` | no | versión exacta usada (p. ej. `CUMANIN_2002_TablaB9`) |
+| `fecha_nacimiento` | no | de la hoja de registro (ISO) |
+| `hora_inicio`, `hora_termino` | no | de la hoja de registro (`HH:MM`) |
+| `mano` | no | mano usada: `derecha` / `izquierda` |
+
+Se guardan **las 15 puntuaciones** de cada niño aunque en la aplicación grupal no se aplique
+la regla de parada: el análisis calcula la PD completa y la PD del manual (parar tras 4
+fallos seguidos) a partir de ellas (`scoring/pd.py`).
+
+## `labels/fotos_aula.csv` (doble foto, opcional)
+
+Si cada hoja se fotografía dos veces (una **controlada**: buena luz, hoja plana, celular en
+soporte o escáner; otra **de aula**: a mano, luz del salón), `etiquetas.csv` apunta a la
+controlada y este archivo a la de aula. La etiqueta se toma de `etiquetas.csv`.
+
+| columna | descripción |
+|---|---|
+| `child_id`, `figura_id` | igual que en `etiquetas.csv` |
+| `imagen_path` | ruta de la foto de aula relativa a `data/` (p. ej. `raw_aula/NINO_0007/F03.jpg`) |
+
+`10_robustez.py` evalúa A y B sobre estas fotos. Sin ellas, la robustez solo se estima con
+degradaciones sintéticas (evidencia más débil).
 
 Una fila por **(niño, figura)**. `00_validar_datos.py` comprueba rango de edad,
 duplicados y valores de `puntaje`, y avisa de desbalance / efecto suelo.
@@ -64,7 +88,8 @@ los 16 valores de `pd`, 0 a 15, para cada tramo).
 ## Anonimización y ética
 
 - `child_id` es un código; ningún dato personal en las carpetas ni en los CSV.
-- Consentimiento de padres/apoderados, asentimiento del niño y aval del Comité de Ética
-  gestionados fuera de este repositorio.
+- Consentimiento de padres/apoderados y aval del Comité de Ética gestionados fuera de este
+  repositorio (se eliminó el asentimiento de los niños).
+- Son datos de menores: **nunca subir `data/raw/`** a un repositorio público.
 - Registrar **versión de baremo** y **hash de git del modelo** en cada informe
   (van en `panel_tecnico` y en `models/actual/manifiesto.json`).

@@ -1,3 +1,5 @@
+# Compatibilidad: la fuente de verdad es pyproject.toml  ->  pip install -e ".[dev]"
+
 # --- núcleo ---
 numpy>=1.26
 pandas>=2.1

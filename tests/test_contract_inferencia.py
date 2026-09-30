@@ -15,7 +15,8 @@ from grafomotor.features.extract import ORDEN
 # Generado con el modelo entrenado sobre datos SINTÉTICOS (scripts/03_entrenar.py).
 # Al reentrenar con datos reales, regenerar con:
 #   python -c "import pandas as pd,numpy as np,joblib; from grafomotor import ORDEN; \
-#     m=joblib.load('models/actual/modelo_xgb.joblib'); df=pd.read_parquet('data/processed/features.parquet'); \
+#     m=joblib.load('models/actual/modelo_xgb.joblib'); \
+#     df=pd.read_parquet('data/processed/features.parquet'); \
 #     X=df[ORDEN].to_numpy(float); \
 #     [print((list(np.round(X[i],4)), int(m.predict(X[i:i+1])[0]))) for i in [0,100,300,600,-1]]"
 CASOS_FIJOS: list[tuple[list[float], int]] = [
@@ -29,8 +30,8 @@ CASOS_FIJOS: list[tuple[list[float], int]] = [
 
 @pytest.mark.skipif(not CASOS_FIJOS, reason="rellenar CASOS_FIJOS tras entrenar el modelo")
 def test_inferencia_estable():
-    from grafomotor.model.registry import cargar_modelo
     from grafomotor.config import load_config
+    from grafomotor.model.registry import cargar_modelo
 
     modelo, _ = cargar_modelo(load_config().ruta("models") / "actual")
     for vec, esperado in CASOS_FIJOS:

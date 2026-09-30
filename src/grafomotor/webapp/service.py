@@ -9,19 +9,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import cv2
 import numpy as np
 
-from grafomotor.config import load_config
-from grafomotor.evaluation import estratificar_por_tramo  # noqa: F401  (para scripts)
-from grafomotor.explain import construir_informe, explicar_para_docente, shap_por_sesion
 from grafomotor import ORDEN
+from grafomotor.artefactos import Artefactos
+from grafomotor.config import load_config
+from grafomotor.explain import construir_informe, explicar_para_docente, shap_por_sesion
 from grafomotor.features.extract import extraer_indicadores
+from grafomotor.io import cargar_plantillas, ruta_plantilla
 from grafomotor.model.predict import agregar_sesion, predecir_figura
 from grafomotor.model.registry import cargar_modelo
 from grafomotor.preprocessing import preprocesar_figura
 from grafomotor.scoring.baremo import cargar_baremo, pd_a_T
-from grafomotor.scoring.niveles import nivel_desde_T
+from grafomotor.scoring.niveles import NivelResultado, nivel_desde_T
 from grafomotor.webapp import db
 
 
@@ -30,28 +30,29 @@ class Servicio:
 
     def __init__(self, config_path: str | None = None):
         self.cfg = load_config(config_path)
-        self.modelo, self.manifiesto = cargar_modelo(self.cfg.ruta("models") / "actual")
+        self.modelo, self.manifiesto = cargar_modelo(Artefactos.de_config(self.cfg).dir_modelo_ml)
         self.baremo = cargar_baremo(self.cfg.ruta("baremos"))
-        self.plantillas = self._cargar_plantillas()
+        self.plantillas = cargar_plantillas(self.cfg, estricto=False)
         self.figuras_meta = self.cfg.figuras
         self.exp_cfg = self.cfg.get("explicacion", default={})
         self.sco_cfg = self.cfg.get("scoring", default={})
         self.db_path = self.cfg.ruta("db")
         db.iniciar_db(self.db_path)
 
-    def _cargar_plantillas(self) -> dict[str, np.ndarray]:
-        carpeta = self.cfg.ruta("templates")
-        out = {}
-        for fid in self.cfg.figuras:
-            p = carpeta / f"{fid}.png"
-            if p.exists():
-                img = cv2.imread(str(p), cv2.IMREAD_GRAYSCALE)
-                out[fid] = (img > 127).astype(np.uint8) * 255
-        return out
-
     def ruta_plantilla(self, figura_id: str) -> Path | None:
-        p = self.cfg.ruta("templates") / f"{figura_id}.png"
+        p = ruta_plantilla(self.cfg, figura_id)
         return p if p.exists() else None
+
+    def _nivel(self, pd_total: int, edad_meses: int) -> tuple[dict, NivelResultado]:
+        """PD -> (tramo, percentil, T) -> nivel, con los cortes de config.yaml."""
+        tT = pd_a_T(pd_total, edad_meses, self.baremo)
+        nivel = nivel_desde_T(
+            tT["T"],
+            n_clases=int(self.sco_cfg.get("n_clases", 2)),
+            corte_bajo=int(self.sco_cfg.get("corte_bajo_T", 40)),
+            corte_muy_bajo=int(self.sco_cfg.get("corte_muy_bajo_T", 30)),
+        )
+        return tT, nivel
 
     def guardar_foto(self, child_id: str, figura_id: str, contenido: bytes, sufijo: str) -> Path:
         """Guarda la foto subida en data/raw/<child_id>/<figura_id>.<sufijo> (persistente,
@@ -92,13 +93,7 @@ class Servicio:
             X.append([vec.valores[k] for k in ORDEN])
 
         sesion = agregar_sesion(child_id, edad_meses, preds)
-        tT = pd_a_T(sesion.PD, edad_meses, self.baremo)
-        nivel = nivel_desde_T(
-            tT["T"],
-            n_clases=int(self.sco_cfg.get("n_clases", 2)),
-            corte_bajo=int(self.sco_cfg.get("corte_bajo_T", 40)),
-            corte_muy_bajo=int(self.sco_cfg.get("corte_muy_bajo_T", 30)),
-        )
+        tT, nivel = self._nivel(sesion.PD, edad_meses)
 
         shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), list(ORDEN))
         nombres_fig = {fid: m.get("nombre", fid) for fid, m in self.figuras_meta.items()}
@@ -169,13 +164,7 @@ class Servicio:
             (f["puntaje_docente"] if f["puntaje_docente"] is not None else f["puntaje"])
             for f in resultado["figuras"]
         )
-        tT = pd_a_T(pd_total, resultado["edad_meses"], self.baremo)
-        nivel = nivel_desde_T(
-            tT["T"],
-            n_clases=int(self.sco_cfg.get("n_clases", 2)),
-            corte_bajo=int(self.sco_cfg.get("corte_bajo_T", 40)),
-            corte_muy_bajo=int(self.sco_cfg.get("corte_muy_bajo_T", 30)),
-        )
+        tT, nivel = self._nivel(pd_total, resultado["edad_meses"])
 
         resultado["accion"] = nivel.accion
         resultado["panel_tecnico"]["resumen"].update({

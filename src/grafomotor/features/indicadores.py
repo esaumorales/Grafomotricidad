@@ -7,7 +7,7 @@ donde `valor_norm` ∈ [0, 1] con la convención  1 = igual que el modelo, 0 = m
 `raw` es el número crudo para el panel técnico del especialista.
 
 Todas reciben imágenes binarias (0/255) del MISMO lado, ya registradas a la plantilla.
-Implementación base: hay que calibrar tolerancias con las figuras reales del CUMANIN-2.
+Implementación base: hay que calibrar tolerancias con las figuras reales del CUMANIN original.
 """
 from __future__ import annotations
 
@@ -26,7 +26,8 @@ def _clip01(x: float) -> float:
 
 
 # 1 -------------------------------------------------------------------------- #
-def precision_modelo(figura: np.ndarray, plantilla: np.ndarray, tol_px: int = 6) -> tuple[float, float]:
+def precision_modelo(figura: np.ndarray, plantilla: np.ndarray,
+                     tol_px: int = 6) -> tuple[float, float]:
     """Parecido general: IoU entre el trazo del niño y el del modelo, con tolerancia."""
     k = np.ones((tol_px, tol_px), np.uint8)
     a = cv2.dilate(figura, k) > 0
@@ -77,7 +78,8 @@ def cierre(figura: np.ndarray) -> tuple[float, int]:
 
 
 # 5 -------------------------------------------------------------------------- #
-def intersecciones(figura: np.ndarray, plantilla: np.ndarray, n_esperadas: int) -> tuple[float, float]:
+def intersecciones(figura: np.ndarray, plantilla: np.ndarray,
+                   n_esperadas: int) -> tuple[float, float]:
     """Cruces de línea: distancia entre los cruces del niño y los esperados."""
     if n_esperadas == 0:
         cruces_f = _puntos_cruce(figura)
@@ -124,7 +126,7 @@ def _puntos_cruce(bin_: np.ndarray) -> list[tuple[int, int]]:
     sk = skeletonize(bin_ > 0).astype(np.uint8)
     vecinos = cv2.filter2D(sk, -1, np.ones((3, 3), np.uint8)) - 1
     ys, xs = np.where((sk == 1) & (vecinos >= 3))
-    return list(zip(xs.tolist(), ys.tolist()))
+    return list(zip(xs.tolist(), ys.tolist(), strict=True))
 
 
 def _aspecto(bin_: np.ndarray) -> float | None:

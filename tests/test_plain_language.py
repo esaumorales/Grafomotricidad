@@ -78,3 +78,11 @@ def test_panel_tecnico_separado():
     # las cifras técnicas viven SOLO en el panel, no en el texto del docente
     assert "T" in inf.panel_tecnico["resumen"]
     assert str(inf.panel_tecnico["resumen"]["T"]) not in inf.informe_docente_md
+
+
+def test_contracciones_al_insertar_el_nombre():
+    from grafomotor.explain.phrases import contraer
+
+    assert contraer("derivar a el niño / la niña a una") == "derivar al niño / la niña a una"
+    assert contraer("el trazo de el niño") == "el trazo del niño"
+    assert contraer("derivar a Ana a una") == "derivar a Ana a una"

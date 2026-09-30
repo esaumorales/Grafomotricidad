@@ -1,4 +1,4 @@
 """Extracción de los 6 indicadores geométricos por figura (Etapa 2 de la arquitectura)."""
-from grafomotor.features.extract import extraer_indicadores, VectorIndicadores
+from grafomotor.features.extract import VectorIndicadores, extraer_indicadores
 
-__all__ = ["extraer_indicadores", "VectorIndicadores"]
+__all__ = ["VectorIndicadores", "extraer_indicadores"]

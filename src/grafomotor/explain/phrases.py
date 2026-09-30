@@ -147,6 +147,11 @@ AVISO_CONFIANZA_BAJA = (
 )
 
 
+def contraer(texto: str) -> str:
+    """Contracciones del español al insertar un nombre: "a el niño" -> "al niño"."""
+    return texto.replace(" a el ", " al ").replace(" de el ", " del ")
+
+
 def frase_en_figuras(nombres: list[str]) -> str:
     """'se ve sobre todo en el cuadrado y en el rombo'."""
     nombres = [n for n in nombres if n]

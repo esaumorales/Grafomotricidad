@@ -53,8 +53,10 @@ def pd_a_T(pd_valor: int, edad_meses: int, baremo: pd.DataFrame) -> dict:
     tramo = tramo_de_edad(edad_meses)
     sub = baremo[baremo["tramo_edad"] == tramo].sort_values("pd")
     if sub.empty:
-        raise KeyError(f"El baremo no tiene el tramo '{tramo}'. Añádelo desde teacorrige.com.")
+        raise KeyError(f"El baremo no tiene el tramo '{tramo}'. "
+                       "Transcríbelo de la Tabla B.9 del manual.")
     # interpolación lineal por si falta ese PD exacto
     T = float(np.interp(pd_valor, sub["pd"], sub["T"]))
-    pc = float(np.interp(pd_valor, sub["pd"], sub["percentil"])) if "percentil" in sub else float("nan")
+    pc = (float(np.interp(pd_valor, sub["pd"], sub["percentil"])) if "percentil" in sub
+          else float("nan"))
     return {"tramo": tramo, "PD": int(pd_valor), "T": round(T, 1), "percentil": round(pc, 1)}

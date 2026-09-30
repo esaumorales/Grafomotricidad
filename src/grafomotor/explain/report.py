@@ -69,9 +69,10 @@ def construir_informe(exp: Explicacion) -> InformeCompleto:
             "resumen": exp.tecnico,
             "accion": exp.accion,
             "nota": (
-                "Panel para el especialista. La puntuación T se obtiene del baremo del "
-                "CUMANIN-2 por tramo de edad; T ≤ 40 = en riesgo, T ≤ 30 = derivar "
-                "(manual, pág. 98-99). 'shap_agregado' con signo: negativo = el "
+                "Panel para el especialista. El percentil sale del baremo del CUMANIN "
+                "original (Tabla B.9) por tramo de edad; la T es una estimación desde el "
+                "percentil. T ≤ 40 = en riesgo, T ≤ 30 = derivar (cortes pendientes de "
+                "validar con el asesor). 'shap_agregado' con signo: negativo = el "
                 "indicador empujó la puntuación de la figura hacia 'incorrecta'."
             ),
         },

@@ -2,7 +2,7 @@
 Pipeline de preprocesamiento (Etapa 1 de la arquitectura).
 
 foto -> orientar -> corregir perspectiva/inclinación -> normalizar iluminación ->
-binarizar -> aislar la figura -> registrar respecto a la plantilla del CUMANIN-2.
+binarizar -> aislar la figura -> registrar respecto a la plantilla de la figura (CUMANIN original).
 
 Cada paso es una función pura para poder testear y calibrar por separado.
 La implementación es una BASE con OpenCV/scikit-image; hay que ajustar umbrales
@@ -134,13 +134,20 @@ def preprocesar_figura(
     ruta_foto: str, plantilla_bin: np.ndarray, cfg: dict | None = None
 ) -> PreprocResultado:
     """Ejecuta todo el pipeline sobre una foto de una figura."""
+    return preprocesar_gris(cargar_y_orientar(ruta_foto), plantilla_bin, cfg)
+
+
+def preprocesar_gris(
+    gris: np.ndarray, plantilla_bin: np.ndarray, cfg: dict | None = None
+) -> PreprocResultado:
+    """Igual que `preprocesar_figura` pero sobre una imagen en gris ya cargada
+    (la usa la prueba de robustez, que degrada la foto en memoria)."""
     cfg = cfg or {}
     lado = int(cfg.get("lado_normalizado_px", 512))
     metodo_bin = cfg.get("umbral_binarizado", "adaptativo")
     modo_reg = cfg.get("registro", "similaridad")
     min_area = int(cfg.get("min_area_figura_px", 400))
 
-    gris = cargar_y_orientar(ruta_foto)
     q = calidad_imagen(gris)
     gris = corregir_perspectiva(gris)
     gris = normalizar_iluminacion(gris)

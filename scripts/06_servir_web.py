@@ -1,5 +1,10 @@
-"""Levanta la app web para el docente en http://localhost:8000"""
-import uvicorn
+"""App web del docente en http://127.0.0.1:8000.
+
+Envoltorio de `grafomotor servir` (lógica en src/grafomotor/comandos/). Opciones: --help
+"""
+import sys
+
+from grafomotor.cli import ejecutar_comando
 
 if __name__ == "__main__":
-    uvicorn.run("grafomotor.webapp.main:app", host="127.0.0.1", port=8000, reload=True)
+    sys.exit(ejecutar_comando("servir", sys.argv[1:]))

@@ -67,7 +67,7 @@ Implementación: `explain/plain_language.py` (orquestador) + `explain/phrases.py
 
 ## 3. Los 6 indicadores traducidos
 
-| indicador (interno) | nombre para el docente | criterio CUMANIN‑2 | ejemplo de "cómo se ve" (severidad moderada) | actividad |
+| indicador (interno) | nombre para el docente | criterio del CUMANIN | ejemplo de "cómo se ve" (severidad moderada) | actividad |
 |---|---|---|---|---|
 | `precision_modelo` | Parecido general con el modelo | similitud global | "El dibujo recuerda al modelo, pero hay que fijarse para reconocerlo." | copiar figuras grandes con el modelo al lado |
 | `vertices` | Esquinas de la figura | nº de ángulos | "El cuadrado parece un óvalo, o aparecen puntas de más." | unir puntos marcados en las esquinas |

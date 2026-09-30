@@ -26,7 +26,8 @@ class ResultadoEntrenamiento:
     feature_names: list[str] = field(default_factory=list)
 
 
-def _pesos(y: np.ndarray) -> np.ndarray:
+def pesos_balanceados(y: np.ndarray) -> np.ndarray:
+    """Peso por muestra para que las clases 0 y 1 pesen lo mismo (efecto suelo / techo)."""
     p1 = y.mean()
     w1, w0 = (0.5 / p1 if p1 else 1.0), (0.5 / (1 - p1) if p1 < 1 else 1.0)
     return np.where(y == 1, w1, w0)
@@ -60,14 +61,14 @@ def entrenar(datos: Datos, cfg: dict) -> ResultadoEntrenamiento:
     )
     fit_kw = {"groups": datos.grupos}
     if cfg.get("class_weight") == "balanced":
-        fit_kw["sample_weight"] = _pesos(datos.y)
+        fit_kw["sample_weight"] = pesos_balanceados(datos.y)
     search.fit(datos.X, datos.y, **fit_kw)
 
     # F1 por fold con los mejores params (para reportar variabilidad)
     f1s = []
     for tr, te in GroupKFold(n_splits=folds).split(datos.X, datos.y, groups=datos.grupos):
         m = XGBClassifier(**{**base.get_params(), **search.best_params_})
-        sw = _pesos(datos.y[tr]) if cfg.get("class_weight") == "balanced" else None
+        sw = pesos_balanceados(datos.y[tr]) if cfg.get("class_weight") == "balanced" else None
         m.fit(datos.X[tr], datos.y[tr], sample_weight=sw)
         f1s.append(f1_score(datos.y[te], m.predict(datos.X[te]), average="macro"))
 
@@ -78,3 +79,20 @@ def entrenar(datos: Datos, cfg: dict) -> ResultadoEntrenamiento:
         cv_f1_por_fold=[round(x, 3) for x in f1s],
         feature_names=datos.feature_names,
     )
+
+
+def ajustar_por_fold(datos: Datos, fold: np.ndarray, params: dict,
+                     balanceado: bool) -> dict[int, XGBClassifier]:
+    """Un XGBoost por fold (entrenado sin los niños de ese fold) con los mismos parámetros.
+
+    Lo usan la evaluación out-of-fold y la prueba de robustez: cada niño se predice con
+    un modelo que no lo vio.
+    """
+    modelos = {}
+    for k in sorted(set(fold)):
+        tr = fold != k
+        m = XGBClassifier(**params)
+        m.fit(datos.X[tr], datos.y[tr],
+              sample_weight=pesos_balanceados(datos.y[tr]) if balanceado else None)
+        modelos[int(k)] = m
+    return modelos

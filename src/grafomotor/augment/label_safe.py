@@ -1,7 +1,7 @@
 """
 Aumento de datos seguro para la etiqueta.
 
-El CUMANIN-2 puntúa rotación, cierre, proporción y ángulos: rotar mucho o voltear
+El CUMANIN puntúa rotación, cierre, proporción y ángulos: rotar mucho o voltear
 una figura CAMBIA su puntaje. Aquí solo se permiten transformaciones que no alteran
 los criterios de corrección:
 
