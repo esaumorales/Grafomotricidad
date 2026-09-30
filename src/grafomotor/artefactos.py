@@ -139,6 +139,12 @@ class Artefactos:
         """Galería de errores de un modelo ("ml" para A o el nombre de una variante de B)."""
         return self.procesados / f"errores_{modelo}"
 
+    def identificacion(self, modelo: str, ext: str = "json") -> Path:
+        return self.procesados / f"identificacion_{modelo}.{ext}"
+
+    def curva_aprendizaje(self, modelo: str, ext: str = "json") -> Path:
+        return self.procesados / f"curva_aprendizaje_{modelo}.{ext}"
+
     @property
     def acuerdo_evaluadores(self) -> Path:
         return self.procesados / "acuerdo_evaluadores.json"

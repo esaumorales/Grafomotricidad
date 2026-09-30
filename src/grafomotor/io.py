@@ -25,7 +25,8 @@ COLUMNAS_REQUERIDAS = [
 ]
 # hoja de registro: fecha_nacimiento, sexo, hora_inicio, hora_termino, mano (derecha/izquierda)
 COLUMNAS_OPCIONALES = ["sexo", "evaluador", "fecha", "version_baremo",
-                       "fecha_nacimiento", "hora_inicio", "hora_termino", "mano"]
+                       "fecha_nacimiento", "hora_inicio", "hora_termino", "mano",
+                       "colegio"]   # colegio: para la validación externa por colegio
 
 
 class ErrorEtiquetas(ValueError):

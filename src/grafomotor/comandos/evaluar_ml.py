@@ -13,7 +13,7 @@ import pandas as pd
 
 from grafomotor.artefactos import Artefactos
 from grafomotor.config import Config
-from grafomotor.evaluation.particiones import folds_de, obtener_particiones
+from grafomotor.evaluation.particiones import folds_de, particiones_de_config
 from grafomotor.evaluation.reporte import evaluar_oof, resumen_corto
 from grafomotor.io import cargar_etiquetas, guardar_json
 from grafomotor.logs import obtener_logger
@@ -54,8 +54,7 @@ def agregar_argumentos(p: argparse.ArgumentParser) -> None:
 def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     art = Artefactos.de_config(cfg)
     etiquetas = cargar_etiquetas(cfg.ruta("labels"))
-    particiones = obtener_particiones(art.particiones, etiquetas,
-                                      int(cfg.get("comparacion", "folds", default=5)))
+    particiones = particiones_de_config(cfg, etiquetas)
     log.info("validación anidada: Grid Search dentro de cada fold (tarda unos minutos)")
     oof, params = predicciones_oof(cfg, etiquetas, particiones)
     oof.to_parquet(art.oof_ml, index=False)

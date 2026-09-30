@@ -89,7 +89,7 @@ grafomotor todo --sinteticos --dl       # ... + modelo B + comparación + robust
 
 | Paso | Comando | Qué hace |
 |---|---|---|
-| 00 | `grafomotor validar` | esquema de etiquetas, edades, desbalance |
+| 00 | `grafomotor validar` | esquema de etiquetas y **¿alcanzan los datos?** (balance por figura, edades, colegios) |
 | 01 | `grafomotor preprocesar` | A: binarizado + registro a plantilla → `data/interim/` |
 | 02 | `grafomotor extraer-features` | A: 6 indicadores → `features.parquet` |
 | 03 | `grafomotor entrenar-ml` | A: XGBoost, Grid Search con CV agrupada por niño |
@@ -104,6 +104,8 @@ grafomotor todo --sinteticos --dl       # ... + modelo B + comparación + robust
 | 14 | `grafomotor ensamblar-dl --base <variante>` | B: ensamble de semillas + TTA sin reentrenar |
 | 15 | `grafomotor errores [--arq <variante>]` | galería de figuras mal calificadas, para revisar a mano |
 | 16 | `grafomotor acuerdo-evaluadores` | acuerdo entre dos evaluadores expertos (techo humano) |
+| 17 | `grafomotor identificar [--arq <variante>]` | **identificación** de niños en riesgo con zona gris a revisión + evaluación selectiva |
+| 18 | `grafomotor curva-aprendizaje [--arq <variante>]` | rendimiento según cuántos niños se usan: ¿ayudarían más datos? |
 | 05 | `grafomotor explicar --child-id NINO_0007` | informe para el docente |
 | 06 | `grafomotor servir` | app web en http://127.0.0.1:8000 |
 
@@ -130,8 +132,25 @@ Resultados en `data/processed/` (nombres definidos en `src/grafomotor/artefactos
 | Acuerdo entre evaluadores del estándar de referencia | CLAIM 2024 | `grafomotor acuerdo-evaluadores` |
 | Guías de reporte para el artículo | TRIPOD+AI (2024), CLAIM (2024) | — |
 
+| Calibración de probabilidades (Platt cruzado) | — | `evaluation/calibracion.py` |
+| Identificación por niño con incertidumbre y zona gris a revisión humana | tamizaje (sensibilidad, VPN) | `grafomotor identificar` |
+| Validación externa por colegio | TRIPOD+AI 2024 | `comparacion.agrupar_por: colegio` |
+| Curva de aprendizaje | — | `grafomotor curva-aprendizaje` |
+
 Regla: **TTA, resolución, aumento y arquitectura se eligen con la validación interna**, nunca
-comparando cifras del fold de prueba (eso infla los resultados).
+comparando cifras del fold de prueba (eso infla los resultados). Los umbrales de la zona
+gris se fijan de antemano en `config.yaml > identificacion`.
+
+## Evaluación e identificación
+
+El sistema tiene dos objetivos:
+
+- **Evaluación** (por figura): la nota 0/1 de cada figura y la PD. Métricas: κ por figura,
+  CCI de la PD. Con evaluación selectiva, las figuras dudosas se marcan para revisión.
+- **Identificación** (por niño): ¿está en riesgo? Con las 15 probabilidades calibradas se
+  calcula exactamente P(PD en zona de riesgo para su edad). Si P(riesgo) cae en la zona
+  gris, el niño va a revisión humana. Métricas: sensibilidad y VPN (el error grave es no
+  detectar a un niño en riesgo), especificidad, VPP, con IC de Wilson.
 
 ## Estructura del código
 

@@ -41,6 +41,8 @@ COMANDOS: dict[str, tuple[str, str]] = {
     "ensamblar-dl": ("ensamblar_dl", "14"),
     "errores": ("errores", "15"),
     "acuerdo-evaluadores": ("acuerdo_evaluadores", "16"),
+    "identificar": ("identificar", "17"),
+    "curva-aprendizaje": ("curva_aprendizaje", "18"),
     "todo": ("todo", "-"),
 }
 

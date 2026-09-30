@@ -32,6 +32,7 @@ data/
 | `fecha_nacimiento` | no | de la hoja de registro (ISO) |
 | `hora_inicio`, `hora_termino` | no | de la hoja de registro (`HH:MM`) |
 | `mano` | no | mano usada: `derecha` / `izquierda` |
+| `colegio` | no | código del colegio; con `comparacion.agrupar_por: colegio` se hace la validación **externa** (entrenar con unos colegios y probar con otro) |
 
 Se guardan **las 15 puntuaciones** de cada niño aunque en la aplicación grupal no se aplique
 la regla de parada: el análisis calcula la PD completa y la PD del manual (parar tras 4

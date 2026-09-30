@@ -28,7 +28,7 @@ from grafomotor.dl.aumentos import PERFILES
 from grafomotor.dl.entrenar import CONFIG_POR_DEFECTO, entrenar_fold, predecir
 from grafomotor.dl.modelo import ARQUITECTURAS, guardar
 from grafomotor.dl.utilidades import dispositivo
-from grafomotor.evaluation.particiones import folds_de, obtener_particiones
+from grafomotor.evaluation.particiones import folds_de, particiones_de_config
 from grafomotor.evaluation.reporte import evaluar_oof, resumen_corto
 from grafomotor.io import cargar_etiquetas, guardar_json
 from grafomotor.logs import obtener_logger
@@ -51,8 +51,7 @@ def agregar_argumentos(p: argparse.ArgumentParser) -> None:
 def tabla_de_entrenamiento(cfg: Config, art: Artefactos, lado: int) -> pd.DataFrame:
     """Etiquetas + recorte de cada figura + fold compartido."""
     etiquetas = cargar_etiquetas(cfg.ruta("labels"))
-    particiones = obtener_particiones(art.particiones, etiquetas,
-                                      int(cfg.get("comparacion", "folds", default=5)))
+    particiones = particiones_de_config(cfg, etiquetas)
     prep = pd.read_csv(art.preparacion_dl_de(lado))
     df = etiquetas.merge(prep[["child_id", "figura_id", "dl_path"]],
                          on=["child_id", "figura_id"], how="left")

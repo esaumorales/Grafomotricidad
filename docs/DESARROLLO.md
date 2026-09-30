@@ -93,4 +93,5 @@ el modelo A funcione sin las dependencias de DL.
 | `test_contract_inferencia.py` | el modelo servido da la salida validada |
 | `test_comparacion.py` | métricas, CCI, PD con regla de 4 fallos, McNemar, bootstrap, degradaciones |
 | `test_dl.py` | red multicabeza, fases, aumentos sin volteos, Grad-CAM (se salta sin PyTorch) |
+| `test_identificacion.py` | P(riesgo) Poisson-binomial, Wilson, triaje, evaluación selectiva, calibración, balance por figura, validación por colegio |
 | `test_infraestructura.py` | CLI, nombres de artefactos, JSON, Holm, validación anidada, errores, acuerdo entre evaluadores |

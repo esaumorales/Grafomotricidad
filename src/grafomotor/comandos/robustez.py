@@ -23,7 +23,7 @@ from grafomotor.config import Config
 from grafomotor.evaluation.degradaciones import DEGRADACIONES, NIVELES, degradar
 from grafomotor.evaluation.degradaciones import VERSION as VERSION_DEGRADACIONES
 from grafomotor.evaluation.metrics import icc_acuerdo_absoluto, metricas_binarias
-from grafomotor.evaluation.particiones import folds_de, obtener_particiones
+from grafomotor.evaluation.particiones import folds_de, particiones_de_config
 from grafomotor.io import cargar_etiquetas, guardar_json, leer_gris, ruta_foto
 from grafomotor.logs import obtener_logger
 from grafomotor.predictores import PredictorA, PredictorB, modelos_ml_por_fold
@@ -149,8 +149,7 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
                  else int(cfg_r.get("muestra_ninos", 40)))
 
     etiquetas = cargar_etiquetas(cfg.ruta("labels"))
-    particiones = obtener_particiones(art.particiones, etiquetas,
-                                      int(cfg.get("comparacion", "folds", default=5)))
+    particiones = particiones_de_config(cfg, etiquetas)
     ninos = sorted(etiquetas["child_id"].unique())
     if n_muestra and n_muestra < len(ninos):
         ninos = sorted(np.random.default_rng(SEMILLA_MUESTRA).choice(ninos, n_muestra,

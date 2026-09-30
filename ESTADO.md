@@ -37,6 +37,14 @@ empeora EfficientNet-B0, por eso queda desactivado por defecto y se decide con l
 validación interna. Con datos sintéticos, la doble calificación está SIMULADA
 (`data/labels/doble_calificacion.csv`); con datos reales hay que sustituirla.
 
+Evaluación e identificación (30/09/2026): calibración cruzada de Platt; identificación por
+niño con P(riesgo) exacta (distribución de la PD), triaje con zona gris a revisión humana y
+sensibilidad/VPN con IC de Wilson (`identificar`); evaluación selectiva por figura; informe
+de balance por figura en `validar` (clase minoritaria por figura frente a mínimos
+orientativos); curva de aprendizaje (`curva-aprendizaje`); validación externa por colegio
+(`comparacion.agrupar_por: colegio`, columna `colegio` en etiquetas.csv). Con ~300 niños de
+varios colegios, correr `validar` y la curva de aprendizaje para confirmar que alcanzan.
+
 Pendiente en este frente:
 - **Doble foto por hoja (URGENTE, antes del 12/10):** decidir si se toma. Sin ella la
   robustez solo se mide con degradaciones sintéticas. El código ya la soporta

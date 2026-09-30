@@ -113,11 +113,24 @@ dl:                                  # MODELO B: ResNet-18 + Grad-CAM
 
 comparacion:                         # reglas comunes A vs B
   folds: 5                           # StratifiedGroupKFold por niño -> data/processed/particiones.csv
+  agrupar_por: nino                  # nino (validación interna) | colegio (validación EXTERNA:
+                                     # un fold por colegio; requiere la columna `colegio`)
   n_boot: 2000                       # bootstrap por niño (IC 95 % de la diferencia de kappa y CCI)
   robustez:
     degradaciones: [sombra, desenfoque, inclinacion, brillo]
     niveles: [leve, moderada, fuerte]
     muestra_ninos: 40                # niños (de todos los folds) evaluados con degradaciones; 0 = todos
+
+datos:                               # ¿alcanzan los datos? (grafomotor validar)
+  # mínimos ORIENTATIVOS de ejemplos de la clase minoritaria por figura
+  min_minoritaria_ml: 30             # modelo A (6 indicadores + XGBoost)
+  min_minoritaria_dl: 100            # modelo B (red profunda)
+
+identificacion:                      # tamizaje por niño (grafomotor identificar)
+  # zona gris: si umbral_bajo < P(riesgo) < umbral_alto, el niño va a revisión humana.
+  # Fijados DE ANTEMANO (no elegirlos mirando las cifras de prueba).
+  umbral_bajo: 0.2
+  umbral_alto: 0.8
 
 explicacion:
   publico: docente                   # docente | especialista
