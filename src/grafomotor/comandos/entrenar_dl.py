@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from grafomotor.artefactos import Artefactos, nombre_variante
+from grafomotor.artefactos import LADO_POR_DEFECTO, Artefactos, nombre_variante
 from grafomotor.config import Config
 from grafomotor.dl.aumentos import PERFILES
 from grafomotor.dl.entrenar import CONFIG_POR_DEFECTO, entrenar_fold, predecir
@@ -42,16 +42,18 @@ def agregar_argumentos(p: argparse.ArgumentParser) -> None:
     p.add_argument("--arq", choices=list(ARQUITECTURAS), default=None)
     p.add_argument("--aumento", choices=PERFILES, default=None)
     p.add_argument("--semillas", type=int, default=1, help="repeticiones con semillas distintas")
+    p.add_argument("--lado", type=int, default=None,
+                   help="resolución de entrada (requiere `preparar-dl --lado` antes)")
     p.add_argument("--final", action="store_true", help="entrenar también con todos los niños")
     p.add_argument("--rapido", action="store_true", help="2+2 épocas (solo para probar)")
 
 
-def tabla_de_entrenamiento(cfg: Config, art: Artefactos) -> pd.DataFrame:
+def tabla_de_entrenamiento(cfg: Config, art: Artefactos, lado: int) -> pd.DataFrame:
     """Etiquetas + recorte de cada figura + fold compartido."""
     etiquetas = cargar_etiquetas(cfg.ruta("labels"))
     particiones = obtener_particiones(art.particiones, etiquetas,
                                       int(cfg.get("comparacion", "folds", default=5)))
-    prep = pd.read_csv(art.preparacion_dl)
+    prep = pd.read_csv(art.preparacion_dl_de(lado))
     df = etiquetas.merge(prep[["child_id", "figura_id", "dl_path"]],
                          on=["child_id", "figura_id"], how="left")
     df["fold"] = folds_de(df["child_id"], particiones)
@@ -63,6 +65,7 @@ def entrenar_variante(cfg: Config, cfg_dl: dict, variante: str, df: pd.DataFrame
     """Entrena los K folds de una variante, guarda todo y devuelve el resumen de métricas."""
     art = Artefactos.de_config(cfg)
     figuras = list(cfg.figuras)
+    carpeta = art.carpeta_dl(int(cfg_dl["lado_px"]))
     medibles = df[df["dl_path"].notna()]
     disp = dispositivo()
     n_folds = int(df["fold"].nunique())
@@ -76,8 +79,9 @@ def entrenar_variante(cfg: Config, cfg_dl: dict, variante: str, df: pd.DataFrame
     for k in range(n_folds):
         log.info("fold %d/%d", k + 1, n_folds)
         prueba = medibles[medibles["fold"] == k]
-        res = entrenar_fold(medibles[medibles["fold"] != k], art.interim_dl, figuras, cfg_dl, disp)
-        prob.loc[prueba.index] = predecir(res.modelo, prueba, art.interim_dl, figuras)
+        res = entrenar_fold(medibles[medibles["fold"] != k], carpeta, figuras, cfg_dl, disp)
+        prob.loc[prueba.index] = predecir(res.modelo, prueba, carpeta, figuras,
+                                          tta=bool(cfg_dl.get("tta", False)))
         guardar(res.modelo, art.modelo_dl_fold(variante, k), {"fold": k, "cfg": cfg_dl})
         historial[f"fold{k}"] = {"mejor_epoca": res.mejor_epoca, "epocas": res.historial}
         del res
@@ -102,7 +106,7 @@ def entrenar_variante(cfg: Config, cfg_dl: dict, variante: str, df: pd.DataFrame
 
     if final:
         log.info("modelo final con todos los niños")
-        res = entrenar_fold(medibles, art.interim_dl, figuras, cfg_dl, disp)
+        res = entrenar_fold(medibles, carpeta, figuras, cfg_dl, disp)
         guardar(res.modelo, art.modelo_dl_final(variante), {"fold": "todos", "cfg": cfg_dl})
     return corto
 
@@ -118,19 +122,21 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     cfg_dl = {**CONFIG_POR_DEFECTO, **dict(cfg.get("dl", default={}))}
     cfg_dl["arquitectura"] = args.arq or cfg_dl["arquitectura"]
     cfg_dl["aumento"] = args.aumento or cfg_dl["aumento"]
+    cfg_dl["lado_px"] = int(args.lado or cfg_dl.get("lado_px", LADO_POR_DEFECTO))
     if args.rapido:
         cfg_dl.update(epocas_fase1=2, epocas_fase2=2)
-    df = tabla_de_entrenamiento(cfg, art)
+    lado = cfg_dl["lado_px"]
+    df = tabla_de_entrenamiento(cfg, art, lado)
 
     resultados = {}
     for i in range(args.semillas):
-        variante = nombre_variante(cfg_dl["arquitectura"], cfg_dl["aumento"], i)
+        variante = nombre_variante(cfg_dl["arquitectura"], cfg_dl["aumento"], i, lado)
         cfg_i = {**cfg_dl, "semilla": int(cfg_dl["semilla"]) + i}
         resultados[variante] = entrenar_variante(cfg, cfg_i, variante, df,
                                                  final=args.final and i == 0)
 
     if args.semillas > 1:
-        base = nombre_variante(cfg_dl["arquitectura"], cfg_dl["aumento"])
+        base = nombre_variante(cfg_dl["arquitectura"], cfg_dl["aumento"], lado=lado)
         resumen = resumen_semillas(resultados)
         guardar_json({"variante": base, "n_semillas": args.semillas, "resumen": resumen,
                       "por_semilla": resultados}, art.variabilidad_dl(base))

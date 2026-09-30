@@ -76,3 +76,23 @@ def test_gradcam_devuelve_mapa():
     assert cam.shape == (224, 224)
     a = atencion_en_trazo(cam, img)
     assert 0 <= a["frac_en_trazo"] <= 1 and 0 <= a["frac_en_borde"] <= 1
+
+
+def test_prueba_de_aleatorizacion_devuelve_resumen():
+    pytest.importorskip("pytorch_grad_cam")
+    from grafomotor.dl.gradcam import prueba_aleatorizacion
+
+    m = RedMultiCabeza("resnet18", 15, preentrenada=False).eval()
+    img, _ = preparar_gris(_foto())
+    r = prueba_aleatorizacion(m, [img, img], [0, 3])
+    assert r["n_validos"] + r["n_mapas_constantes"] == 2
+    assert isinstance(r["pasa"], bool)
+
+
+def test_tta_devuelve_probabilidades():
+    from grafomotor.dl.entrenar import predecir_arrays
+
+    m = RedMultiCabeza("resnet18", 15, preentrenada=False).eval()
+    img, _ = preparar_gris(_foto())
+    p = predecir_arrays(m, [img, img], [0, 1], tta=True)
+    assert p.shape == (2,) and ((p >= 0) & (p <= 1)).all()

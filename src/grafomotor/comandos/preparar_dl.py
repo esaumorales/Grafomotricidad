@@ -1,4 +1,4 @@
-"""Paso 07 (modelo B): preprocesamiento mínimo -> recortes 224×224 en data/interim_dl/."""
+"""Paso 07 (modelo B): preprocesamiento mínimo -> recortes cuadrados (224 px por defecto)."""
 from __future__ import annotations
 
 import argparse
@@ -18,13 +18,15 @@ log = obtener_logger(__name__)
 
 
 def agregar_argumentos(p: argparse.ArgumentParser) -> None:
-    pass
+    p.add_argument("--lado", type=int, default=None,
+                   help="lado del recorte en píxeles (por defecto config.yaml > dl > lado_px)")
 
 
 def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     art = Artefactos.de_config(cfg)
-    art.interim_dl.mkdir(parents=True, exist_ok=True)
-    lado = int(cfg.get("dl", "lado_px", default=LADO))
+    lado = args.lado or int(cfg.get("dl", "lado_px", default=LADO))
+    carpeta = art.carpeta_dl(lado)
+    carpeta.mkdir(parents=True, exist_ok=True)
 
     filas = []
     for fila in cargar_etiquetas(cfg.ruta("labels")).itertuples(index=False):
@@ -36,14 +38,14 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
             filas.append({**base, "dl_path": None, "aviso": "sin_foto", "seg": 0.0})
             continue
         nombre = f"{fila.child_id}__{fila.figura_id}.png"
-        cv2.imwrite(str(art.interim_dl / nombre), img)
+        cv2.imwrite(str(carpeta / nombre), img)
         filas.append({**base, "dl_path": nombre, "aviso": aviso or "",
                       "seg": round(time.perf_counter() - t0, 4)})
 
     rep = pd.DataFrame(filas)
-    rep.to_csv(art.preparacion_dl, index=False)
+    rep.to_csv(art.preparacion_dl_de(lado), index=False)
     log.info("%d/%d recortes -> %s · %.1f ms por figura", rep["dl_path"].notna().sum(),
-             len(rep), art.interim_dl, rep["seg"].mean() * 1000)
+             len(rep), carpeta, rep["seg"].mean() * 1000)
     avisos = rep.loc[rep["aviso"] != "", "aviso"].value_counts().to_dict()
     if avisos:
         log.warning("avisos: %s", avisos)

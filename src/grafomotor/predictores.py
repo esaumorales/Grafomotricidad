@@ -22,21 +22,32 @@ from grafomotor.io import cargar_plantillas
 from grafomotor.logs import obtener_logger
 from grafomotor.model.dataset import Datos, construir
 from grafomotor.model.registry import cargar_modelo
-from grafomotor.model.train import ajustar_por_fold
+from grafomotor.model.train import ajustar_anidado, ajustar_por_fold
 from grafomotor.preprocessing import preprocesar_gris
 
 log = obtener_logger(__name__)
 
 
 def modelos_ml_por_fold(cfg: Config, etiquetas: pd.DataFrame, particiones: pd.DataFrame
-                        ) -> tuple[dict[int, object], Datos]:
-    """Un XGBoost por fold con los hiperparámetros del modelo A final, y los datos."""
+                        ) -> tuple[dict[int, object], Datos, dict[int, object]]:
+    """Un XGBoost por fold externo, los datos y los hiperparámetros de cada fold.
+
+    Con `modelo.cv.anidada: true` (por defecto) los hiperparámetros se eligen dentro de cada
+    fold (validación anidada, sin fuga). Con `false` se reutilizan los del modelo final: más
+    rápido pero optimista, solo para pruebas.
+    """
     art = Artefactos.de_config(cfg)
     datos = construir(pd.read_parquet(art.features), etiquetas)
-    base, _ = cargar_modelo(art.dir_modelo_ml)
-    modelos = ajustar_por_fold(datos, folds_de(datos.grupos, particiones), base.get_params(),
-                               cfg.get("modelo", "class_weight") == "balanced")
-    return modelos, datos
+    fold = folds_de(datos.grupos, particiones)
+    cfg_modelo = cfg.get("modelo", default={})
+    if cfg.get("modelo", "cv", "anidada", default=True):
+        modelos, params = ajustar_anidado(datos, fold, cfg_modelo)
+    else:
+        base, _ = cargar_modelo(art.dir_modelo_ml)
+        modelos = ajustar_por_fold(datos, fold, base.get_params(),
+                                   cfg_modelo.get("class_weight") == "balanced")
+        params = dict.fromkeys(modelos, "modelo final (sin anidar)")
+    return modelos, datos, params
 
 
 class PredictorA:
@@ -77,6 +88,7 @@ class PredictorB:
         self.modelos = dict(modelos)
         self.idx = {f: i for i, f in enumerate(cfg.figuras)}
         self.lado = int(cfg.get("dl", "lado_px", default=224))
+        self.tta = bool(cfg.get("dl", "tta", default=False))
 
     @classmethod
     def desde_variante(cls, cfg: Config, variante: str, claves: str = "folds") -> PredictorB:
@@ -93,7 +105,12 @@ class PredictorB:
             rutas = {"final": final if final.exists() else art.modelo_dl_fold(variante, 0)}
         if not rutas:
             raise FileNotFoundError(f"no hay modelos entrenados en {carpeta}")
-        return cls(cfg, {k: cargar(r, str(disp))[0] for k, r in rutas.items()})
+        cargados = {k: cargar(r, str(disp)) for k, r in rutas.items()}
+        pred = cls(cfg, {k: m for k, (m, _) in cargados.items()})
+        # la resolución de entrada es la del entrenamiento, no la de config.yaml
+        extra = next(iter(cargados.values()))[1]
+        pred.lado = int(extra.get("cfg", {}).get("lado_px", pred.lado))
+        return pred
 
     def predecir_lote(self, grises: Sequence[np.ndarray], figuras: Sequence[str],
                       clave: Hashable) -> np.ndarray:
@@ -101,4 +118,5 @@ class PredictorB:
         from grafomotor.dl.imagen import preparar_gris
 
         imgs = [preparar_gris(g, self.lado)[0] for g in grises]
-        return predecir_arrays(self.modelos[clave], imgs, [self.idx[f] for f in figuras])
+        return predecir_arrays(self.modelos[clave], imgs, [self.idx[f] for f in figuras],
+                               tta=self.tta)

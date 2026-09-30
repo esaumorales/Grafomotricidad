@@ -29,6 +29,8 @@ UMBRAL_SEVERIDAD_CORRECTA = 0.45   # severidad < umbral -> el "evaluador" pone 1
 class ParametrosSinteticos:
     n_ninos: int = 150
     semilla: int = 7
+    fraccion_doble: float = 0.2     # niños con un 2.º evaluador simulado (0 = ninguno)
+    ruido_evaluador: float = 0.06   # desacuerdo del 2.º evaluador cerca del umbral
 
 
 def perturbar(plantilla: np.ndarray, severidad: float, rng: np.random.Generator) -> np.ndarray:
@@ -70,7 +72,12 @@ def generar_dataset(cfg: Config, params: ParametrosSinteticos | None = None) -> 
     rng = np.random.default_rng(params.semilla)
     figuras = list(cfg.figuras)
 
-    filas = []
+    filas, dobles = [], []
+    # generador aparte: el dataset principal no cambia al activar la doble calificación
+    rng_doble = np.random.default_rng(params.semilla + 1)
+    ninos_dobles = set(rng_doble.choice(np.arange(1, params.n_ninos + 1),
+                                        int(params.fraccion_doble * params.n_ninos),
+                                        replace=False))
     for i in range(1, params.n_ninos + 1):
         cid = f"NINO_{i:04d}"
         edad = int(rng.integers(EDAD_MIN_MESES, EDAD_MAX_MESES + 1))
@@ -90,11 +97,19 @@ def generar_dataset(cfg: Config, params: ParametrosSinteticos | None = None) -> 
                 "evaluador": rng.choice(["EXP_A", "EXP_B"]),
                 "fecha": "2026-03-01", "version_baremo": "SINTETICO",
             })
+            if i in ninos_dobles:   # 2.º evaluador: discrepa sobre todo en casos límite
+                sev_2 = severidad + rng_doble.normal(0, params.ruido_evaluador)
+                dobles.append({"child_id": cid, "figura_id": fid,
+                               "puntaje": int(sev_2 < UMBRAL_SEVERIDAD_CORRECTA)})
 
     df = pd.DataFrame(filas)
     destino = cfg.ruta("labels")
     destino.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(destino, index=False)
+    if dobles:
+        pd.DataFrame(dobles).to_csv(cfg.ruta("doble_calificacion"), index=False)
+        log.info("doble calificación simulada: %d niños -> %s", len(ninos_dobles),
+                 cfg.ruta("doble_calificacion"))
     log.info("%d niños · %d imágenes -> %s", params.n_ninos, len(df), raw)
     log.info("tasa de acierto global %.3f · niños con PD=0: %d", df["puntaje"].mean(),
              int((df.groupby("child_id")["puntaje"].sum() == 0).sum()))

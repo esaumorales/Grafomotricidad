@@ -16,11 +16,15 @@ from pathlib import Path
 from grafomotor.config import Config
 
 AUMENTO_POR_DEFECTO = "moderado"
+LADO_POR_DEFECTO = 224
 
 
 def nombre_variante(arquitectura: str, aumento: str = AUMENTO_POR_DEFECTO,
-                    semilla_idx: int = 0) -> str:
+                    semilla_idx: int = 0, lado: int = LADO_POR_DEFECTO) -> str:
+    """p. ej. resnet18 · resnet18_robusto · resnet18_320px · resnet18_robusto_320px_s2."""
     nombre = arquitectura if aumento == AUMENTO_POR_DEFECTO else f"{arquitectura}_{aumento}"
+    if lado != LADO_POR_DEFECTO:
+        nombre += f"_{lado}px"
     return nombre if semilla_idx == 0 else f"{nombre}_s{semilla_idx}"
 
 
@@ -62,9 +66,28 @@ class Artefactos:
         return self.procesados / "evaluacion_ml.json"
 
     # --- modelo B ------------------------------------------------------------
+    def carpeta_dl(self, lado: int = LADO_POR_DEFECTO) -> Path:
+        """Recortes del modelo B: data/interim_dl (224 px) o data/interim_dl_<lado>."""
+        if lado == LADO_POR_DEFECTO:
+            return self.interim_dl
+        return self.interim_dl.with_name(f"{self.interim_dl.name}_{lado}")
+
+    def preparacion_dl_de(self, lado: int = LADO_POR_DEFECTO) -> Path:
+        return self.carpeta_dl(lado) / "_preparacion_dl.csv"
+
     @property
     def preparacion_dl(self) -> Path:
-        return self.interim_dl / "_preparacion_dl.csv"
+        return self.preparacion_dl_de(LADO_POR_DEFECTO)
+
+    def lado_de_variante(self, variante: str) -> int:
+        """Resolución con que se entrenó una variante (guardada en su historial)."""
+        import json
+
+        ruta = self.historial_dl(variante)
+        if not ruta.exists():
+            return LADO_POR_DEFECTO
+        cfg = json.loads(ruta.read_text(encoding="utf-8")).get("cfg", {})
+        return int(cfg.get("lado_px", LADO_POR_DEFECTO))
 
     def dir_modelo_dl(self, variante: str) -> Path:
         return self.modelos / "dl" / variante
@@ -111,6 +134,14 @@ class Artefactos:
 
     def practicidad(self, variante: str) -> Path:
         return self.procesados / f"practicidad_{variante}.json"
+
+    def dir_errores(self, modelo: str) -> Path:
+        """Galería de errores de un modelo ("ml" para A o el nombre de una variante de B)."""
+        return self.procesados / f"errores_{modelo}"
+
+    @property
+    def acuerdo_evaluadores(self) -> Path:
+        return self.procesados / "acuerdo_evaluadores.json"
 
     @property
     def resumen_variantes(self) -> Path:

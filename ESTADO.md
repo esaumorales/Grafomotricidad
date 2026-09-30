@@ -28,12 +28,20 @@ artículo: la robustez sintética usa las mismas familias de degradación que el
 doble foto. Los hiperparámetros NO se afinan con datos sintéticos: se hace con los reales y
 solo con la validación interna (nunca mirando el fold de prueba).
 
+Buenas prácticas aplicadas tras revisar la literatura (30/09/2026): validación anidada del
+modelo A (la fuga anterior inflaba el kappa del nivel en ~5 puntos), ensamble de semillas y
+TTA sin reentrenar (`ensamblar-dl`), resolución configurable (`--lado`), galería de errores
+(`errores`), prueba de aleatorización de Grad-CAM (Adebayo et al., 2018) y acuerdo entre
+evaluadores (`acuerdo-evaluadores`, CLAIM 2024). Hallazgo: el TTA mejora ResNet-18 pero
+empeora EfficientNet-B0, por eso queda desactivado por defecto y se decide con la
+validación interna. Con datos sintéticos, la doble calificación está SIMULADA
+(`data/labels/doble_calificacion.csv`); con datos reales hay que sustituirla.
+
 Pendiente en este frente:
 - **Doble foto por hoja (URGENTE, antes del 12/10):** decidir si se toma. Sin ella la
   robustez solo se mide con degradaciones sintéticas. El código ya la soporta
   (`data/labels/fotos_aula.csv`, ver `docs/DATOS.md`).
 - **Regla de 4 fallos:** decidir con el asesor qué PD es la oficial (se reportan ambas).
-- Corrección de Holm u otra para las 15 pruebas de McNemar al reportar.
 - Cuello de botella de conceptos (Koh et al., 2020): solo si el asesor lo pide; no implementado.
 - La app web sigue usando solo el modelo A (es un agregado; el foco son los modelos).
 

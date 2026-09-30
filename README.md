@@ -93,23 +93,45 @@ grafomotor todo --sinteticos --dl       # ... + modelo B + comparación + robust
 | 01 | `grafomotor preprocesar` | A: binarizado + registro a plantilla → `data/interim/` |
 | 02 | `grafomotor extraer-features` | A: 6 indicadores → `features.parquet` |
 | 03 | `grafomotor entrenar-ml` | A: XGBoost, Grid Search con CV agrupada por niño |
-| 04 | `grafomotor evaluar-ml` | A: out-of-fold con particiones compartidas → `oof_ml.parquet` |
+| 04 | `grafomotor evaluar-ml` | A: out-of-fold **anidado** con particiones compartidas → `oof_ml.parquet` |
 | 07 | `grafomotor preparar-dl` | B: perspectiva + recorte 224×224 → `data/interim_dl/` |
 | 08 | `grafomotor entrenar-dl --final` | B: 2 fases por fold → `oof_dl_<variante>.parquet` |
 | 09 | `grafomotor comparar --arq <variante>` | A vs B: métricas, McNemar + Holm, bootstrap |
 | 10 | `grafomotor robustez --arq <variante>` | degradaciones sintéticas + doble foto |
 | 11 | `grafomotor gradcam --arq <variante>` | dónde mira la red y si usa atajos |
 | 12 | `grafomotor practicidad --arq <variante>` | pasos, segundos por hoja, fallos |
-| 13 | `grafomotor resumen-variantes` | todas las variantes de B frente a A |
+| 13 | `grafomotor resumen-variantes` | todas las variantes de B frente a A (y el techo humano) |
+| 14 | `grafomotor ensamblar-dl --base <variante>` | B: ensamble de semillas + TTA sin reentrenar |
+| 15 | `grafomotor errores [--arq <variante>]` | galería de figuras mal calificadas, para revisar a mano |
+| 16 | `grafomotor acuerdo-evaluadores` | acuerdo entre dos evaluadores expertos (techo humano) |
 | 05 | `grafomotor explicar --child-id NINO_0007` | informe para el docente |
 | 06 | `grafomotor servir` | app web en http://127.0.0.1:8000 |
 
 Variantes del modelo B (`entrenar-dl`): `--arq efficientnet_b0` (arquitectura alternativa),
-`--aumento robusto` (más sombra, desenfoque y luz → variante `<arq>_robusto`) y
-`--semillas 3` (media ± DE entre semillas). El nombre de la variante es el que se pasa
+`--aumento robusto` (más sombra, desenfoque y luz → variante `<arq>_robusto`),
+`--lado 320` (más resolución; antes `preparar-dl --lado 320`) y `--semillas 3` (media ± DE
+entre semillas). El nombre de la variante es el que se pasa
 como `--arq` a los pasos 09-12.
 
 Resultados en `data/processed/` (nombres definidos en `src/grafomotor/artefactos.py`).
+
+## Buenas prácticas aplicadas
+
+| Práctica | Referencia | Dónde |
+|---|---|---|
+| División por niño (sin fuga entre figuras de un mismo niño) | estudios de fuga por sujeto en imagen médica | `evaluation/particiones.py` |
+| Validación cruzada anidada: hiperparámetros elegidos sin ver el fold de prueba | Varma y Simon (2006) | `model/train.py::ajustar_anidado` |
+| Pocas capas ajustadas, aumento + dropout + parada temprana | guías de transfer learning con datos pequeños | `dl/entrenar.py` |
+| Red común + una cabeza por elemento, aumento y TTA | Langer et al. (2024) | `dl/modelo.py`, `ensamblar-dl` |
+| Varias semillas (media ± DE) y ensamble | práctica estándar en DL | `entrenar-dl --semillas`, `ensamblar-dl` |
+| McNemar con corrección de Holm, bootstrap por niño | comparación de clasificadores | `evaluation/comparacion.py` |
+| Revisión manual de errores | imagen médica con pocos datos | `grafomotor errores` |
+| Prueba de aleatorización de Grad-CAM | Adebayo et al. (2018) | `grafomotor gradcam` |
+| Acuerdo entre evaluadores del estándar de referencia | CLAIM 2024 | `grafomotor acuerdo-evaluadores` |
+| Guías de reporte para el artículo | TRIPOD+AI (2024), CLAIM (2024) | — |
+
+Regla: **TTA, resolución, aumento y arquitectura se eligen con la validación interna**, nunca
+comparando cifras del fold de prueba (eso infla los resultados).
 
 ## Estructura del código
 

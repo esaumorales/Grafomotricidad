@@ -45,6 +45,36 @@ def atencion_en_trazo(cam: np.ndarray, img224: np.ndarray, borde_frac: float = 0
     }
 
 
+def prueba_aleatorizacion(modelo: RedMultiCabeza, imgs: list[np.ndarray],
+                          figuras_idx: list[int], semilla: int = 0) -> dict:
+    """Prueba de sanidad de Adebayo et al. (2018): aleatorización del modelo.
+
+    Compara el mapa del modelo entrenado con el de la MISMA arquitectura con pesos
+    aleatorios. Si se parecen mucho, el mapa refleja la imagen (bordes, contraste) y no lo
+    que aprendió la red: no serviría como explicación. Se mide con la correlación de rangos
+    de Spearman entre ambos mapas; pasa si la mediana es baja (< 0.5).
+    """
+    import torch
+    from scipy.stats import spearmanr
+
+    torch.manual_seed(semilla)
+    aleatorio = RedMultiCabeza(modelo.arquitectura, modelo.n_figuras, preentrenada=False)
+    aleatorio = aleatorio.to(next(modelo.parameters()).device).eval()
+    correlaciones, degenerados = [], 0
+    for img, f in zip(imgs, figuras_idx, strict=True):
+        a = cv2.resize(mapa_gradcam(modelo, img, f), (28, 28), interpolation=cv2.INTER_AREA)
+        b = cv2.resize(mapa_gradcam(aleatorio, img, f), (28, 28), interpolation=cv2.INTER_AREA)
+        if a.std() < 1e-6 or b.std() < 1e-6:
+            degenerados += 1          # mapa constante: la correlación no está definida
+            continue
+        correlaciones.append(float(spearmanr(a.ravel(), b.ravel()).statistic))
+    mediana = float(np.median(correlaciones)) if correlaciones else float("nan")
+    return {"n_validos": len(correlaciones), "n_mapas_constantes": degenerados,
+            "spearman_mediana": round(mediana, 3),
+            "spearman_media": round(float(np.mean(correlaciones)), 3) if correlaciones else None,
+            "pasa": bool(np.isfinite(mediana) and mediana < 0.5)}
+
+
 def superponer(img224: np.ndarray, cam: np.ndarray, alfa: float = 0.45) -> np.ndarray:
     """Imagen BGR con el mapa de calor encima (para figuras del artículo / panel técnico)."""
     color = cv2.applyColorMap((cam * 255).astype(np.uint8), cv2.COLORMAP_JET)

@@ -8,6 +8,7 @@ rutas:
   labels: data/labels/etiquetas.csv
   baremos: config/baremos.csv        # PD -> Pc (Tabla B.9) por tramo de edad (ver docs/DATOS.md)
   interim_dl: data/interim_dl        # recortes 224x224 en gris para el modelo B (DL)
+  doble_calificacion: data/labels/doble_calificacion.csv   # opcional: 2.º evaluador (techo humano)
   fotos_aula: data/labels/fotos_aula.csv   # opcional: 2.ª foto de cada hoja, en condiciones de aula
   models: models
   db: data/app.db                    # sesiones evaluadas desde el Dashboard Docente (SQLite)
@@ -67,13 +68,15 @@ modelo:                              # MODELO A: indicadores + XGBoost + SHAP
   objetivo: binary:logistic          # puntaje por figura 0/1
   cv:
     tipo: grupo_por_nino             # GroupKFold sobre child_id
-    folds: 5
+    folds: 5                         # CV interna del Grid Search
+    anidada: true                    # evaluación anidada: hiperparámetros elegidos dentro de cada fold
   grid_search:
     max_depth: [2, 3, 4]
     learning_rate: [0.03, 0.05, 0.1]
     n_estimators: [200, 400, 800]
     subsample: [0.8, 1.0]
     reg_lambda: [1.0, 3.0]
+  metrica_busqueda: f1_macro         # métrica que optimiza el Grid Search
   class_weight: balanced             # desbalance por figura (efecto suelo a los 3 años)
 
 scoring:
@@ -91,6 +94,8 @@ scoring:
 
 dl:                                  # MODELO B: ResNet-18 + Grad-CAM
   arquitectura: resnet18             # resnet18 (principal) | efficientnet_b0 (alternativa). No más de 2.
+  tta: false                         # TTA (-2°, 0°, +2°): NO por defecto; ayuda a unas redes y empeora otras.
+                                     # Decidir con la validación interna, nunca mirando el fold de prueba.
   aumento: moderado                  # moderado | robusto (más sombra, desenfoque y luz; ver dl/aumentos.py)
   semilla: 20260930
   lado_px: 224

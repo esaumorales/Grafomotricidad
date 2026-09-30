@@ -3,6 +3,8 @@ Paso 11: explicabilidad del modelo B con Grad-CAM sobre las figuras de prueba de
 
 Mide qué fracción del mapa cae sobre el trazo y cuál en el borde de la imagen: si la red
 mira fuera del trazo (sombras, borde de la hoja) está usando un atajo, no los criterios.
+Además hace la prueba de sanidad de Adebayo et al. (2018): si los mapas de la red entrenada
+se parecen a los de una red con pesos aleatorios, no explican lo aprendido.
 Guarda un resumen y ejemplos superpuestos (para el artículo).
 """
 from __future__ import annotations
@@ -16,7 +18,12 @@ import pandas as pd
 
 from grafomotor.artefactos import Artefactos
 from grafomotor.config import Config
-from grafomotor.dl.gradcam import atencion_en_trazo, mapa_gradcam, superponer
+from grafomotor.dl.gradcam import (
+    atencion_en_trazo,
+    mapa_gradcam,
+    prueba_aleatorizacion,
+    superponer,
+)
 from grafomotor.dl.modelo import cargar
 from grafomotor.dl.utilidades import dispositivo
 from grafomotor.io import guardar_json, leer_gris
@@ -32,6 +39,8 @@ COLUMNAS = ["frac_en_trazo", "frac_area_trazo", "frac_en_borde"]
 def agregar_argumentos(p: argparse.ArgumentParser) -> None:
     p.add_argument("--arq", default=None, help="variante de B")
     p.add_argument("--ejemplos", type=int, default=3, help="ejemplos guardados por figura")
+    p.add_argument("--sanidad", type=int, default=60,
+                   help="imágenes para la prueba de aleatorización del modelo (0 = no hacerla)")
 
 
 def resumir(df: pd.DataFrame) -> dict:
@@ -53,18 +62,21 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     variante = args.arq or cfg.get("dl", "arquitectura", default="resnet18")
     idx = {f: i for i, f in enumerate(cfg.figuras)}
     disp = str(dispositivo())
+    carpeta_dl = art.carpeta_dl(art.lado_de_variante(variante))
 
     oof = (pd.read_parquet(art.oof_dl(variante)).dropna(subset=["yhat"])
-           .merge(pd.read_csv(art.preparacion_dl)[["child_id", "figura_id", "dl_path"]],
+           .merge(pd.read_csv(carpeta_dl / "_preparacion_dl.csv")
+                  [["child_id", "figura_id", "dl_path"]],
                   on=["child_id", "figura_id"]))
     carpeta_ej = art.dir_ejemplos_gradcam(variante)
     carpeta_ej.mkdir(parents=True, exist_ok=True)
 
-    filas, guardados = [], dict.fromkeys(cfg.figuras, 0)
+    filas, guardados, sanidad = [], dict.fromkeys(cfg.figuras, 0), []
+    n_sanidad_fold = -(-args.sanidad // max(oof["fold"].nunique(), 1))   # techo
     for k, g in oof.groupby("fold"):
         modelo, _ = cargar(art.modelo_dl_fold(variante, int(k)), disp)
         for r in g.itertuples(index=False):
-            img = leer_gris(art.interim_dl / r.dl_path)
+            img = leer_gris(carpeta_dl / r.dl_path)
             pred, esperado = int(r.yhat), int(r.y)
             cam = mapa_gradcam(modelo, img, idx[r.figura_id], clase=pred)  # explica lo predicho
             filas.append({"figura_id": r.figura_id, "child_id": r.child_id,
@@ -73,12 +85,33 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
                 nombre = f"{r.figura_id}_{r.child_id}_pred{pred}_exp{esperado}.png"
                 cv2.imwrite(str(carpeta_ej / nombre), superponer(img, cam))
                 guardados[r.figura_id] += 1
+        if args.sanidad:
+            muestra = g.sample(min(n_sanidad_fold, len(g)), random_state=int(k))
+            sanidad.append(prueba_aleatorizacion(
+                modelo, [leer_gris(carpeta_dl / p) for p in muestra["dl_path"]],
+                [idx[f] for f in muestra["figura_id"]], semilla=int(k)))
         del modelo
 
     salida = resumir(pd.DataFrame(filas))
+    if sanidad:
+        validas = [s["spearman_mediana"] for s in sanidad if s["n_validos"]]
+        mediana = float(np.median(validas)) if validas else float("nan")
+        salida["sanidad_aleatorizacion"] = {
+            "referencia": "Adebayo et al. (2018), aleatorización del modelo",
+            "spearman_mediana": round(mediana, 3),
+            "pasa": bool(np.isfinite(mediana) and mediana < 0.5),
+            "mapas_constantes": sum(s["n_mapas_constantes"] for s in sanidad),
+            "por_fold": sanidad}
+        (log.info if mediana < 0.5 else log.warning)(
+            "prueba de aleatorización: Spearman mediano %.3f (%s)", mediana,
+            "pasa: los mapas dependen de lo aprendido" if mediana < 0.5
+            else "NO pasa: los mapas se parecen a los de una red aleatoria")
     guardar_json(salida, art.gradcam(variante))
-    print(json.dumps({k: salida[k] for k in ("n", "global", "enriquecimiento_trazo",
-                                             "alerta_atajo")}, indent=2, ensure_ascii=False))
+    corto = {k: salida[k] for k in ("n", "global", "enriquecimiento_trazo", "alerta_atajo")}
+    if "sanidad_aleatorizacion" in salida:
+        s = salida["sanidad_aleatorizacion"]
+        corto["sanidad"] = {k: s[k] for k in ("spearman_mediana", "pasa", "mapas_constantes")}
+    print(json.dumps(corto, indent=2, ensure_ascii=False))
     if salida["alerta_atajo"]:
         log.warning("posible atajo (mira el borde) en: %s", list(salida["alerta_atajo"]))
     log.info("-> %s · ejemplos en %s", art.gradcam(variante), carpeta_ej)

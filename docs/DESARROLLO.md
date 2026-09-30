@@ -77,6 +77,8 @@ el modelo A funcione sin las dependencias de DL.
 ## Buenas prácticas de evaluación (no negociables para el artículo)
 
 - Nunca afinar hiperparámetros mirando el fold de prueba: solo con la validación interna.
+  El modelo A ya usa validación anidada (`modelo.cv.anidada: true`); para B, decidir TTA,
+  resolución, aumento y arquitectura con la validación interna o fijarlos de antemano.
 - No afinar con datos sintéticos: sirven para probar el código, no para decidir.
 - Reportar variabilidad entre semillas del modelo B y p-valores corregidos por Holm.
 - Las etiquetas son del evaluador experto; la docente no califica.
@@ -91,4 +93,4 @@ el modelo A funcione sin las dependencias de DL.
 | `test_contract_inferencia.py` | el modelo servido da la salida validada |
 | `test_comparacion.py` | métricas, CCI, PD con regla de 4 fallos, McNemar, bootstrap, degradaciones |
 | `test_dl.py` | red multicabeza, fases, aumentos sin volteos, Grad-CAM (se salta sin PyTorch) |
-| `test_infraestructura.py` | CLI, nombres de artefactos, JSON, Holm |
+| `test_infraestructura.py` | CLI, nombres de artefactos, JSON, Holm, validación anidada, errores, acuerdo entre evaluadores |

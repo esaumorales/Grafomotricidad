@@ -38,6 +38,9 @@ COMANDOS: dict[str, tuple[str, str]] = {
     "gradcam": ("gradcam", "11"),
     "practicidad": ("practicidad", "12"),
     "resumen-variantes": ("resumen_variantes", "13"),
+    "ensamblar-dl": ("ensamblar_dl", "14"),
+    "errores": ("errores", "15"),
+    "acuerdo-evaluadores": ("acuerdo_evaluadores", "16"),
     "todo": ("todo", "-"),
 }
 

@@ -48,6 +48,10 @@ def filas_tabla(art: Artefactos) -> list[dict]:
             fila["peor_cci_degradado"] = peor_robustez(leer_json(robusteces[0]), "A")
         filas.append(fila)
 
+    if art.acuerdo_evaluadores.exists():
+        filas.append({"variante": "techo humano (2 evaluadores)",
+                      **resumen_corto(leer_json(art.acuerdo_evaluadores))})
+
     for v in art.variantes_dl():
         fila = {"variante": v, **resumen_corto(leer_json(art.evaluacion_dl(v)))}
         if art.variabilidad_dl(v).exists():

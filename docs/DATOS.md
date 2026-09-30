@@ -7,6 +7,7 @@ data/
 ├── raw/            fotos originales:  raw/<child_id>/<figura_id>.jpg
 ├── interim/        modelo A: figuras binarias registradas <child_id>__<figura_id>.png
 ├── interim_dl/     modelo B: recortes 224×224 en gris <child_id>__<figura_id>.png
+├── interim_dl_320/ (opcional) los mismos recortes a otra resolución (`preparar-dl --lado 320`)
 ├── processed/      features.parquet, particiones.csv, oof_*.parquet, evaluacion_*.json,
 │                   comparacion_*, robustez_*, gradcam_*, practicidad_*
 ├── templates/      plantilla de referencia por figura: <figura_id>.png (binaria)
@@ -35,6 +36,21 @@ data/
 Se guardan **las 15 puntuaciones** de cada niño aunque en la aplicación grupal no se aplique
 la regla de parada: el análisis calcula la PD completa y la PD del manual (parar tras 4
 fallos seguidos) a partir de ellas (`scoring/pd.py`).
+
+## `labels/doble_calificacion.csv` (segundo evaluador, recomendado)
+
+CLAIM 2024 pide reportar el acuerdo entre evaluadores del estándar de referencia, y ese
+acuerdo es el techo realista de cualquier modelo. Un segundo evaluador del equipo califica
+**por su cuenta, sin ver la primera nota**, al menos el **20 % de los niños** (las 15
+figuras de cada uno). Formato (ver `doble_calificacion_ejemplo.csv`):
+
+| columna | descripción |
+|---|---|
+| `child_id`, `figura_id` | igual que en `etiquetas.csv` |
+| `puntaje` | 0 / 1 del segundo evaluador |
+
+`grafomotor acuerdo-evaluadores` calcula kappa por figura, CCI de la PD y kappa del nivel
+entre los dos evaluadores, y `resumen-variantes` lo muestra como "techo humano".
 
 ## `labels/fotos_aula.csv` (doble foto, opcional)
 

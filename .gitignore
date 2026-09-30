@@ -2,11 +2,13 @@
 data/raw/*
 data/interim/*
 data/interim_dl/*
+data/interim_dl_*/
 data/processed/*
 data/templates/*
 data/labels/*
 data/*.db
 !data/labels/etiquetas_ejemplo.csv
+!data/labels/doble_calificacion_ejemplo.csv
 !**/.gitkeep
 models/*
 !models/.gitkeep

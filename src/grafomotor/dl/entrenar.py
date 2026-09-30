@@ -23,8 +23,14 @@ import torch
 from sklearn.model_selection import GroupShuffleSplit
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms import functional as TF
 
-from grafomotor.dl.aumentos import transformacion_entrenamiento, transformacion_evaluacion
+from grafomotor.dl.aumentos import (
+    DE_IMAGENET,
+    MEDIA_IMAGENET,
+    transformacion_entrenamiento,
+    transformacion_evaluacion,
+)
 from grafomotor.dl.modelo import RedMultiCabeza
 from grafomotor.dl.utilidades import dispositivo as elegir_dispositivo
 from grafomotor.dl.utilidades import fijar_semilla
@@ -35,6 +41,7 @@ log = obtener_logger(__name__)
 CONFIG_POR_DEFECTO = {
     "arquitectura": "resnet18",
     "aumento": "moderado",           # moderado | robusto (ver dl/aumentos.py)
+    "tta": False,                    # TTA solo como variante (ensamblar-dl)
     "lote": 64,
     "epocas_fase1": 8,
     "epocas_fase2": 15,
@@ -182,31 +189,47 @@ def entrenar_fold(df_train: pd.DataFrame, carpeta, figuras: list[str], cfg: dict
     return ResultadoFold(modelo=modelo, historial=historial, mejor_epoca=mejor_ep)
 
 
+# Aumento en la prueba (TTA), como Langer et al. (2024): rotaciones pequeñas y deterministas.
+# Se promedian las probabilidades; ±2° no cambia ningún criterio del CUMANIN.
+ANGULOS_TTA = (-2.0, 0.0, 2.0)
+_BLANCO_NORMALIZADO = [(1 - m) / d for m, d in zip(MEDIA_IMAGENET, DE_IMAGENET, strict=True)]
+
+
+def _probabilidades(modelo: RedMultiCabeza, x: torch.Tensor, fig: torch.Tensor,
+                    angulos: tuple[float, ...]) -> np.ndarray:
+    """Media de sigmoid(logit) sobre las rotaciones de `angulos` (x ya normalizado)."""
+    total = torch.zeros(x.shape[0], device=x.device)
+    for ang in angulos:
+        xi = x if ang == 0 else TF.rotate(x, ang, fill=_BLANCO_NORMALIZADO)
+        with torch.autocast(device_type=x.device.type, enabled=x.device.type == "cuda"):
+            total += torch.sigmoid(modelo(xi, fig).float())
+    return (total / len(angulos)).cpu().numpy()
+
+
 @torch.no_grad()
 def predecir(modelo: RedMultiCabeza, df: pd.DataFrame, carpeta, figuras: list[str],
-             dispositivo: str | None = None, lote: int = 128) -> np.ndarray:
-    """Probabilidad de 'figura correcta' para cada fila de df."""
+             dispositivo: str | None = None, lote: int = 128, tta: bool = False) -> np.ndarray:
+    """Probabilidad de 'figura correcta' para cada fila de df (con TTA si se pide)."""
     disp = torch.device(dispositivo or next(modelo.parameters()).device)
     ds = DatasetFiguras(df, carpeta, figuras, transformacion_evaluacion())
-    probs = []
+    angulos = ANGULOS_TTA if tta else (0.0,)
     modelo.eval()
-    for x, fig, _ in DataLoader(ds, batch_size=lote, shuffle=False):
-        with torch.autocast(device_type=disp.type, enabled=disp.type == "cuda"):
-            logits = modelo(x.to(disp), fig.to(disp))
-        probs.append(torch.sigmoid(logits.float()).cpu().numpy())
+    probs = [_probabilidades(modelo, x.to(disp), fig.to(disp), angulos)
+             for x, fig, _ in DataLoader(ds, batch_size=lote, shuffle=False)]
     return np.concatenate(probs) if probs else np.zeros(0)
 
 
 @torch.no_grad()
 def predecir_arrays(modelo: RedMultiCabeza, imgs: list[np.ndarray], fig_idx: list[int],
-                    lote: int = 128) -> np.ndarray:
-    """Igual que `predecir` pero sobre imágenes 224×224 en memoria (robustez)."""
+                    lote: int = 128, tta: bool = False) -> np.ndarray:
+    """Igual que `predecir` pero sobre imágenes ya preparadas en memoria (robustez)."""
     disp = next(modelo.parameters()).device
     tf = transformacion_evaluacion()
+    angulos = ANGULOS_TTA if tta else (0.0,)
+    modelo.eval()
     out = []
     for i in range(0, len(imgs), lote):
         x = torch.stack([tf(im) for im in imgs[i:i + lote]]).to(disp)
         f = torch.tensor(fig_idx[i:i + lote], dtype=torch.long, device=disp)
-        with torch.autocast(device_type=disp.type, enabled=disp.type == "cuda"):
-            out.append(torch.sigmoid(modelo(x, f).float()).cpu().numpy())
+        out.append(_probabilidades(modelo, x, f, angulos))
     return np.concatenate(out) if out else np.zeros(0)

@@ -54,7 +54,8 @@ class CacheA:
         h = hashlib.md5()
         for f in (art.particiones, art.dir_modelo_ml / "manifiesto.json", art.features):
             h.update(f.read_bytes() if f.exists() else b"")
-        h.update(json.dumps(cfg.get("preprocesamiento", default={}), sort_keys=True).encode())
+        for seccion in ("preprocesamiento", "modelo"):
+            h.update(json.dumps(cfg.get(seccion, default={}), sort_keys=True).encode())
         self.firma = h.hexdigest()
         self.datos: dict[tuple[str, str, str], float] = {}
         if self.ruta.exists():
@@ -98,7 +99,7 @@ class EvaluadorRobustez:
     def a(self) -> PredictorA:
         """A se construye solo si falta algo en la caché (reentrena un XGBoost por fold)."""
         if self._a is None:
-            modelos, _ = modelos_ml_por_fold(self.cfg, self.etiquetas, self.particiones)
+            modelos, _, _ = modelos_ml_por_fold(self.cfg, self.etiquetas, self.particiones)
             self._a = PredictorA(self.cfg, modelos)
         return self._a
 
