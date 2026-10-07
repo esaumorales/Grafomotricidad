@@ -1,7 +1,7 @@
 """
 Red común + 15 cabezas (una por figura), al estilo de Langer et al. (2024).
 
-La columna vertebral (ResNet-18 o EfficientNet-B0, preentrenadas en ImageNet vía
+La columna vertebral (ResNet-18, DenseNet-121, MobileNetV2 o EfficientNet-B0, preentrenadas en ImageNet vía
 `timm`) extrae un vector por imagen. Cada figura tiene su propia cabeza lineal
 (logit de "figura correcta"); se implementan como una sola capa Linear de 15
 salidas de la que se toma la columna de la figura: es equivalente a 15 cabezas
@@ -14,7 +14,8 @@ import timm
 import torch
 from torch import nn
 
-ARQUITECTURAS = {"resnet18": "resnet18", "efficientnet_b0": "efficientnet_b0"}
+ARQUITECTURAS = {"resnet18": "resnet18", "densenet121": "densenet121",
+                 "mobilenetv2": "mobilenetv2_100", "efficientnet_b0": "efficientnet_b0"}
 
 
 class RedMultiCabeza(nn.Module):
@@ -45,7 +46,9 @@ class RedMultiCabeza(nn.Module):
         """Descongela el último bloque de la red y devuelve sus parámetros."""
         if self.arquitectura == "resnet18":
             modulos = [self.red.layer4]
-        else:
+        elif self.arquitectura == "densenet121":
+            modulos = [self.red.features.denseblock4, self.red.features.norm5]
+        else:  # efficientnet_b0 y mobilenetv2 comparten estructura en timm
             modulos = [self.red.blocks[-2:], self.red.conv_head, self.red.bn2]
         params = []
         for m in modulos:
@@ -55,7 +58,11 @@ class RedMultiCabeza(nn.Module):
         return params
 
     def capa_objetivo_gradcam(self) -> nn.Module:
-        return self.red.layer4[-1] if self.arquitectura == "resnet18" else self.red.blocks[-1]
+        if self.arquitectura == "resnet18":
+            return self.red.layer4[-1]
+        if self.arquitectura == "densenet121":
+            return self.red.features.norm5
+        return self.red.blocks[-1]
 
 
 class SalidaDeFigura(nn.Module):

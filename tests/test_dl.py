@@ -43,7 +43,18 @@ def test_verificador_rechaza_volteos():
         verificar_sin_volteos(T.Compose([T.RandomRotation(45)]))
 
 
-@pytest.mark.parametrize("arq", ["resnet18", "efficientnet_b0"])
+TODAS_ARQ = ["resnet18", "densenet121", "mobilenetv2", "efficientnet_b0"]
+
+
+@pytest.mark.parametrize("arq", TODAS_ARQ)
+def test_gradcam_y_fase2_en_cada_arquitectura(arq):
+    m = RedMultiCabeza(arq, 15, preentrenada=False)
+    assert list(m.capa_objetivo_gradcam().parameters())
+    m.congelar_red()
+    assert m.descongelar_ultimas_capas()
+
+
+@pytest.mark.parametrize("arq", TODAS_ARQ)
 def test_red_multicabeza_elige_la_cabeza_de_la_figura(arq):
     m = RedMultiCabeza(arq, 15, preentrenada=False).eval()
     x = torch.randn(4, 3, 224, 224)

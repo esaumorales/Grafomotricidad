@@ -110,7 +110,7 @@ scoring:
   n_fallos_parada: 4
 
 dl:                                  # MODELO B: ResNet-18 + Grad-CAM
-  arquitectura: resnet18             # resnet18 (principal) | efficientnet_b0 (alternativa). No más de 2.
+  arquitectura: resnet18             # resnet18 | densenet121 | mobilenetv2 | efficientnet_b0 (las 4 del Word)
   tta: false                         # TTA (-2°, 0°, +2°): NO por defecto; ayuda a unas redes y empeora otras.
                                      # Decidir con la validación interna, nunca mirando el fold de prueba.
   aumento: moderado                  # moderado | robusto (más sombra, desenfoque y luz; ver dl/aumentos.py)
