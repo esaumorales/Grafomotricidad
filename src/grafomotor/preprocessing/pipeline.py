@@ -77,38 +77,46 @@ def binarizar(gris: np.ndarray, metodo: str = "adaptativo") -> np.ndarray:
     return b
 
 
-def aislar_figura(binaria: np.ndarray, min_area: int = 400) -> np.ndarray:
-    """Se queda con la componente de trazo dominante (el dibujo del niño)."""
+def aislar_figura(binaria: np.ndarray, min_area: int = 400, fraccion_min: float = 0.05) -> np.ndarray:
+    """Se queda con el trazo del niño: la componente mayor y toda otra componente que
+    pese al menos `fraccion_min` de ella (figuras de varias partes, como las dos líneas de
+    F02). Descarta motas y restos de la cuadrícula."""
     n, lab, stats, _ = cv2.connectedComponentsWithStats(binaria, connectivity=8)
     if n <= 1:
         return binaria
-    idx = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
-    if stats[idx, cv2.CC_STAT_AREA] < min_area:
+    areas = stats[1:, cv2.CC_STAT_AREA]
+    mayor = int(areas.max())
+    if mayor < min_area:
         return binaria
-    return np.where(lab == idx, 255, 0).astype(np.uint8)
+    conservar = [1 + i for i, a in enumerate(areas) if a >= max(fraccion_min * mayor, 1)]
+    return np.where(np.isin(lab, conservar), 255, 0).astype(np.uint8)
 
 
 def registrar_a_plantilla(
-    figura: np.ndarray, plantilla: np.ndarray, modo: str = "similaridad", lado: int = 512
+    figura: np.ndarray, plantilla: np.ndarray, modo: str = "similaridad", lado: int = 512,
+    suavizado: int = 31,
 ) -> tuple[np.ndarray, dict]:
     """
     Alinea la figura del niño con la plantilla de referencia.
 
-    Base: momentos + ECC (Enhanced Correlation Coefficient) de OpenCV para estimar
-    una transformación de similaridad (o afín). Devuelve la figura re-muestreada al
+    Base: ECC (Enhanced Correlation Coefficient) de OpenCV. Modos: "traslacion" (no gira
+    el dibujo: la inclinación real del niño se conserva y la miden los indicadores),
+    "similaridad" (traslación + giro) o "afin". Devuelve la figura re-muestreada al
     lienzo de la plantilla y los parámetros del registro.
     """
     figura = _encajar_en_lienzo(figura, lado)
     plantilla = _encajar_en_lienzo(plantilla, lado)
     warp = np.eye(2, 3, dtype=np.float32)
-    modo_cv = cv2.MOTION_EUCLIDEAN if modo == "similaridad" else cv2.MOTION_AFFINE
+    modo_cv = {"traslacion": cv2.MOTION_TRANSLATION, "similaridad": cv2.MOTION_EUCLIDEAN,
+               "afin": cv2.MOTION_AFFINE}[modo]
     crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 200, 1e-5)
     try:
-        cc, warp = cv2.findTransformECC(
-            plantilla.astype(np.float32) / 255,
-            figura.astype(np.float32) / 255,
-            warp, modo_cv, crit, None, 5,
-        )
+        # se suavizan ambas: una línea fina de la plantilla y un trazo grueso del niño solo
+        # se solapan tras desenfocar, y así el ECC no cae en mínimos locales
+        k = int(suavizado) | 1
+        pf = cv2.GaussianBlur(plantilla.astype(np.float32) / 255, (k, k), 0)
+        ff = cv2.GaussianBlur(figura.astype(np.float32) / 255, (k, k), 0)
+        cc, warp = cv2.findTransformECC(pf, ff, warp, modo_cv, crit, None, 5)
         ok = cc > 0.2
     except cv2.error:
         ok = False
@@ -122,10 +130,21 @@ def registrar_a_plantilla(
 
 
 def calidad_imagen(gris: np.ndarray) -> float:
-    """Heurística 0..1: nitidez (varianza del laplaciano) + contraste."""
-    nitidez = cv2.Laplacian(gris, cv2.CV_64F).var()
-    contraste = gris.std()
-    s = min(nitidez / 300.0, 1.0) * 0.7 + min(contraste / 60.0, 1.0) * 0.3
+    """Heurística 0..1 de nitidez y contraste del TRAZO (no de toda la imagen, que en una
+    celda casi blanca engañaba): pendiente del borde del trazo relativa a su contraste
+    (~1/ancho del borde: baja si la foto está movida o desenfocada) + contraste del trazo."""
+    fondo = float(np.median(gris))
+    tinta = gris < 0.78 * fondo
+    if int(tinta.sum()) < 50:                       # sin trazo medible: criterio global
+        nitidez = cv2.Laplacian(gris, cv2.CV_64F).var()
+        s = min(nitidez / 300.0, 1.0) * 0.7 + min(float(gris.std()) / 60.0, 1.0) * 0.3
+        return round(float(s), 3)
+    zona = cv2.dilate(tinta.astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
+    g = gris.astype(np.float64)
+    mag = np.hypot(cv2.Sobel(g, cv2.CV_64F, 1, 0), cv2.Sobel(g, cv2.CV_64F, 0, 1))
+    contraste = max(fondo - float(np.percentile(gris[tinta], 10)), 1.0)
+    pendiente = float(np.percentile(mag[zona], 95)) / contraste
+    s = min(pendiente / 2.0, 1.0) * 0.6 + min(contraste / 80.0, 1.0) * 0.4
     return round(float(s), 3)
 
 
@@ -145,15 +164,17 @@ def preprocesar_gris(
     cfg = cfg or {}
     lado = int(cfg.get("lado_normalizado_px", 512))
     metodo_bin = cfg.get("umbral_binarizado", "adaptativo")
-    modo_reg = cfg.get("registro", "similaridad")
+    modo_reg = cfg.get("registro", "traslacion")
     min_area = int(cfg.get("min_area_figura_px", 400))
+    fraccion_min = float(cfg.get("fraccion_min_trazo", 0.05))
 
     q = calidad_imagen(gris)
     gris = corregir_perspectiva(gris)
     gris = normalizar_iluminacion(gris)
     binaria = binarizar(gris, metodo_bin)
-    figura = aislar_figura(binaria, min_area)
-    alineada, reg = registrar_a_plantilla(figura, plantilla_bin, modo_reg, lado)
+    figura = aislar_figura(binaria, min_area, fraccion_min)
+    alineada, reg = registrar_a_plantilla(figura, plantilla_bin, modo_reg, lado,
+                                          int(cfg.get("suavizado_registro_px", 31)))
 
     aviso = None
     if q < 0.35:

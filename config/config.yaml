@@ -16,8 +16,10 @@ rutas:
 preprocesamiento:
   lado_normalizado_px: 512           # cada figura se reescala a este lienzo cuadrado
   umbral_binarizado: adaptativo      # adaptativo | otsu
-  registro: similaridad              # similaridad | afin
+  registro: traslacion               # traslacion (no gira el dibujo) | similaridad | afin
   min_area_figura_px: 400
+  suavizado_registro_px: 31          # desenfoque de ambas imágenes antes del ECC (solo ayuda a converger)
+  fraccion_min_trazo: 0.05           # se conserva toda componente de >=5 % de la mayor (figuras de varias partes)
 
 figuras:
   # id -> nº de vértices esperado y nº de puntos de intersección esperados.
