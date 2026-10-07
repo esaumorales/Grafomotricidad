@@ -26,6 +26,10 @@ export function listarSesiones() {
   return fetch(`${BASE}/sesiones`).then(json)
 }
 
+export function sesionesDeNino(childId) {
+  return fetch(`${BASE}/ninos/${encodeURIComponent(childId)}/sesiones`).then(json)
+}
+
 export function obtenerSesion(id) {
   return fetch(`${BASE}/sesiones/${id}`).then(json)
 }

@@ -20,7 +20,7 @@ from grafomotor.io import cargar_plantillas, ruta_plantilla
 from grafomotor.model.predict import agregar_sesion, predecir_figura
 from grafomotor.model.registry import cargar_modelo
 from grafomotor.preprocessing import preprocesar_figura
-from grafomotor.scoring.baremo import cargar_baremo, pd_a_T
+from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
 from grafomotor.scoring.niveles import CriterioNiveles, NivelResultado
 from grafomotor.webapp import db
 
@@ -45,9 +45,9 @@ class Servicio:
         return p if p.exists() else None
 
     def _nivel(self, pd_total: int, edad_meses: int) -> tuple[dict, NivelResultado]:
-        """PD -> (tramo, percentil, T) -> nivel, con el criterio de config.yaml."""
-        tT = pd_a_T(pd_total, edad_meses, self.baremo)
-        return tT, self.criterio.clasificar(pd_total, edad_meses, self.baremo)
+        """PD -> (tramo, percentil) -> nivel, con el criterio de config.yaml."""
+        tPc = pd_a_percentil(pd_total, edad_meses, self.baremo)
+        return tPc, self.criterio.clasificar(pd_total, edad_meses, self.baremo)
 
     def guardar_foto(self, child_id: str, figura_id: str, contenido: bytes, sufijo: str) -> Path:
         """Guarda la foto subida en data/raw/<child_id>/<figura_id>.<sufijo> (persistente,
@@ -88,7 +88,7 @@ class Servicio:
             X.append([vec.valores[k] for k in ORDEN])
 
         sesion = agregar_sesion(child_id, edad_meses, preds)
-        tT, nivel = self._nivel(sesion.PD, edad_meses)
+        tPc, nivel = self._nivel(sesion.PD, edad_meses)
 
         shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), list(ORDEN))
         nombres_fig = {fid: m.get("nombre", fid) for fid, m in self.figuras_meta.items()}
@@ -100,7 +100,7 @@ class Servicio:
 
         panel = informe.panel_tecnico
         panel["resumen"].update({
-            "PD": sesion.PD, "percentil": tT["percentil"], "tramo_edad": tT["tramo"],
+            "PD": sesion.PD, "percentil": tPc["percentil"], "tramo_edad": tPc["tramo"],
             "nivel": nivel.nivel,
             # instantánea de la IA, no se vuelve a tocar aunque el docente corrija después
             "PD_ia": sesion.PD, "nivel_ia": nivel.nivel,
@@ -138,6 +138,9 @@ class Servicio:
     def listar_sesiones(self) -> list[dict]:
         return db.listar_sesiones(self.db_path)
 
+    def listar_sesiones_de_nino(self, child_id: str) -> list[dict]:
+        return db.listar_sesiones_de_nino(self.db_path, child_id)
+
     def obtener_sesion(self, sesion_id: int) -> dict | None:
         return db.obtener_sesion(self.db_path, sesion_id)
 
@@ -159,11 +162,11 @@ class Servicio:
             (f["puntaje_docente"] if f["puntaje_docente"] is not None else f["puntaje"])
             for f in resultado["figuras"]
         )
-        tT, nivel = self._nivel(pd_total, resultado["edad_meses"])
+        tPc, nivel = self._nivel(pd_total, resultado["edad_meses"])
 
         resultado["accion"] = nivel.accion
         resultado["panel_tecnico"]["resumen"].update({
-            "PD": pd_total, "T": nivel.T, "percentil": tT["percentil"], "tramo_edad": tT["tramo"],
+            "PD": pd_total, "percentil": tPc["percentil"], "tramo_edad": tPc["tramo"],
             "nivel": nivel.nivel, "descriptor_verbal": nivel.descriptor_verbal,
         })
 

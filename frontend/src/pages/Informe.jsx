@@ -76,7 +76,6 @@ export default function Informe() {
               <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 10 }}>Resumen de la sesión</div>
-                  <FilaTecnica etiqueta="Puntuación T" valor={tecnico.T} />
                   <FilaTecnica etiqueta="PD (0-15)" valor={tecnico.PD} />
                   <FilaTecnica etiqueta="Percentil" valor={tecnico.percentil} />
                   <FilaTecnica etiqueta="Tramo de edad" valor={tecnico.tramo_edad} />

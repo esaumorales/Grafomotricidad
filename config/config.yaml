@@ -80,29 +80,25 @@ modelo:                              # MODELO A: indicadores + XGBoost + SHAP
   class_weight: balanced             # desbalance por figura (efecto suelo a los 3 años)
 
 scoring:
-  # NIVELES DEL NIÑO: de la PD y la edad -> percentil (Tabla B.9) o T -> nivel.
+  # NIVELES DEL NIÑO: de la PD y la edad -> percentil (Tabla B.9) -> nivel.
   # Los cortes van del PEOR nivel al MEJOR; el niño cae en el primero cuyo `maximo`
   # alcance. Varios cortes pueden compartir nombre con distinta acción.
   # acciones: ninguna | reforzar_y_revaluar | derivar  (todo lo que no sea "ninguna"
   # cuenta como "en riesgo" para la identificación).
   #
-  # PROVISIONAL: base T (estimada, NO publicada para esta escala) con cortes 40/30 citados
-  # de pág. 98-99 sin verificar. SUSTITUIR por los cortes oficiales en PERCENTIL y su fuente,
-  # por ejemplo:
-  #   base: percentil
-  #   fuente: "Manual CUMANIN (2002), pág. __"
-  #   cortes:
-  #     - {nombre: "Muy bajo",  maximo: 2,   accion: derivar}
-  #     - {nombre: "Bajo",      maximo: 16,  accion: reforzar_y_revaluar}
-  #     - {nombre: "Adecuado",  maximo: 100, accion: ninguna}
+  # Base PERCENTIL (Tabla B.9, pág. 83: dato verificado contra el libro físico). Los cortes
+  # T 40/30 (manual, pág. 98-99) NO están verificados y se dejaron de usar. Los cortes
+  # 16 y 2 son la convención estándar en psicometría (~ -1 DE / -2 DE); SUSTITUIR por los
+  # oficiales del CUMANIN, con su fuente, si se verifica la pág. 98-99.
+  # Para tres niveles (Adecuado / Bajo / Muy bajo), cambia los dos nombres "En riesgo".
   niveles:
-    base: T
-    fuente: "PROVISIONAL: cortes T 40/30 (pág. 98-99) sin verificar para el CUMANIN original"
+    base: percentil
+    fuente: "PROVISIONAL: convención psicométrica ~ -1 DE (Pc 16) y ~ -2 DE (Pc 2); sin verificar pág. 98-99 del manual"
     cortes:
-      - {nombre: "En riesgo", maximo: 30,  accion: derivar}
-      - {nombre: "En riesgo", maximo: 40,  accion: reforzar_y_revaluar}
-      - {nombre: "Adecuado",  maximo: 999, accion: ninguna}
-  version_baremo: "CUMANIN original, Tabla B.9 pág.83 — transcrita 2026-09-10, sin verificar contra el libro"
+      - {nombre: "En riesgo", maximo: 2,   accion: derivar}
+      - {nombre: "En riesgo", maximo: 16,  accion: reforzar_y_revaluar}
+      - {nombre: "Adecuado",  maximo: 100, accion: ninguna}
+  version_baremo: "CUMANIN original, Tabla B.9 pág.83 — transcrita de foto del libro físico 2026-09-15"
 
   # PD: en la aplicación grupal no se aplica la regla de parada. Se guardan las 15
   # puntuaciones y se reportan dos PD: completa y "del manual" (parar tras 4 fallos

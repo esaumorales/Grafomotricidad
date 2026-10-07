@@ -3,7 +3,7 @@ Traducción de SHAP + indicadores -> hallazgos en lenguaje natural para el docen
 
 Entrada:
   sesion       : PrediccionSesion  (figuras con puntaje/prob/indicadores)
-  nivel        : NivelResultado    (T, nivel, accion)
+  nivel        : NivelResultado    (percentil, nivel, accion)
   shap         : dict de shap_por_sesion()  (agg_signed, agg_abs, por_figura)
   nombres_fig  : {figura_id: "cuadrado", ...}
   nombre_nino  : str | None
@@ -155,7 +155,7 @@ def explicar_para_docente(
         sugerencias=sugerencias_para([d.indicador for d in dificultades]),
         cautela=P.CAUTELA,
         tecnico={
-            "T": nivel.T,
+            "percentil": nivel.percentil,
             "nivel": nivel.nivel,
             "descriptor_verbal": nivel.descriptor_verbal,
             "PD": sesion.PD,

@@ -42,6 +42,7 @@ class SesionResumen(BaseModel):
     pd_total: int
     nivel: str
     accion: str
+    percentil: float | None = None
 
 
 class CorregirFiguraIn(BaseModel):

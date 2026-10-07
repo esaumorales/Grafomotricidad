@@ -1,30 +1,52 @@
 """
-Nivel de desempeño grafomotor. La forma recomendada es `CriterioNiveles` (cortes y
-fuente en config.yaml, por percentil de la Tabla B.9). `nivel_desde_T` se conserva como
-criterio histórico.
+Nivel de desempeño grafomotor.
 
-T -> nivel de desempeño grafomotor. Cortes citados del manual (pág. 98-99),
-PENDIENTES DE VALIDAR con el asesor para el CUMANIN original (la T de esta
-subescala es una estimación desde el percentil de la Tabla B.9):
+Forma recomendada: `CriterioNiveles` (cortes y fuente en config.yaml > scoring > niveles),
+que clasifica sobre el PERCENTIL de la Tabla B.9 (pág. 83), el único dato confirmado contra
+el libro físico. `nivel_desde_percentil` es la versión simple con los cortes por defecto.
 
-    T >= 41  -> Adecuado
-    31-40    -> Bajo (en riesgo / screening)
-    <= 30    -> Muy bajo (derivar a especialista)
+Los cortes T>=41/31-40/<=30 que citaba una versión anterior (manual, pág. 98-99) NO están
+verificados: el equipo no ha confirmado que esas páginas correspondan a esta edición del
+manual ni a la subescala de Visopercepción (ver ESTADO.md). `nivel_desde_T` se conserva
+solo como criterio histórico.
+
+Cortes por defecto sobre el percentil (convención estándar en psicometría, ~ -1 y -2 DE):
+
+    Pc > 16   -> Adecuado
+    Pc 3-16   -> Bajo (en riesgo / screening)   [~ -1 DE]
+    Pc <= 2   -> Muy bajo (derivar)              [~ -2 DE]
+
+Si el equipo verifica las páginas 98-99 del manual original, estos cortes deben sustituirse
+por los oficiales (documentando la fuente exacta en config.yaml).
 
 `n_clases`:
-  2 -> {Adecuado, En riesgo}      (En riesgo = T <= 40; recomendado por defecto)
+  2 -> {Adecuado, En riesgo}
   3 -> {Adecuado, Bajo, Muy bajo}
-
-Tabla 5.2 (7 descriptores) disponible en `descriptor_verbal()` para el panel técnico.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
+CORTE_BAJO_PC = 16
+CORTE_MUY_BAJO_PC = 2
+
+# Bandas descriptivas por percentil (convención estándar en psicometría, equivalente
+# aprox. a bandas de -2/-1/0/+1/+2 desviaciones típicas). NO provienen de una tabla del
+# manual CUMANIN: son una convención general para el panel técnico del especialista.
+_BANDAS_DESCRIPTIVAS = [
+    ("Muy alto", 98, 100),
+    ("Alto", 91, 97),
+    ("Medio-alto", 75, 90),
+    ("Medio", 25, 74),
+    ("Medio-bajo", 9, 24),
+    ("Bajo", 3, 8),
+    ("Muy bajo", 0, 2),
+]
+
+# Criterio histórico por T (cortes sin verificar) y su tabla de descriptores.
 CORTE_BAJO = 40
 CORTE_MUY_BAJO = 30
-
-# Tabla 5.2 del manual (descriptor -> (T_min, T_max))
 TABLA_5_2 = [
     ("Muy alto", 70, 999),
     ("Alto", 60, 69),
@@ -38,23 +60,56 @@ TABLA_5_2 = [
 
 @dataclass
 class NivelResultado:
-    T: float
-    nivel: str                 # etiqueta según n_clases
+    percentil: float | None
+    nivel: str                 # etiqueta según los cortes / n_clases
     accion: str                # "ninguna" | "reforzar_y_revaluar" | "derivar"
-    descriptor_verbal: str     # de la Tabla 5.2 (para el especialista)
+    descriptor_verbal: str     # banda descriptiva (para el especialista)
     n_clases: int
-    percentil: float | None = None
+    T: float | None = None     # solo en el criterio histórico por T
 
 
-def descriptor_verbal(T: float) -> str:
+def descriptor_verbal(percentil: float) -> str:
+    for nombre, lo, hi in _BANDAS_DESCRIPTIVAS:
+        if lo <= percentil <= hi:
+            return nombre
+    return "Medio"
+
+
+def descriptor_verbal_T(T: float) -> str:
     for nombre, lo, hi in TABLA_5_2:
         if lo <= T <= hi:
             return nombre
     return "Medio"
 
 
+def nivel_desde_percentil(percentil: float, n_clases: int = 2,
+                          corte_bajo: int = CORTE_BAJO_PC,
+                          corte_muy_bajo: int = CORTE_MUY_BAJO_PC) -> NivelResultado:
+    if percentil <= corte_muy_bajo:
+        accion = "derivar"
+    elif percentil <= corte_bajo:
+        accion = "reforzar_y_revaluar"
+    else:
+        accion = "ninguna"
+
+    if n_clases == 3:
+        nivel = {"derivar": "Muy bajo", "reforzar_y_revaluar": "Bajo",
+                 "ninguna": "Adecuado"}[accion]
+    else:
+        nivel = "En riesgo" if percentil <= corte_bajo else "Adecuado"
+
+    return NivelResultado(
+        percentil=round(float(percentil), 1),
+        nivel=nivel,
+        accion=accion,
+        descriptor_verbal=descriptor_verbal(percentil),
+        n_clases=n_clases,
+    )
+
+
 def nivel_desde_T(T: float, n_clases: int = 2, corte_bajo: int = CORTE_BAJO,
                   corte_muy_bajo: int = CORTE_MUY_BAJO) -> NivelResultado:
+    """Criterio histórico (T estimada, cortes sin verificar). Preferir el de percentil."""
     if T <= corte_muy_bajo:
         accion = "derivar"
     elif T <= corte_bajo:
@@ -69,11 +124,12 @@ def nivel_desde_T(T: float, n_clases: int = 2, corte_bajo: int = CORTE_BAJO,
         nivel = "En riesgo" if T <= corte_bajo else "Adecuado"
 
     return NivelResultado(
-        T=round(float(T), 1),
+        percentil=None,
         nivel=nivel,
         accion=accion,
-        descriptor_verbal=descriptor_verbal(T),
+        descriptor_verbal=descriptor_verbal_T(T),
         n_clases=n_clases,
+        T=round(float(T), 1),
     )
 
 
@@ -92,7 +148,8 @@ class CriterioNiveles:
     """De la PD y la edad al nivel del niño, con cortes y fuente declarados en config.yaml.
 
     base = "percentil": usa el percentil de la Tabla B.9 (dato publicado del manual).
-    base = "T":         usa la T estimada desde el percentil (no publicada para esta escala).
+    base = "T":         usa la T estimada desde el percentil (no publicada para esta escala;
+                        exige una columna T en el baremo).
     Los cortes van del peor nivel al mejor; el niño cae en el primero que alcance.
     Varios cortes pueden compartir nombre con distinta acción (p. ej. "En riesgo" con
     acción "derivar" por debajo de un segundo corte).
@@ -113,7 +170,12 @@ class CriterioNiveles:
     @classmethod
     def de_config(cls, cfg) -> CriterioNiveles:
         n = cfg.get("scoring", "niveles", default=None)
-        if n is None:   # compatibilidad con configuraciones antiguas (n_clases + cortes T)
+        if n is None:   # compatibilidad con configuraciones anteriores
+            if cfg.get("scoring", "corte_bajo_pc", default=None) is not None:
+                return cls.por_percentil(
+                    int(cfg.get("scoring", "n_clases", default=2)),
+                    float(cfg.get("scoring", "corte_bajo_pc", default=CORTE_BAJO_PC)),
+                    float(cfg.get("scoring", "corte_muy_bajo_pc", default=CORTE_MUY_BAJO_PC)))
             return cls.por_T(int(cfg.get("scoring", "n_clases", default=2)),
                              float(cfg.get("scoring", "corte_bajo_T", default=CORTE_BAJO)),
                              float(cfg.get("scoring", "corte_muy_bajo_T",
@@ -121,6 +183,16 @@ class CriterioNiveles:
         return cls(base=n["base"], fuente=n.get("fuente", ""),
                    cortes=tuple(Corte(c["nombre"], float(c["maximo"]), c["accion"])
                                 for c in n["cortes"]))
+
+    @classmethod
+    def por_percentil(cls, n_clases: int = 2, corte_bajo: float = CORTE_BAJO_PC,
+                      corte_muy_bajo: float = CORTE_MUY_BAJO_PC) -> CriterioNiveles:
+        """Equivalente a `nivel_desde_percentil`."""
+        riesgo = "En riesgo" if n_clases == 2 else "Bajo"
+        muy_bajo = "En riesgo" if n_clases == 2 else "Muy bajo"
+        return cls("percentil", (Corte(muy_bajo, corte_muy_bajo, "derivar"),
+                                 Corte(riesgo, corte_bajo, "reforzar_y_revaluar"),
+                                 Corte("Adecuado", float("inf"), "ninguna")))
 
     @classmethod
     def por_T(cls, n_clases: int = 2, corte_bajo: float = CORTE_BAJO,
@@ -145,11 +217,16 @@ class CriterioNiveles:
         from grafomotor.scoring.baremo import pd_a_T
 
         r = pd_a_T(pd_valor, edad_meses, baremo)
+        if self.base == "T" and math.isnan(r["T"]):
+            raise ValueError("scoring.niveles.base = 'T' exige una columna T en el baremo")
         valor = r["percentil"] if self.base == "percentil" else r["T"]
         corte = next((c for c in self.cortes if valor <= c.maximo), self.cortes[-1])
-        return NivelResultado(T=r["T"], nivel=corte.nombre, accion=corte.accion,
-                              descriptor_verbal=descriptor_verbal(r["T"]),
-                              n_clases=len(self.etiquetas), percentil=r["percentil"])
+        # la T (si existe) es una estimación: el descriptor se da siempre por percentil
+        T = None if math.isnan(r["T"]) else r["T"]
+        return NivelResultado(percentil=r["percentil"], nivel=corte.nombre,
+                              accion=corte.accion,
+                              descriptor_verbal=descriptor_verbal(r["percentil"]),
+                              n_clases=len(self.etiquetas), T=T)
 
     def en_riesgo(self, pd_valor: int, edad_meses: int, baremo) -> bool:
         """Para el tamizaje: cualquier nivel que pida alguna acción."""
