@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph A["🅰️ TÉCNICA A · con reglas"]
+        direction TB
+        A1["🖼️ Foto de la figura"]:::tecA
+        A2["⬛ Blanco y negro<br/>y alinear con el modelo"]:::tecA
+        A3["📏 Medir 6 indicadores"]:::tecA
+        A4["🌳 <b>XGBoost</b><br/>decide 1 o 0"]:::tecA
+        A5["💡 <b>SHAP</b> explica<br/>QUÉ criterio falló"]:::expl
+        A1 --> A2 --> A3 --> A4 --> A5
+    end
+    subgraph B["🅱️ TÉCNICA B · aprendiendo de ejemplos"]
+        direction TB
+        B1["🖼️ Foto de la figura"]:::tecB
+        B2["🔲 Recorte de 224 × 224"]:::tecB
+        B3["🧠 <b>Red neuronal</b><br/>ResNet · DenseNet<br/>MobileNet · EfficientNet"]:::tecB
+        B4["✅ Decide 1 o 0"]:::tecB
+        B5["🔥 <b>Grad-CAM</b> muestra<br/>DÓNDE miró la red"]:::expl
+        B1 --> B2 --> B3 --> B4 --> B5
+    end
+
+    A ~~~ B
+
+    classDef tecA fill:#EDE7FF,stroke:#6F4EDB,stroke-width:2px,color:#2E1F6B
+    classDef tecB fill:#DFF5F3,stroke:#1B998B,stroke-width:2px,color:#0B4F47
+    classDef expl fill:#FFF4D6,stroke:#E0A800,stroke-width:2px,color:#5C4400

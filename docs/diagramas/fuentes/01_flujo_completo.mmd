@@ -1,0 +1,42 @@
+flowchart TB
+    subgraph S1["1 · De la hoja a las imágenes"]
+        direction LR
+        A["📝 <b>Hoja en papel</b><br/>el niño copia<br/>15 figuras"]:::etapa
+        B["📷 <b>Foto o PDF</b><br/>de cada hoja"]:::etapa
+        C["✂️ <b>Recortar</b><br/>una imagen<br/>por figura"]:::etapa
+        D["🧼 <b>Preparar</b><br/>para los<br/>modelos"]:::etapa
+        A --> B --> C --> D
+    end
+
+    subgraph S2["2 · La parte humana"]
+        direction LR
+        G["👩‍🏫 <b>Evaluador experto</b><br/>pone 1 o 0<br/>a cada figura"]:::humano
+        H["📋 <b>Excel</b><br/>de calificaciones"]:::humano
+        G --> H
+    end
+
+    subgraph S3["3 · Los dos modelos aprenden y deciden"]
+        direction LR
+        E["🅰️ <b>Técnica A</b><br/>indicadores<br/>+ XGBoost"]:::tecA
+        F["🅱️ <b>Técnica B</b><br/>red neuronal"]:::tecB
+        E ~~~ F
+    end
+
+    subgraph S4["4 · Resultado"]
+        direction LR
+        I["🔢 <b>Puntaje</b><br/>por figura<br/>y total"]:::etapa
+        J["📊 <b>Nivel</b><br/>según la<br/>edad"]:::etapa
+        K["🗒️ <b>Informe</b><br/>sencillo para<br/>la docente"]:::salida
+        I --> J --> K
+    end
+
+    S1 ~~~ S2
+    S1 --> S3
+    S2 -.->|"ejemplos para aprender"| S3
+    S3 --> S4
+
+    classDef etapa fill:#E8F0FE,stroke:#3B6FD4,stroke-width:2px,color:#1B2A41
+    classDef humano fill:#FFF4D6,stroke:#E0A800,stroke-width:2px,color:#5C4400
+    classDef tecA fill:#EDE7FF,stroke:#6F4EDB,stroke-width:2px,color:#2E1F6B
+    classDef tecB fill:#DFF5F3,stroke:#1B998B,stroke-width:2px,color:#0B4F47
+    classDef salida fill:#1F3A6E,stroke:#1F3A6E,stroke-width:2px,color:#FFFFFF

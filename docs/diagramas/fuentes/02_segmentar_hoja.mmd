@@ -1,0 +1,37 @@
+flowchart TB
+    subgraph S1["A · Encontrar y enderezar la hoja"]
+        direction LR
+        A["📷 <b>Foto</b><br/>torcida o<br/>girada"]:::entrada
+        B["🔍 <b>Buscar</b><br/>la cuadrícula<br/>de la tabla"]:::paso
+        C["📐 <b>Enderezar</b><br/>como si la viéramos<br/>de frente"]:::paso
+        A --> B --> C
+    end
+
+    subgraph S2["B · Saber de qué lado está cada cosa"]
+        direction LR
+        D{"<b>¿Cuál columna<br/>es el modelo?</b>"}:::decision
+        E["🖨️ <b>La más oscura</b><br/>lo impreso es negro,<br/>el lápiz es gris"]:::nota
+        F["🔄 <b>Poner la hoja</b><br/>derecha: modelo<br/>a la izquierda"]:::paso
+        D --> E --> F
+    end
+
+    subgraph S3["C · Cortar y guardar"]
+        direction LR
+        G["✂️ <b>Cortar</b><br/>las 5 celdas<br/>de la copia"]:::paso
+        H["✨ <b>Quitar sombras</b><br/>fondo blanco"]:::paso
+        I["💾 <b>Guardar</b><br/>F01 … F15"]:::salida
+        G --> H --> I
+    end
+
+    X["⚠️ <b>Si algo sale mal</b><br/>avisa: «repetir esta foto»"]:::aviso
+
+    S1 --> S2
+    S2 --> S3
+    S1 -.-> X
+
+    classDef entrada fill:#FFFFFF,stroke:#5C6B8A,stroke-width:2px,color:#1B2A41
+    classDef paso fill:#E8F0FE,stroke:#3B6FD4,stroke-width:2px,color:#1B2A41
+    classDef decision fill:#FFF4D6,stroke:#E0A800,stroke-width:2px,color:#5C4400
+    classDef nota fill:#F1F3F5,stroke:#868E96,stroke-width:2px,color:#343A40
+    classDef aviso fill:#FDE8E8,stroke:#D64545,stroke-width:2px,color:#6B1F1F
+    classDef salida fill:#1F3A6E,stroke:#1F3A6E,stroke-width:2px,color:#FFFFFF

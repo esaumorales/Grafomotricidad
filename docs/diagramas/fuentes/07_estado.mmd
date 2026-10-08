@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph S1["✅ Ya está hecho"]
+        direction LR
+        A["✂️ <b>Recortar las hojas</b><br/>46 niños · 690 figuras"]:::hecho
+        B["🧼 <b>Preparar imágenes</b><br/>para las técnicas A y B"]:::hecho
+        A --> B
+    end
+
+    subgraph S2["🟨 Falta hacer"]
+        direction LR
+        C["📝 <b>Calificar</b><br/>con 1 o 0<br/>cada figura"]:::pendiente
+        D["🏋️ <b>Entrenar</b><br/>los modelos"]:::pendiente
+        E["⚖️ <b>Comparar</b><br/>A con B y medir<br/>qué tan bien"]:::pendiente
+        F["📄 <b>Escribir</b><br/>el artículo"]:::pendiente
+        C --> D --> E --> F
+    end
+
+    S1 --> S2
+
+    classDef hecho fill:#DDF3E4,stroke:#2E9E5B,stroke-width:3px,color:#14532D
+    classDef pendiente fill:#FFF4D6,stroke:#E0A800,stroke-width:3px,color:#5C4400

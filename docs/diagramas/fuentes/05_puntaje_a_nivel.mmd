@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph S1["Del puntaje al percentil"]
+        direction LR
+        A["✅ <b>Figuras bien<br/>copiadas</b><br/>por ejemplo, 9 de 15"]:::etapa
+        B["🔢 <b>Puntaje total</b><br/>PD = 9"]:::etapa
+        C["📖 <b>Tabla de su edad</b><br/>Tabla B.9<br/>del manual"]:::etapa
+        D["📍 <b>Percentil</b><br/>cuántos niños de su edad<br/>lo hacen igual o peor"]:::etapa
+        A --> B --> C --> D
+    end
+
+    E{"<b>¿Qué nivel<br/>le corresponde?</b>"}:::decision
+    F["🟢 <b>Adecuado</b><br/>percentil mayor a 16"]:::ok
+    G["🟡 <b>En riesgo</b><br/>percentil de 3 a 16<br/>reforzar y volver a evaluar"]:::medio
+    H["🔴 <b>En riesgo</b><br/>percentil 2 o menos<br/>derivar a especialista"]:::alto
+
+    S1 --> E
+    E --> F
+    E --> G
+    E --> H
+
+    classDef etapa fill:#E8F0FE,stroke:#3B6FD4,stroke-width:2px,color:#1B2A41
+    classDef decision fill:#FFF4D6,stroke:#E0A800,stroke-width:2px,color:#5C4400
+    classDef ok fill:#DDF3E4,stroke:#2E9E5B,stroke-width:2px,color:#14532D
+    classDef medio fill:#FFF1C2,stroke:#D9A400,stroke-width:2px,color:#5C4400
+    classDef alto fill:#FDE0E0,stroke:#D64545,stroke-width:2px,color:#6B1F1F

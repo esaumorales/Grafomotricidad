@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph S1["1 · Repartir a los niños"]
+        direction LR
+        A["👧👦 <b>Todos los niños</b><br/>con sus calificaciones"]:::etapa
+        B["🗂️ <b>5 grupos</b><br/>todas las figuras de un niño<br/>van al mismo grupo"]:::etapa
+        A --> B
+    end
+
+    subgraph S2["2 · Entrenar y probar"]
+        direction LR
+        C["🏋️ <b>Entrenar</b><br/>con 4 grupos"]:::tecA
+        D["🧪 <b>Probar</b><br/>con el grupo que falta:<br/>niños que nunca vio"]:::tecB
+        E["🔁 <b>Repetir 5 veces</b><br/>cambiando el grupo<br/>de prueba"]:::etapa
+        C --> D --> E
+    end
+
+    F["⚖️ <b>Comparar A y B</b><br/>con los mismos niños y las mismas medidas"]:::salida
+
+    S1 --> S2
+    S2 --> F
+
+    classDef etapa fill:#E8F0FE,stroke:#3B6FD4,stroke-width:2px,color:#1B2A41
+    classDef tecA fill:#EDE7FF,stroke:#6F4EDB,stroke-width:2px,color:#2E1F6B
+    classDef tecB fill:#DFF5F3,stroke:#1B998B,stroke-width:2px,color:#0B4F47
+    classDef salida fill:#1F3A6E,stroke:#1F3A6E,stroke-width:2px,color:#FFFFFF

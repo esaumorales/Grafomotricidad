@@ -45,24 +45,9 @@ saber cuál funciona mejor:
 
 ## 2. El camino completo, de la hoja al informe
 
-```mermaid
-flowchart LR
-    A["📝 Hoja en papel<br/>el niño copia 15 figuras"] --> B["📷 Foto o PDF<br/>de la hoja"]
-    B --> C["✂️ R1. Recortar<br/>una imagen por figura"]
-    C --> D["🧼 R2. Limpiar y preparar<br/>para los modelos"]
-    D --> E["🅰️ Técnica A<br/>indicadores + XGBoost"]
-    D --> F["🅱️ Técnica B<br/>red neuronal"]
-    G["👩‍🏫 Evaluador experto<br/>pone 1 o 0 a cada figura"] --> H["📋 R3. Hoja de calificación<br/>Excel → etiquetas"]
-    H --> E
-    H --> F
-    E --> I["🔢 Puntaje por figura<br/>y puntaje total"]
-    F --> I
-    I --> J["📊 Nivel del niño<br/>según su edad"]
-    J --> K["🗒️ Informe sencillo<br/>para la docente"]
+![Flujo completo: de la hoja en papel al informe para la docente](img/01_flujo_completo.png)
 
-    style G fill:#fff3cd,stroke:#e0a800
-    style H fill:#fff3cd,stroke:#e0a800
-```
+<sub>Fuente editable: [`docs/diagramas/fuentes/01_flujo_completo.mmd`](diagramas/fuentes/01_flujo_completo.mmd)</sub>
 
 Lo importante de este dibujo:
 
@@ -82,16 +67,9 @@ a la izquierda está el **modelo impreso** y a la derecha el **dibujo del niño*
 
 La foto puede venir torcida, de lado o al revés. La computadora la **endereza y corta** así:
 
-```mermaid
-flowchart TD
-    A["Foto de la hoja<br/>puede estar torcida o girada"] --> B["Buscar la cuadrícula<br/>el rectángulo de la tabla"]
-    B --> C["Enderezar la hoja<br/>como si la viéramos de frente"]
-    C --> D{"¿Cuál columna es<br/>el modelo impreso?"}
-    D -->|"La más oscura, porque está impresa"| E["Poner la hoja derecha"]
-    E --> F["Cortar las 5 celdas<br/>de la copia del niño"]
-    F --> G["Quitar sombras<br/>y dejar el fondo blanco"]
-    G --> H["Guardar F01 ... F15<br/>una imagen por figura"]
-```
+![Cómo se corta una hoja: encontrarla, enderezarla y recortar las figuras](img/02_segmentar_hoja.png)
+
+<sub>Fuente editable: [`docs/diagramas/fuentes/02_segmentar_hoja.mmd`](diagramas/fuentes/02_segmentar_hoja.mmd)</sub>
 
 **Truco que usa:** el modelo impreso es **negro fuerte**; el lápiz del niño es **gris**. Con eso
 la computadora sabe de qué lado está cada cosa, aunque la hoja venga al revés.
@@ -103,15 +81,9 @@ la computadora sabe de qué lado está cada cosa, aunque la hoja venga al revés
 
 De cada figura se hacen **tres cosas**, sin necesitar todavía las calificaciones:
 
-```mermaid
-flowchart LR
-    F["Imagen de una figura"] --> A1["Técnica A:<br/>pasar a blanco y negro,<br/>alinear con el modelo"]
-    F --> B1["Técnica B:<br/>recorte cuadrado<br/>de 224 × 224"]
-    A1 --> A2["Medir 6 cosas<br/>del dibujo"]
-    A2 --> AA[("features.parquet")]
-    A1 --> AI[("interim/")]
-    B1 --> BB[("interim_dl/")]
-```
+![Cómo se preparan las imágenes para la técnica A y la técnica B](img/03_preparar_imagenes.png)
+
+<sub>Fuente editable: [`docs/diagramas/fuentes/03_preparar_imagenes.mmd`](diagramas/fuentes/03_preparar_imagenes.mmd)</sub>
 
 Los **6 indicadores** que mide la técnica A son como preguntas sobre el dibujo:
 
@@ -137,6 +109,10 @@ que no falten datos y avisa de los niños incompletos.
   separan niños completos: **todas las figuras de un niño van al mismo grupo**, para que no
   "haga trampa" viendo otra figura del mismo niño.
 
+![Cómo se evalúa de forma justa: grupos de niños y repeticiones](img/08_evaluacion_justa.png)
+
+<sub>Fuente editable: [`docs/diagramas/fuentes/08_evaluacion_justa.mmd`](diagramas/fuentes/08_evaluacion_justa.mmd)</sub>
+
 ### Paso 5. El informe para la docente
 
 El resultado se explica en **lenguaje sencillo**: *"Lo que hace bien"*, *"En qué necesita apoyo"*
@@ -146,23 +122,9 @@ y *"Qué puedes hacer en el aula"*. Los números técnicos van aparte, para el e
 
 ## 4. Los dos "cerebros" que se comparan
 
-```mermaid
-flowchart TB
-    subgraph A["🅰️ TÉCNICA A — con reglas"]
-        direction TB
-        A1["Foto de la figura"] --> A2["Blanco y negro<br/>y alinear con el modelo"]
-        A2 --> A3["Medir 6 indicadores"]
-        A3 --> A4["XGBoost<br/>decide 1 o 0"]
-        A4 --> A5["SHAP explica<br/>QUÉ criterio falló"]
-    end
-    subgraph B["🅱️ TÉCNICA B — aprendiendo de ejemplos"]
-        direction TB
-        B1["Foto de la figura"] --> B2["Recorte de 224 × 224"]
-        B2 --> B3["Red neuronal<br/>4 tipos a comparar"]
-        B3 --> B4["Decide 1 o 0"]
-        B4 --> B5["Grad-CAM muestra<br/>DÓNDE miró la red"]
-    end
-```
+![Las dos técnicas que se comparan, A con reglas y B con redes neuronales](img/04_dos_tecnicas.png)
+
+<sub>Fuente editable: [`docs/diagramas/fuentes/04_dos_tecnicas.mmd`](diagramas/fuentes/04_dos_tecnicas.mmd)</sub>
 
 **Las 4 redes que se prueban** (todas ya vienen "pre-entrenadas" con millones de fotos
 cualquiera, y aquí solo se les enseña lo particular de estos dibujos):
@@ -182,16 +144,9 @@ calificaciones y las mismas medidas** para que la comparación sea justa.
 
 ## 5. Del puntaje al nivel del niño
 
-```mermaid
-flowchart LR
-    A["Figuras bien copiadas<br/>por ejemplo 9 de 15"] --> B["Puntaje total<br/>PD = 9"]
-    B --> C["Mirar la tabla de su edad<br/>Tabla B.9 del manual"]
-    C --> D["Percentil<br/>qué parte de los niños<br/>de su edad lo hace peor"]
-    D --> E{"¿Qué nivel?"}
-    E -->|"Más de 16"| F["✅ Adecuado"]
-    E -->|"De 3 a 16"| G["🟡 En riesgo:<br/>reforzar y volver a evaluar"]
-    E -->|"2 o menos"| H["🔴 En riesgo:<br/>derivar a especialista"]
-```
+![Del puntaje total al nivel del niño según su edad](img/05_puntaje_a_nivel.png)
+
+<sub>Fuente editable: [`docs/diagramas/fuentes/05_puntaje_a_nivel.mmd`](diagramas/fuentes/05_puntaje_a_nivel.mmd)</sub>
 
 - **Percentil 50** quiere decir "está justo en el medio de los niños de su edad".
 - Los cortes **16 y 2** son una convención común en psicología y están marcados como
@@ -202,16 +157,9 @@ flowchart LR
 
 ## 6. Dónde queda cada archivo
 
-```mermaid
-flowchart TD
-    A[("data/hojas_reales/<br/>fotos de las hojas")] -->|"segmentar-hojas"| B[("data/raw_reales/<br/>una imagen por figura")]
-    B -->|"preparar-reales"| C[("data/real/interim/<br/>para la técnica A")]
-    B -->|"preparar-reales"| D[("data/real/interim_dl/<br/>para la técnica B")]
-    B -->|"preparar-reales"| E[("data/real/processed/<br/>los 6 indicadores")]
-    F[("Excel de calificación")] -->|"cargar-calificaciones"| G[("data/real/labels/<br/>etiquetas.csv")]
-    C & D & E & G --> H["entrenar y evaluar"]
-    H --> I[("models/real/<br/>modelos entrenados")]
-```
+![Dónde queda cada archivo y qué comando lo genera](img/06_carpetas.png)
+
+<sub>Fuente editable: [`docs/diagramas/fuentes/06_carpetas.mmd`](diagramas/fuentes/06_carpetas.mmd)</sub>
 
 | Carpeta | Para qué sirve | ¿Se sube a GitHub? |
 |---|---|---|
@@ -257,17 +205,9 @@ grafomotor todo --sinteticos --dl
 
 ## 8. En qué punto está el proyecto
 
-```mermaid
-flowchart LR
-    A["Recortar hojas<br/>46 niños, 690 figuras"]:::hecho --> B["Preparar imágenes<br/>modelos A y B"]:::hecho
-    B --> C["Calificar con 1 o 0<br/>cada figura"]:::pendiente
-    C --> D["Entrenar<br/>los modelos"]:::pendiente
-    D --> E["Comparar A contra B<br/>y medir qué tan bien"]:::pendiente
-    E --> F["Escribir el artículo"]:::pendiente
+![En qué punto está el proyecto: lo hecho y lo que falta](img/07_estado.png)
 
-    classDef hecho fill:#d4edda,stroke:#28a745,color:#155724
-    classDef pendiente fill:#fff3cd,stroke:#e0a800,color:#856404
-```
+<sub>Fuente editable: [`docs/diagramas/fuentes/07_estado.mmd`](diagramas/fuentes/07_estado.mmd)</sub>
 
 🟩 **Hecho** · 🟨 **Pendiente**
 

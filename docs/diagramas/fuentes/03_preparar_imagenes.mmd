@@ -1,0 +1,24 @@
+flowchart LR
+    F["🖼️ <b>Imagen de<br/>una figura</b>"]:::entrada
+
+    subgraph TA["🅰️ Para la técnica A"]
+        direction TB
+        A1["⬛ <b>Pasar a blanco y negro</b><br/>y alinear con el modelo"]:::tecA
+        A2["📏 <b>Medir 6 cosas</b><br/>del dibujo"]:::tecA
+        A1 --> A2
+    end
+    subgraph TB2["🅱️ Para la técnica B"]
+        direction TB
+        B1["🔲 <b>Recorte cuadrado</b><br/>de 224 × 224 píxeles"]:::tecB
+    end
+
+    F --> A1
+    F --> B1
+    A1 --> I[("<b>interim/</b>")]:::datos
+    A2 --> P[("<b>features.parquet</b><br/>los 6 indicadores")]:::datos
+    B1 --> D[("<b>interim_dl/</b>")]:::datos
+
+    classDef entrada fill:#FFFFFF,stroke:#5C6B8A,stroke-width:2px,color:#1B2A41
+    classDef tecA fill:#EDE7FF,stroke:#6F4EDB,stroke-width:2px,color:#2E1F6B
+    classDef tecB fill:#DFF5F3,stroke:#1B998B,stroke-width:2px,color:#0B4F47
+    classDef datos fill:#F1F3F5,stroke:#868E96,stroke-width:2px,color:#343A40

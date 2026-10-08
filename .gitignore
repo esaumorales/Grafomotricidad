@@ -49,3 +49,7 @@ Thumbs.db
 data/hojas_reales/
 data/raw_reales/
 data/real/
+
+# Herramientas de diagramas
+docs/diagramas/node_modules/
+docs/diagramas/puppeteer.json

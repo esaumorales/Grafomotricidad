@@ -3,15 +3,9 @@
 > 🆕 **¿Eres nuevo aquí?** Empieza por la [**guía para principiantes**](docs/GUIA_PRINCIPIANTE.md):
 > explica todo el flujo con palabras sencillas y dibujos.
 
-```mermaid
-flowchart LR
-    A["📝 Hoja en papel"] --> B["📷 Foto o PDF"] --> C["✂️ Una imagen<br/>por figura"]
-    C --> D["🅰️ Indicadores<br/>+ XGBoost"]
-    C --> E["🅱️ Red neuronal<br/>+ Grad-CAM"]
-    D --> F["🔢 Puntaje"]
-    E --> F
-    F --> G["📊 Nivel según<br/>la edad"] --> H["🗒️ Informe<br/>para la docente"]
-```
+![Flujo completo: de la hoja en papel al informe para la docente](docs/img/01_flujo_completo.png)
+
+<sub>Fuente editable: [`docs/diagramas/fuentes/01_flujo_completo.mmd`](docs/diagramas/fuentes/01_flujo_completo.mmd)</sub>
 
 Calificación automática, figura por figura, de la escala de **Visopercepción del CUMANIN
 original** (Portellano Pérez et al., 2002; 15 figuras, cada una 0/1) a partir de la

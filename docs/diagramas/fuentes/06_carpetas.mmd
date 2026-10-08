@@ -1,0 +1,27 @@
+flowchart TD
+    A[("📁 <b>data/hojas_reales/</b><br/>fotos de las hojas")]:::datos
+    B[("📁 <b>data/raw_reales/</b><br/>una imagen por figura")]:::datos
+    C[("📁 <b>data/real/interim/</b><br/>para la técnica A")]:::tecA
+    D[("📁 <b>data/real/interim_dl/</b><br/>para la técnica B")]:::tecB
+    E[("📁 <b>data/real/processed/</b><br/>los 6 indicadores")]:::tecA
+    F[("📗 <b>Excel de calificación</b><br/>1 o 0 por figura")]:::humano
+    G[("📁 <b>data/real/labels/</b><br/>etiquetas.csv")]:::humano
+    H["🏋️ <b>Entrenar y evaluar</b>"]:::etapa
+    I[("📁 <b>models/real/</b><br/>modelos entrenados")]:::datos
+
+    A -->|"segmentar-hojas"| B
+    B -->|"preparar-reales"| C
+    B -->|"preparar-reales"| D
+    B -->|"preparar-reales"| E
+    F -->|"cargar-calificaciones"| G
+    C --> H
+    D --> H
+    E --> H
+    G --> H
+    H --> I
+
+    classDef datos fill:#F1F3F5,stroke:#868E96,stroke-width:2px,color:#343A40
+    classDef tecA fill:#EDE7FF,stroke:#6F4EDB,stroke-width:2px,color:#2E1F6B
+    classDef tecB fill:#DFF5F3,stroke:#1B998B,stroke-width:2px,color:#0B4F47
+    classDef humano fill:#FFF4D6,stroke:#E0A800,stroke-width:2px,color:#5C4400
+    classDef etapa fill:#E8F0FE,stroke:#3B6FD4,stroke-width:2px,color:#1B2A41
