@@ -51,7 +51,8 @@ def _informe_simulado(accion: str, nombre: str) -> None:
     shap = {"agg_signed": agg, "agg_abs": {k: abs(v) for k, v in agg.items()},
             "por_figura": [agg] * len(preds), "base_value": 0.0}
     exp = explicar_para_docente(
-        agregar_sesion("DEMO", 40, preds), nivel_desde_percentil(PERCENTIL_SIMULADO[accion], n_clases=2),
+        agregar_sesion("DEMO", 40, preds),
+        nivel_desde_percentil(PERCENTIL_SIMULADO[accion], n_clases=2),
         shap, figuras,
         {"umbral_relevancia_shap": .03, "max_fortalezas": 2, "max_dificultades": 3,
          "umbral_confianza_baja": .6},

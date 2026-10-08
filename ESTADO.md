@@ -60,12 +60,12 @@ Pendiente en este frente:
 
 ## Datos reales (2026-10-08)
 
-46 niños (NIN-01..46) fotografiados/escaneados: hojas -> `scripts/14_segmentar_hojas.py` ->
-`data/raw_reales/<niño>/F01..F15.jpg` (690 figuras). `scripts/15_preparar_reales.py` genera,
+46 niños (NIN-01..46) fotografiados/escaneados: hojas -> `grafomotor segmentar-hojas` ->
+`data/raw_reales/<niño>/F01..F15.jpg` (690 figuras). `grafomotor preparar-reales` genera,
 sin necesitar calificaciones, `data/real/interim` (modelo A), `data/real/interim_dl` (modelo B,
 224x224) y `data/real/processed/features.parquet`. Se usa `config/config_real.yaml` (rutas
 reales; si cambias parámetros en config.yaml, cópialos allí). Con las calificaciones llenas en
-`data/hojas_reales/calificacion_46_ninos.xlsx`, `scripts/16_cargar_calificaciones.py` produce
+`data/hojas_reales/calificacion_46_ninos.xlsx`, `grafomotor cargar-calificaciones` produce
 `data/real/labels/etiquetas.csv` y se entrena con `grafomotor --config config/config_real.yaml ...`.
 Pendiente: repetir fotos de NIN-06 (hoja 1), NIN-10 (hoja 2) y NIN-11 (hojas 2 y 3).
 

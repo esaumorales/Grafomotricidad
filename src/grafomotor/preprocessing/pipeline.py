@@ -77,7 +77,8 @@ def binarizar(gris: np.ndarray, metodo: str = "adaptativo") -> np.ndarray:
     return b
 
 
-def aislar_figura(binaria: np.ndarray, min_area: int = 400, fraccion_min: float = 0.05) -> np.ndarray:
+def aislar_figura(binaria: np.ndarray, min_area: int = 400,
+                  fraccion_min: float = 0.05) -> np.ndarray:
     """Se queda con el trazo del niño: la componente mayor y toda otra componente que
     pese al menos `fraccion_min` de ella (figuras de varias partes, como las dos líneas de
     F02). Descarta motas y restos de la cuadrícula."""

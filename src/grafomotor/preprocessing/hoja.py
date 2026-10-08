@@ -86,14 +86,15 @@ def localizar_cuadricula(gris: np.ndarray, p: ParamsHoja) -> np.ndarray | None:
     alto, ancho = chica.shape
     mejor, mejor_area = None, 0
     for i in range(1, n):
-        x, y, w, h, area = st[i]
+        w, h, area = st[i, cv2.CC_STAT_WIDTH], st[i, cv2.CC_STAT_HEIGHT], st[i, cv2.CC_STAT_AREA]
         if w * h < 0.15 * alto * ancho:
             continue
         # la cuadrícula es una línea fina: ocupa poco de su caja (descarta bordes de mesa/hoja)
         relleno = area / float(w * h)
         if relleno > 0.25:
             continue
-        if w > 0.97 * ancho and h > 0.97 * alto:      # marco de la foto o sombra del borde, no la tabla
+        # marco de la foto o sombra del borde, no la tabla
+        if w > 0.97 * ancho and h > 0.97 * alto:
             continue
         if w * h > mejor_area:
             mejor, mejor_area = i, w * h
@@ -132,13 +133,14 @@ def _lineas(gris: np.ndarray, p: ParamsHoja, horizontal: bool,
     m = cv2.morphologyEx(b, cv2.MORPH_OPEN, k)
     proy = m.sum(axis=1 if horizontal else 0).astype(float)
     n = h if horizontal else w
-    uniforme = [int(round(i * (n - 1) / n_esperadas)) for i in range(n_esperadas + 1)]
+    uniforme = [round(i * (n - 1) / n_esperadas) for i in range(n_esperadas + 1)]
     if proy.max() <= 0:
         return uniforme, 0
     proy = np.convolve(proy, np.ones(5) / 5, mode="same")
     ventana = max(3, int(n * p.ventana_linea))
     elegidas, halladas = [], 0
-    for k, objetivo in enumerate(uniforme):       # el pico más fuerte cerca de cada posición esperada
+    # el pico más fuerte cerca de cada posición esperada
+    for k, objetivo in enumerate(uniforme):
         lo, hi = max(0, objetivo - ventana), min(n, objetivo + ventana + 1)
         if not horizontal and k == 1:             # línea entre modelo y copia: no está en el centro
             lo, hi = int(p.rango_linea_media[0] * n), int(p.rango_linea_media[1] * n)
@@ -251,7 +253,8 @@ def decidir_orientacion(vertical: np.ndarray, plantillas: dict[str, np.ndarray],
         hm = [huella(_tinta(c), p.lado_huella_px) for c in modelos]
         for pag in ((pagina,) if pagina else (1, 2, 3)):
             fig = [ids[(pag - 1) * N_FILAS + i] for i in range(N_FILAS)]
-            puntajes[(giro, pag)] = float(np.mean([_dice(hm[i], hp[fig[i]]) for i in range(N_FILAS)]))
+            dados = [_dice(hm[i], hp[fig[i]]) for i in range(N_FILAS)]
+            puntajes[(giro, pag)] = float(np.mean(dados))
     orden = sorted(puntajes.items(), key=lambda kv: -kv[1])
     (giro, pag), mejor = orden[0]
     return giro, pag, mejor, mejor - orden[1][1], puntajes
@@ -271,7 +274,8 @@ def segmentar_hoja(gris: np.ndarray, plantillas: dict[str, np.ndarray],
     xs, _ = _lineas(vertical, p, False, N_COLS)
 
     # la página sale del orden de las fotos (1.ª, 2.ª, 3.ª hoja); las plantillas solo deciden 0/180
-    giro, pag, punt, margen, _ = decidir_orientacion(vertical, plantillas, p, ys, xs, pagina_esperada)
+    giro, pag, punt, margen, _ = decidir_orientacion(
+        vertical, plantillas, p, ys, xs, pagina_esperada)
     giro_trazo, dif = orientacion_por_trazo(vertical, ys, xs, p)
     if giro_trazo != giro and margen > 0.1:
         avisos.append("la orientación por trazo y por plantilla no coinciden")
@@ -293,7 +297,8 @@ def segmentar_hoja(gris: np.ndarray, plantillas: dict[str, np.ndarray],
     toca = []
     for c in copias:
         b = _tinta(c)
-        franja = np.concatenate([b[:3].ravel(), b[-3:].ravel(), b[:, :3].ravel(), b[:, -3:].ravel()])
+        franja = np.concatenate([b[:3].ravel(), b[-3:].ravel(),
+                                 b[:, :3].ravel(), b[:, -3:].ravel()])
         toca.append(bool((franja > 0).mean() > 0.02))
     return HojaSegmentada(vertical, ys, xs, modelos, copias, pag, punt, margen, avisos, toca)
 

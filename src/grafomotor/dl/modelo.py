@@ -1,8 +1,8 @@
 """
 Red común + 15 cabezas (una por figura), al estilo de Langer et al. (2024).
 
-La columna vertebral (ResNet-18, DenseNet-121, MobileNetV2 o EfficientNet-B0, preentrenadas en ImageNet vía
-`timm`) extrae un vector por imagen. Cada figura tiene su propia cabeza lineal
+La columna vertebral (ResNet-18, DenseNet-121, MobileNetV2 o EfficientNet-B0, preentrenadas
+en ImageNet vía `timm`) extrae un vector por imagen. Cada figura tiene su propia cabeza lineal
 (logit de "figura correcta"); se implementan como una sola capa Linear de 15
 salidas de la que se toma la columna de la figura: es equivalente a 15 cabezas
 independientes (cada columna tiene sus propios pesos y solo recibe gradiente de

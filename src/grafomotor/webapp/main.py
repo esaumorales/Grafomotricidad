@@ -4,7 +4,7 @@ API FastAPI para el Dashboard Docente.
   GET   /api/salud                              -> estado del servicio
   POST  /api/evaluar                             -> evalúa una sesión (fotos -> informe), la guarda
   GET   /api/sesiones                            -> historial (resumen)
-  GET   /api/ninos/{child_id}/sesiones           -> evaluaciones de un niño en el tiempo (seguimiento)
+  GET   /api/ninos/{child_id}/sesiones           -> evaluaciones de un niño en el tiempo
   GET   /api/sesiones/{id}                       -> informe completo de una sesión guardada
   PATCH /api/sesiones/{id}/figuras/{figura_id}   -> corrección manual del docente
   GET   /api/imagenes/{child_id}/{figura_id}     -> foto subida por el docente (para comparar)

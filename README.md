@@ -1,5 +1,18 @@
 # Evaluación grafomotora infantil: aprendizaje automático vs. aprendizaje profundo explicables
 
+> 🆕 **¿Eres nuevo aquí?** Empieza por la [**guía para principiantes**](docs/GUIA_PRINCIPIANTE.md):
+> explica todo el flujo con palabras sencillas y dibujos.
+
+```mermaid
+flowchart LR
+    A["📝 Hoja en papel"] --> B["📷 Foto o PDF"] --> C["✂️ Una imagen<br/>por figura"]
+    C --> D["🅰️ Indicadores<br/>+ XGBoost"]
+    C --> E["🅱️ Red neuronal<br/>+ Grad-CAM"]
+    D --> F["🔢 Puntaje"]
+    E --> F
+    F --> G["📊 Nivel según<br/>la edad"] --> H["🗒️ Informe<br/>para la docente"]
+```
+
 Calificación automática, figura por figura, de la escala de **Visopercepción del CUMANIN
 original** (Portellano Pérez et al., 2002; 15 figuras, cada una 0/1) a partir de la
 **foto** de la hoja de niños peruanos de **3 a 5 años**. Se **comparan dos enfoques** con
@@ -8,7 +21,7 @@ los mismos datos:
 | | Modelo A — ML clásico | Modelo B — DL |
 |---|---|---|
 | Entrada | foto → pipeline de visión clásica (perspectiva, iluminación, binarizado, aislar trazo, registro a plantilla) | foto → preprocesamiento **mínimo** (perspectiva + recorte 224×224) |
-| Modelo | **6 indicadores geométricos** + **XGBoost** | **ResNet-18** preentrenada (EfficientNet-B0 como alternativa), red común + 15 cabezas |
+| Modelo | **6 indicadores geométricos** + **XGBoost** | redes preentrenadas **ResNet-18, DenseNet-121, MobileNetV2 y EfficientNet-B0**, red común + 15 cabezas |
 | Explicación | **SHAP**: *qué* criterio falló | **Grad-CAM**: *dónde* miró la red |
 | Código | `preprocessing/`, `features/`, `model/`, `explain/` | `dl/` |
 
@@ -16,9 +29,10 @@ Las dos rutas se evalúan con las **mismas particiones por niño**, las mismas e
 evaluador experto y las mismas métricas (`evaluation/`). La app web (FastAPI + React) es
 un agregado: usa el modelo A y entrega al docente un informe en lenguaje natural.
 
-Documentación: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) ·
+Documentación: [`docs/GUIA_PRINCIPIANTE.md`](docs/GUIA_PRINCIPIANTE.md) ·
+[`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) ·
 [`docs/EXPLICABILIDAD.md`](docs/EXPLICABILIDAD.md) · [`docs/DATOS.md`](docs/DATOS.md) ·
-[`ESTADO.md`](ESTADO.md)
+[`docs/BUENAS_PRACTICAS.md`](docs/BUENAS_PRACTICAS.md) · [`ESTADO.md`](ESTADO.md)
 
 ---
 
@@ -59,9 +73,10 @@ sus cortes, la acción de cada uno y la **fuente** se declaran en
 identificación y app web. Se pueden definir por **percentil** (el dato que publica la
 Tabla B.9, recomendado) o por T.
 
-**Provisional:** base T con cortes 40/30 (T ≥ 41 Adecuado · ≤ 40 En riesgo · ≤ 30 derivar),
-citados de pág. 98-99 sin verificar para esta edición. **Sustituir por los cortes oficiales
-en percentil y su fuente** (plantilla en el propio config.yaml).
+**Provisional:** base percentil con cortes 16 y 2 (Pc > 16 Adecuado · ≤ 16 En riesgo, reforzar ·
+≤ 2 En riesgo, derivar), la convención de psicometría (~ −1 DE y −2 DE). Los cortes T 40/30
+de pág. 98-99 no están verificados y no se usan. **Sustituir por los cortes oficiales y su
+fuente** si se verifican (en `config.yaml > scoring > niveles`).
 
 ## Puesta en marcha
 
@@ -91,6 +106,17 @@ grafomotor todo --sinteticos --dl       # ... + modelo B + comparación + robust
 ```
 
 ### Con datos reales, paso a paso
+
+Antes de todo, las hojas se recortan y se preparan (pasos **R1-R3**, siempre con
+`--config config/config_real.yaml`, que apunta a `data/real/` y no mezcla datos sintéticos):
+
+| Paso | Comando | Qué hace |
+|---|---|---|
+| R1 | `grafomotor segmentar-hojas` | recorta cada hoja (5 figuras) en una imagen por figura → `data/raw_reales/` |
+| R2 | `grafomotor --config config/config_real.yaml preparar-reales` | `interim/`, `interim_dl/` e indicadores, **sin necesitar calificaciones** |
+| R3 | `grafomotor --config config/config_real.yaml cargar-calificaciones` | Excel de calificación (0/1) → `etiquetas.csv` validado |
+
+Después, la cadena de modelos:
 
 | Paso | Comando | Qué hace |
 |---|---|---|

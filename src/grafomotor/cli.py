@@ -43,6 +43,9 @@ COMANDOS: dict[str, tuple[str, str]] = {
     "acuerdo-evaluadores": ("acuerdo_evaluadores", "16"),
     "identificar": ("identificar", "17"),
     "curva-aprendizaje": ("curva_aprendizaje", "18"),
+    "segmentar-hojas": ("segmentar_hojas", "R1"),
+    "preparar-reales": ("preparar_reales", "R2"),
+    "cargar-calificaciones": ("cargar_calificaciones", "R3"),
     "todo": ("todo", "-"),
 }
 
