@@ -6,10 +6,15 @@ que la validada. Se rellena `CASOS_FIJOS` tras entrenar (script 03) con unos poc
 vectores de indicadores y su predicción esperada. Si algún día una versión de
 librería cambia el resultado, este test lo detecta.
 """
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from grafomotor.features.extract import ORDEN
+
+# el modelo entrenado no se versiona (models/ está en .gitignore): sin él, el test se omite
+MODELO = Path(__file__).resolve().parents[1] / "models" / "actual" / "modelo_xgb.joblib"
 
 # (vector en el orden de ORDEN)  ->  puntaje esperado (0/1)
 # Generado con el modelo entrenado sobre datos SINTÉTICOS (scripts/03_entrenar.py).
@@ -29,6 +34,7 @@ CASOS_FIJOS: list[tuple[list[float], int]] = [
 
 
 @pytest.mark.skipif(not CASOS_FIJOS, reason="rellenar CASOS_FIJOS tras entrenar el modelo")
+@pytest.mark.skipif(not MODELO.exists(), reason="no hay modelo entrenado en models/actual")
 def test_inferencia_estable():
     from grafomotor.config import load_config
     from grafomotor.model.registry import cargar_modelo
