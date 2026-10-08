@@ -45,6 +45,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Hojas reales de los niños (datos de menores: nunca al repositorio)
+# Hojas reales de los niÃ±os (datos de menores: nunca al repositorio)
 data/hojas_reales/
 data/raw_reales/
+data/real/

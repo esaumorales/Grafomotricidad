@@ -1,0 +1,164 @@
+# Copia de config.yaml con las rutas de los DATOS REALES. Si cambias parámetros en config.yaml, cópialos aquí.
+
+# Configuración del proyecto. Rutas relativas a la raíz del repo.
+
+rutas:
+  # DATOS REALES (fotos de las hojas de los niños). Todo bajo data/real/ y models/real/,
+  # separado de los datos sintéticos. Usar con:  grafomotor --config config/config_real.yaml <paso>
+  raw: data/raw_reales               # raw_reales/<niño>/F01.jpg ... F15.jpg (salida de 14_segmentar_hojas.py)
+  interim: data/real/interim
+  processed: data/real/processed
+  templates: data/templates          # figuras de referencia del CUMANIN original (una por figura_id)
+  labels: data/real/labels/etiquetas.csv
+  baremos: config/baremos.csv
+  interim_dl: data/real/interim_dl
+  doble_calificacion: data/real/labels/doble_calificacion.csv
+  fotos_aula: data/real/labels/fotos_aula.csv
+  models: models/real
+  db: data/real/app.db
+
+preprocesamiento:
+  lado_normalizado_px: 512           # cada figura se reescala a este lienzo cuadrado
+  umbral_binarizado: adaptativo      # adaptativo | otsu
+  registro: traslacion               # traslacion (no gira el dibujo) | similaridad | afin
+  min_area_figura_px: 400
+  suavizado_registro_px: 31          # desenfoque de ambas imágenes antes del ECC (solo ayuda a converger)
+  fraccion_min_trazo: 0.05           # se conserva toda componente de >=5 % de la mayor (figuras de varias partes)
+
+figuras:
+  # id -> nº de vértices esperado y nº de puntos de intersección esperados.
+  # Orden y nombres = escala de Visopercepción del CUMANIN original (Apéndice C, criterios
+  # de corrección; las 15 figuras son prácticamente iguales en ambas ediciones). Los valores
+  # vertices_esperados / intersecciones_esperadas se calculan empíricamente sobre la
+  # propia plantilla vectorial (scripts/gen_plantillas.py) con el mismo algoritmo de
+  # src/grafomotor/features/indicadores.py, para que sean consistentes con lo que el
+  # pipeline mide en inferencia. Pendiente de recalibrar cuando se sustituyan las
+  # plantillas por la digitalización oficial del manual (ver ESTADO.md).
+  # Medidos corriendo _contorno_mayor+approxPolyDP y _puntos_cruce (las mismas funciones
+  # de indicadores.py) sobre cada plantilla vs. sí misma, para que "copia perfecta -> error 0".
+  F01: { nombre: "línea recta",                vertices_esperados: 2,  intersecciones_esperadas: 0 }
+  F02: { nombre: "dos líneas horizontales",    vertices_esperados: 2,  intersecciones_esperadas: 0 }
+  F03: { nombre: "cruz",                        vertices_esperados: 8,  intersecciones_esperadas: 5 }
+  F04: { nombre: "círculo",                     vertices_esperados: 8,  intersecciones_esperadas: 0 }
+  F05: { nombre: "cuadrado",                    vertices_esperados: 4,  intersecciones_esperadas: 0 }
+  F06: { nombre: "triángulo",                   vertices_esperados: 3,  intersecciones_esperadas: 4 }
+  F07: { nombre: "x (aspa)",                    vertices_esperados: 8,  intersecciones_esperadas: 6 }
+  F08: { nombre: "línea ondulada",              vertices_esperados: 6,  intersecciones_esperadas: 0 }
+  F09: { nombre: "rectángulo con x interna",    vertices_esperados: 4,  intersecciones_esperadas: 18 }
+  F10: { nombre: "rombo",                       vertices_esperados: 4,  intersecciones_esperadas: 0 }
+  F11: { nombre: "círculo + triángulo",         vertices_esperados: 8,  intersecciones_esperadas: 7 }
+  F12: { nombre: "u",                           vertices_esperados: 9,  intersecciones_esperadas: 6 }
+  F13: { nombre: "lazo",                        vertices_esperados: 8,  intersecciones_esperadas: 4 }
+  F14: { nombre: "doble pico ondulado",         vertices_esperados: 9,  intersecciones_esperadas: 10 }
+  F15: { nombre: "cuadrado + círculo",          vertices_esperados: 8,  intersecciones_esperadas: 12 }
+  # ADVERTENCIA (hallazgo al calibrar): _puntos_cruce (indicadores.py) cuenta puntos de
+  # ramificación del esqueleto, no cruces geométricos reales -> en figuras con varias
+  # líneas gruesas que se tocan (F03, F06, F07, F09, F11, F12, F15) genera cifras
+  # infladas por artefactos de grosor de trazo (p.ej. F09 da 18 en vez de 1 cruce real).
+  # El indicador "intersecciones" queda auto-consistente (plantilla vs. sí misma = 0
+  # error) pero es sensible a temblor de trazo en estas figuras; revisar el algoritmo
+  # de _puntos_cruce antes de confiar en él para figuras con >1 intersección real.
+
+indicadores:
+  usar: [precision_modelo, vertices, error_angular, cierre, intersecciones, proporcion]
+  opcionales: [rectitud, correcciones]
+
+augmentacion:
+  activar: true
+  por_figura_min_muestras: 40        # aumenta solo figuras/clases con menos de esto
+  transformaciones: [elastica_leve, grosor_trazo, brillo_contraste]
+  # PROHIBIDO: rotaciones amplias, volteos (cambian los criterios de puntuación)
+
+modelo:                              # MODELO A: indicadores + XGBoost + SHAP
+  algoritmo: xgboost
+  objetivo: binary:logistic          # puntaje por figura 0/1
+  cv:
+    tipo: grupo_por_nino             # GroupKFold sobre child_id
+    folds: 5                         # CV interna del Grid Search
+    anidada: true                    # evaluación anidada: hiperparámetros elegidos dentro de cada fold
+  grid_search:
+    max_depth: [2, 3, 4]
+    learning_rate: [0.03, 0.05, 0.1]
+    n_estimators: [200, 400, 800]
+    subsample: [0.8, 1.0]
+    reg_lambda: [1.0, 3.0]
+  metrica_busqueda: f1_macro         # métrica que optimiza el Grid Search
+  class_weight: balanced             # desbalance por figura (efecto suelo a los 3 años)
+
+scoring:
+  # NIVELES DEL NIÑO: de la PD y la edad -> percentil (Tabla B.9) -> nivel.
+  # Los cortes van del PEOR nivel al MEJOR; el niño cae en el primero cuyo `maximo`
+  # alcance. Varios cortes pueden compartir nombre con distinta acción.
+  # acciones: ninguna | reforzar_y_revaluar | derivar  (todo lo que no sea "ninguna"
+  # cuenta como "en riesgo" para la identificación).
+  #
+  # Base PERCENTIL (Tabla B.9, pág. 83: dato verificado contra el libro físico). Los cortes
+  # T 40/30 (manual, pág. 98-99) NO están verificados y se dejaron de usar. Los cortes
+  # 16 y 2 son la convención estándar en psicometría (~ -1 DE / -2 DE); SUSTITUIR por los
+  # oficiales del CUMANIN, con su fuente, si se verifica la pág. 98-99.
+  # Para tres niveles (Adecuado / Bajo / Muy bajo), cambia los dos nombres "En riesgo".
+  niveles:
+    base: percentil
+    fuente: "PROVISIONAL: convención psicométrica ~ -1 DE (Pc 16) y ~ -2 DE (Pc 2); sin verificar pág. 98-99 del manual"
+    cortes:
+      - {nombre: "En riesgo", maximo: 2,   accion: derivar}
+      - {nombre: "En riesgo", maximo: 16,  accion: reforzar_y_revaluar}
+      - {nombre: "Adecuado",  maximo: 100, accion: ninguna}
+  version_baremo: "CUMANIN original, Tabla B.9 pág.83 — transcrita de foto del libro físico 2026-09-15"
+
+  # PD: en la aplicación grupal no se aplica la regla de parada. Se guardan las 15
+  # puntuaciones y se reportan dos PD: completa y "del manual" (parar tras 4 fallos
+  # seguidos, aplicado a posteriori). Cuál es la oficial: pendiente con el asesor.
+  n_fallos_parada: 4
+
+dl:                                  # MODELO B: ResNet-18 + Grad-CAM
+  arquitectura: resnet18             # resnet18 | densenet121 | mobilenetv2 | efficientnet_b0 (las 4 del Word)
+  tta: false                         # TTA (-2°, 0°, +2°): NO por defecto; ayuda a unas redes y empeora otras.
+                                     # Decidir con la validación interna, nunca mirando el fold de prueba.
+  aumento: moderado                  # moderado | robusto (más sombra, desenfoque y luz; ver dl/aumentos.py)
+  semilla: 20260930
+  lado_px: 224
+  lote: 64
+  epocas_fase1: 8                    # red congelada, solo las 15 cabezas
+  epocas_fase2: 15                   # se descongelan las últimas capas
+  lr_fase1: 0.001
+  lr_fase2_red: 0.0001               # tasa baja para el ajuste fino
+  lr_fase2_cabezas: 0.0003
+  peso_decaimiento: 0.0001
+  paciencia: 5                       # parada temprana (validación interna por niño)
+  fraccion_validacion: 0.15
+  # aumento de datos: brillo, contraste, sombra, desenfoque leve, perspectiva leve,
+  # rotación ±7°. PROHIBIDO: volteos y rotaciones grandes (ver dl/aumentos.py).
+
+comparacion:                         # reglas comunes A vs B
+  folds: 5                           # StratifiedGroupKFold por niño -> data/processed/particiones.csv
+  agrupar_por: nino                  # nino (validación interna) | colegio (validación EXTERNA:
+                                     # un fold por colegio; requiere la columna `colegio`)
+  n_boot: 2000                       # bootstrap por niño (IC 95 % de la diferencia de kappa y CCI)
+  robustez:
+    degradaciones: [sombra, desenfoque, inclinacion, brillo]
+    niveles: [leve, moderada, fuerte]
+    muestra_ninos: 40                # niños (de todos los folds) evaluados con degradaciones; 0 = todos
+
+datos:                               # ¿alcanzan los datos? (grafomotor validar)
+  # mínimos ORIENTATIVOS de ejemplos de la clase minoritaria por figura
+  min_minoritaria_ml: 30             # modelo A (6 indicadores + XGBoost)
+  min_minoritaria_dl: 100            # modelo B (red profunda)
+
+identificacion:                      # tamizaje por niño (grafomotor identificar)
+  # zona gris: si umbral_bajo < P(riesgo) < umbral_alto, el niño va a revisión humana.
+  # Fijados DE ANTEMANO (no elegirlos mirando las cifras de prueba).
+  umbral_bajo: 0.2
+  umbral_alto: 0.8
+
+explicacion:
+  publico: docente                   # docente | especialista
+  idioma: es-PE
+  max_fortalezas: 2
+  max_dificultades: 3
+  umbral_relevancia_shap: 0.03       # |shap agregado| mínimo para mencionar un indicador
+  umbral_confianza_baja: 0.60        # prob media por debajo -> avisar "revisar fotos"
+  incluir_panel_tecnico: true        # tablas/cifras/SHAP -> solo en sección aparte
+  pulido_llm:
+    activar: false                   # por defecto plantillas deterministas (reproducible)
+    modelo: ""
