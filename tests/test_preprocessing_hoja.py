@@ -34,3 +34,15 @@ def test_calidad_penaliza_desenfoque():
     nitida = calidad_imagen(g)
     borrosa = calidad_imagen(cv2.GaussianBlur(g, (0, 0), 6))
     assert nitida > borrosa
+
+
+def test_resumen_de_segmentacion_con_solo_conserva_los_demas(tmp_path):
+    from grafomotor.comandos.segmentar_hojas import _guardar_resumen
+
+    ruta = tmp_path / "resumen.csv"
+    fila = ["", "", "0.5", "0.5", "0", "", ""]
+    _guardar_resumen(ruta, [["NIN-01", 1, *fila], ["NIN-02", 1, *fila]], None)
+    _guardar_resumen(ruta, [["NIN-02", 1, "1", "0.9", "0.9", "0", "aviso", ""]], "NIN-02")
+    lineas = ruta.read_text(encoding="utf-8").splitlines()
+    assert len(lineas) == 3                       # cabecera + NIN-01 + NIN-02 (reemplazada)
+    assert lineas[1].startswith("NIN-01") and "aviso" in lineas[2]

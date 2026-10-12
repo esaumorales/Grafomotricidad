@@ -47,6 +47,25 @@ def _evidencia(h: HojaSegmentada, ruta: Path) -> None:
                 [cv2.IMWRITE_JPEG_QUALITY, 85])
 
 
+COLUMNAS_RESUMEN = ["nino", "pagina_archivo", "pagina_detectada", "puntaje", "margen",
+                    "figuras_que_salen_de_la_celda", "avisos", "error"]
+
+
+def _guardar_resumen(ruta: Path, filas: list[list], solo: str | None) -> None:
+    """Escribe el resumen. Con --solo solo se reemplazan las filas de ese niño: el resto del
+    resumen (los demás niños) se conserva."""
+    previas = []
+    if solo and ruta.exists():
+        with open(ruta, newline="", encoding="utf-8") as fh:
+            previas = [f for f in list(csv.reader(fh))[1:] if f and f[0] != solo]
+    todas = sorted(previas + [[str(c) for c in f] for f in filas],
+                   key=lambda f: (f[0], int(f[1])))
+    with open(ruta, "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(COLUMNAS_RESUMEN)
+        w.writerows(todas)
+
+
 def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     origen, salida, evid = (REPO_ROOT / args.origen, REPO_ROOT / args.salida,
                             REPO_ROOT / args.evidencia)
@@ -78,11 +97,7 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
         if h.avisos:
             log.warning("%s: %s", foto.stem, "; ".join(h.avisos))
 
-    with open(evid / "resumen_segmentacion.csv", "w", newline="", encoding="utf-8") as fh:
-        w = csv.writer(fh)
-        w.writerow(["nino", "pagina_archivo", "pagina_detectada", "puntaje", "margen",
-                    "figuras_que_salen_de_la_celda", "avisos", "error"])
-        w.writerows(filas)
+    _guardar_resumen(evid / "resumen_segmentacion.csv", filas, args.solo)
     con_aviso = sum(1 for f in filas if f[6] or f[7])
     log.info("%d hojas segmentadas · %d con aviso -> %s", len(filas), con_aviso, salida)
     return 0
