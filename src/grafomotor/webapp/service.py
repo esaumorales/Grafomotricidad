@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 
 from grafomotor import ORDEN
+from grafomotor.model.columnas import fila
 from grafomotor.artefactos import Artefactos
 from grafomotor.config import load_config
 from grafomotor.explain import construir_informe, explicar_para_docente, shap_por_sesion
@@ -31,6 +32,8 @@ class Servicio:
     def __init__(self, config_path: str | None = None):
         self.cfg = load_config(config_path)
         self.modelo, self.manifiesto = cargar_modelo(Artefactos.de_config(self.cfg).dir_modelo_ml)
+        # columnas con que se entrenó el modelo cargado (los modelos antiguos solo tienen las 6)
+        self.nombres = list(self.manifiesto.get("feature_names") or ORDEN)
         self.baremo = cargar_baremo(self.cfg.ruta("baremos"))
         self.plantillas = cargar_plantillas(self.cfg, estricto=False)
         self.figuras_meta = self.cfg.figuras
@@ -84,13 +87,13 @@ class Servicio:
             vec = extraer_indicadores(
                 pre.figura_bin, self.plantillas[fid], fid, self.figuras_meta.get(fid, {})
             )
-            preds.append(predecir_figura(self.modelo, vec.valores, fid))
-            X.append([vec.valores[k] for k in ORDEN])
+            preds.append(predecir_figura(self.modelo, vec.valores, fid, vec.raw, self.nombres))
+            X.append(fila(vec.valores, vec.raw, fid, self.nombres))
 
         sesion = agregar_sesion(child_id, edad_meses, preds)
         tPc, nivel = self._nivel(sesion.PD, edad_meses)
 
-        shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), list(ORDEN))
+        shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), self.nombres)
         nombres_fig = {fid: m.get("nombre", fid) for fid, m in self.figuras_meta.items()}
 
         exp = explicar_para_docente(

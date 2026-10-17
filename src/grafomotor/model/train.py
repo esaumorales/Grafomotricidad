@@ -5,12 +5,17 @@ Entrenamiento del modelo XGBoost que puntúa cada figura (0/1).
 - Grid Search sobre la malla de config.yaml.
 - Evaluación con validación ANIDADA: los hiperparámetros se eligen sin ver el fold de prueba.
 - Pesos de clase para el desbalance por figura (efecto suelo a los 3 años).
+- Punto de corte calibrado (`modelo.umbral`): con pesos balanceados el modelo queda demasiado
+  estricto y la PD sale sistemáticamente baja (sesgo). El corte se elige SOLO con los niños de
+  entrenamiento y se guarda dentro del modelo (`ModeloConUmbral`), así todo el código que
+  compara la probabilidad con 0.5 sigue igual.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
 import numpy as np
+from scipy.special import expit, logit
 from sklearn.metrics import f1_score
 from sklearn.model_selection import GridSearchCV, GroupKFold
 from xgboost import XGBClassifier
@@ -18,9 +23,38 @@ from xgboost import XGBClassifier
 from grafomotor.model.dataset import Datos
 
 
+class ModeloConUmbral:
+    """XGBoost con el punto de corte movido: prob' = sigmoide(logit(prob) + desplazamiento).
+
+    prob' >= 0.5 equivale a prob >= umbral, con umbral = sigmoide(-desplazamiento). Mover el
+    log-odds en una constante no cambia el orden de las figuras (misma AUC), solo dónde se
+    corta. Para SHAP se usa `base` (el desplazamiento solo cambia el valor base).
+    """
+
+    def __init__(self, base: XGBClassifier, desplazamiento: float = 0.0, modo: str = "fijo"):
+        self.base, self.desplazamiento, self.modo = base, float(desplazamiento), modo
+
+    @property
+    def umbral(self) -> float:
+        return float(expit(-self.desplazamiento))
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        p = self.base.predict_proba(X)
+        if self.desplazamiento == 0.0:
+            return p
+        p1 = expit(logit(np.clip(p[:, 1], 1e-6, 1 - 1e-6)) + self.desplazamiento)
+        return np.column_stack([1 - p1, p1])
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return (self.predict_proba(X)[:, 1] >= 0.5).astype(int)
+
+    def get_params(self, deep: bool = True) -> dict:
+        return self.base.get_params(deep)
+
+
 @dataclass
 class ResultadoEntrenamiento:
-    modelo: XGBClassifier
+    modelo: ModeloConUmbral
     mejores_params: dict
     cv_f1_macro: float
     cv_f1_por_fold: list[float] = field(default_factory=list)
@@ -53,6 +87,51 @@ def _malla(cfg: dict) -> dict[str, list]:
     }
 
 
+def _ajustar(X: np.ndarray, y: np.ndarray, params: dict, balanceado: bool) -> XGBClassifier:
+    m = XGBClassifier(**params)
+    m.fit(X, y, sample_weight=pesos_balanceados(y) if balanceado else None)
+    return m
+
+
+def _modo_umbral(cfg: dict) -> str:
+    return (cfg.get("umbral") or {}).get("modo", "fijo")
+
+
+def desplazamiento_umbral(X: np.ndarray, y: np.ndarray, grupos: np.ndarray, params: dict,
+                          cfg: dict) -> float:
+    """Desplazamiento del log-odds según `modelo.umbral.modo` (solo con estos datos de entrenamiento).
+
+    - fijo: corte en 0.5 (comportamiento anterior).
+    - prevalencia: CV interna agrupada por niño; el corte hace que el modelo marque "correcta"
+      tantas figuras como el evaluador (la PD deja de salir baja en promedio).
+    - correccion_pesos: deshace en forma analítica el efecto de los pesos balanceados
+      (log-odds + log(p/(1-p)), con p = proporción de figuras correctas).
+    """
+    modo = _modo_umbral(cfg)
+    p = float(np.mean(y))
+    if modo == "fijo" or p in (0.0, 1.0):
+        return 0.0
+    balanceado = cfg.get("class_weight") == "balanced"
+    if modo == "correccion_pesos":
+        return float(np.log(p / (1 - p))) if balanceado else 0.0
+    if modo != "prevalencia":
+        raise ValueError(f"modelo.umbral.modo desconocido: {modo!r}")
+    folds = min(int(cfg.get("cv", {}).get("folds", 5)), len(set(grupos)))
+    oof = np.empty(len(y))
+    for tr, te in GroupKFold(n_splits=folds).split(X, y, groups=grupos):
+        oof[te] = _ajustar(X[tr], y[tr], params, balanceado).predict_proba(X[te])[:, 1]
+    corte = float(np.clip(np.quantile(oof, 1 - p), 0.01, 0.99))
+    return float(-logit(corte))
+
+
+def ajustar_con_umbral(X: np.ndarray, y: np.ndarray, grupos: np.ndarray, params: dict,
+                       cfg: dict) -> ModeloConUmbral:
+    """Ajusta XGBoost con `params` y le pone el punto de corte elegido con estos mismos niños."""
+    base = _ajustar(X, y, params, cfg.get("class_weight") == "balanced")
+    return ModeloConUmbral(base, desplazamiento_umbral(X, y, grupos, params, cfg),
+                           _modo_umbral(cfg))
+
+
 def buscar_hiperparametros(X: np.ndarray, y: np.ndarray, grupos: np.ndarray,
                            cfg: dict) -> GridSearchCV:
     """Grid Search con CV agrupada por niño sobre (X, y); devuelve la búsqueda reajustada."""
@@ -76,17 +155,18 @@ def entrenar(datos: Datos, cfg: dict) -> ResultadoEntrenamiento:
     del rendimiento es la validación anidada (`ajustar_anidado`, comando evaluar-ml).
     """
     busqueda = buscar_hiperparametros(datos.X, datos.y, datos.grupos, cfg)
-    balanceado = cfg.get("class_weight") == "balanced"
+    params = {**_base(cfg).get_params(), **busqueda.best_params_}
     f1s = []
     folds = int(cfg.get("cv", {}).get("folds", 5))
     for tr, te in GroupKFold(n_splits=folds).split(datos.X, datos.y, groups=datos.grupos):
-        m = XGBClassifier(**{**_base(cfg).get_params(), **busqueda.best_params_})
-        m.fit(datos.X[tr], datos.y[tr],
-              sample_weight=pesos_balanceados(datos.y[tr]) if balanceado else None)
+        m = ajustar_con_umbral(datos.X[tr], datos.y[tr], datos.grupos[tr], params, cfg)
         f1s.append(f1_score(datos.y[te], m.predict(datos.X[te]), average="macro"))
 
+    modelo = ModeloConUmbral(
+        busqueda.best_estimator_,
+        desplazamiento_umbral(datos.X, datos.y, datos.grupos, params, cfg), _modo_umbral(cfg))
     return ResultadoEntrenamiento(
-        modelo=busqueda.best_estimator_,
+        modelo=modelo,
         mejores_params=busqueda.best_params_,
         cv_f1_macro=float(np.mean(f1s)),
         cv_f1_por_fold=[round(x, 3) for x in f1s],
@@ -95,23 +175,30 @@ def entrenar(datos: Datos, cfg: dict) -> ResultadoEntrenamiento:
 
 
 def ajustar_anidado(datos: Datos, fold: np.ndarray, cfg: dict
-                    ) -> tuple[dict[int, XGBClassifier], dict[int, dict]]:
+                    ) -> tuple[dict[int, ModeloConUmbral], dict[int, dict]]:
     """Validación cruzada ANIDADA (Varma y Simon, 2006).
 
     Para cada fold externo k, el Grid Search usa SOLO los niños de los otros folds (CV
     interna agrupada por niño) y el mejor modelo predice el fold k, que nunca participó en
-    la elección de hiperparámetros. Devuelve un modelo y sus hiperparámetros por fold.
+    la elección de hiperparámetros. El punto de corte también se elige dentro (solo con los
+    niños de entrenamiento del fold). Devuelve un modelo y sus hiperparámetros por fold.
     """
     modelos, params = {}, {}
     for k in sorted(set(fold)):
         tr = fold != k
         busqueda = buscar_hiperparametros(datos.X[tr], datos.y[tr], datos.grupos[tr], cfg)
-        modelos[int(k)], params[int(k)] = busqueda.best_estimator_, busqueda.best_params_
+        completos = {**_base(cfg).get_params(), **busqueda.best_params_}
+        m = ModeloConUmbral(
+            busqueda.best_estimator_,
+            desplazamiento_umbral(datos.X[tr], datos.y[tr], datos.grupos[tr], completos, cfg),
+            _modo_umbral(cfg))
+        modelos[int(k)] = m
+        params[int(k)] = {**busqueda.best_params_, "umbral": round(m.umbral, 3)}
     return modelos, params
 
 
 def ajustar_por_fold(datos: Datos, fold: np.ndarray, params: dict,
-                     balanceado: bool) -> dict[int, XGBClassifier]:
+                     cfg: dict) -> dict[int, ModeloConUmbral]:
     """Un XGBoost por fold (entrenado sin los niños de ese fold) con los mismos parámetros.
 
     Lo usan la evaluación out-of-fold y la prueba de robustez: cada niño se predice con
@@ -120,8 +207,6 @@ def ajustar_por_fold(datos: Datos, fold: np.ndarray, params: dict,
     modelos = {}
     for k in sorted(set(fold)):
         tr = fold != k
-        m = XGBClassifier(**params)
-        m.fit(datos.X[tr], datos.y[tr],
-              sample_weight=pesos_balanceados(datos.y[tr]) if balanceado else None)
-        modelos[int(k)] = m
+        modelos[int(k)] = ajustar_con_umbral(datos.X[tr], datos.y[tr], datos.grupos[tr],
+                                             params, cfg)
     return modelos

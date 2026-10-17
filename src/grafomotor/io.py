@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from grafomotor.config import Config
 
 EDAD_MIN_MESES = 36   # 3;0
-EDAD_MAX_MESES = 71   # 5;11
+EDAD_MAX_MESES = 78   # 6;6 (fin del último tramo de la Tabla B.9; antes 71 = 5;11)
 UMBRAL_PLANTILLA = 127
 
 COLUMNAS_REQUERIDAS = [
@@ -48,8 +48,8 @@ def cargar_etiquetas(path: str | Path) -> pd.DataFrame:
     if not en_rango.all():
         fuera = df.loc[~en_rango, "child_id"].unique().tolist()
         raise ErrorEtiquetas(
-            f"edad_meses fuera del rango 3;0–5;11 (36–71) en: {fuera}. "
-            "El baremo del CUMANIN (Tabla B.9) llega más allá, pero el estudio se limita a 3–5."
+            f"edad_meses fuera del rango 3;0–6;6 (36–78) en: {fuera}. "
+            "Es el rango que cubre el baremo del CUMANIN (Tabla B.9)."
         )
 
     dup = df.duplicated(subset=["child_id", "figura_id"]).sum()

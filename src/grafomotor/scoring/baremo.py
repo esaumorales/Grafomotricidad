@@ -4,8 +4,8 @@ Baremo del CUMANIN (Visopercepción): PD -> Pc por tramo de edad.
 Tramos y tabla: Tabla B.9 "Escala de Visopercepción" del manual CUMANIN original
 (Portellano Pérez, Mateos Mateos y Martínez Arias), pág. 83. Esa tabla publica el
 percentil (Pc) directo por tramo de edad EN MESES — no publica una puntuación T
-para esta subescala. El estudio usa los tramos dentro de 3;0-5;11 (36-71 meses);
-el tramo 67-78 del manual llega hasta 6;6, pero solo 67-71 cae dentro del alcance.
+para esta subescala. El estudio usa todos los tramos, 3;0-6;6 (36-78 meses): se amplió
+desde 5;11 (71) el 15/10/2026 porque parte de la muestra real tiene 6 años.
 
 No se deriva una T a partir del percentil: la fórmula T = 50 + 10·Φ⁻¹(Pc/100)
 (asumiendo distribución normal) no es un dato publicado en el manual y se descartó
@@ -32,8 +32,8 @@ _TRAMOS = [
 
 def tramo_de_edad(edad_meses: int) -> str:
     """Devuelve la etiqueta de tramo (p.ej. '49_54') de la Tabla B.9 para una edad en meses."""
-    if not 36 <= edad_meses <= 71:
-        raise ValueError(f"edad_meses={edad_meses} fuera de 3;0–5;11 (36–71)")
+    if not 36 <= edad_meses <= 78:
+        raise ValueError(f"edad_meses={edad_meses} fuera de 3;0–6;6 (36–78)")
     for lo, hi, label in _TRAMOS:
         if lo <= edad_meses <= hi:
             return label

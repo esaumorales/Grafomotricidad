@@ -49,22 +49,20 @@ def submuestra_ninos(ninos: np.ndarray, fraccion: float, semilla: int) -> set:
 
 def _predictor_ml(cfg: Config, art: Artefactos, etiquetas: pd.DataFrame):
     """Devuelve (tabla con X, función entrenar-y-predecir) para el modelo A."""
-    from xgboost import XGBClassifier
-
-    from grafomotor import ORDEN
+    from grafomotor.model.columnas import nombres_columnas
+    from grafomotor.model.dataset import matriz
     from grafomotor.model.registry import cargar_modelo
-    from grafomotor.model.train import pesos_balanceados
+    from grafomotor.model.train import ajustar_con_umbral
 
     datos = etiquetas.merge(pd.read_parquet(art.features), on=["child_id", "figura_id"])
     params = cargar_modelo(art.dir_modelo_ml)[0].get_params()
-    balanceado = cfg.get("modelo", "class_weight") == "balanced"
+    nombres = nombres_columnas(cfg)
+    cfg_modelo = cfg.get("modelo", default={})
 
     def entrenar_predecir(tr: pd.DataFrame, te: pd.DataFrame) -> np.ndarray:
-        m = XGBClassifier(**params)
-        y = tr["puntaje"].to_numpy()
-        m.fit(tr[ORDEN].to_numpy(float), y,
-              sample_weight=pesos_balanceados(y) if balanceado else None)
-        return m.predict_proba(te[ORDEN].to_numpy(float))[:, 1]
+        m = ajustar_con_umbral(matriz(tr, nombres), tr["puntaje"].to_numpy(),
+                               tr["child_id"].to_numpy(), params, cfg_modelo)
+        return m.predict_proba(matriz(te, nombres))[:, 1]
 
     return datos, entrenar_predecir
 

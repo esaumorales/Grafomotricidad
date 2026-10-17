@@ -21,7 +21,7 @@ data/
 | columna | oblig. | descripción |
 |---|---|---|
 | `child_id` | sí | código anónimo del niño/a (p. ej. `NINO_0007`) |
-| `edad_meses` | sí | edad en meses el día de la prueba. **36–71** (3;0–5;11) |
+| `edad_meses` | sí | edad en meses el día de la prueba. **36–78** (3;0–6;6; ampliado desde 71 el 15/10/2026) |
 | `figura_id` | sí | id de la figura (`F01`…), coherente con `config.yaml > figuras` |
 | `imagen_path` | sí | ruta de la foto relativa a `data/` (`raw/NINO_0007/F03.jpg`) |
 | `puntaje` | sí | **0 / 1** — corrección del **evaluador experto (el equipo)**, no de la docente, según los criterios del Apéndice C del CUMANIN original |
@@ -86,8 +86,8 @@ tramo_edad , pd , T , percentil
 
 - `tramo_edad`: **6 tramos reales de la Tabla B.9, en meses** (no son de ancho
   uniforme): `36_42`, `43_48`, `49_54`, `55_60`, `61_66`, `67_78`. El estudio
-  (3;0-5;11 = 36-71 meses) usa los primeros 5 completos y parte del último
-  (67-71 de los 67-78 que llegan hasta 6;6).
+  usa los 6 tramos completos (3;0-6;6 = 36-78 meses); hasta el 15/10/2026 se limitaba
+  a 3;0-5;11 (36-71), pero parte de la muestra real tiene 6 años.
 - `pd`: puntuación directa (nº de figuras acertadas, 0-15).
 - `percentil`: **publicado directamente en la Tabla B.9** — es el dato real.
 - `T`: **la Tabla B.9 NO publica T para esta subescala.** La columna `T` de este CSV
