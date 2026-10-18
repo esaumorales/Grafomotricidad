@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calificación de figuras</title>
+<style>
+  :root { --tinta:#1f2933; --suave:#6b7785; --linea:#d9dee4; --fondo:#f6f7f9; --azul:#1f5f99; --ok:#1d7a46; --mal:#b3261e; --aviso:#8f4a00; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.45 system-ui, "Segoe UI", sans-serif; color:var(--tinta); background:var(--fondo); }
+  header { display:flex; gap:16px; align-items:center; flex-wrap:wrap; padding:10px 16px; background:#fff; border-bottom:1px solid var(--linea); }
+  header h1 { font-size:18px; margin:0; }
+  header label { font-size:14px; color:var(--suave); }
+  input[type=text], input[type=number], textarea { font:inherit; padding:6px 8px; border:1px solid var(--linea); border-radius:6px; }
+  button { font:inherit; cursor:pointer; padding:8px 14px; border:1px solid var(--linea); border-radius:8px; background:#fff; color:var(--tinta); }
+  button:hover { border-color:var(--azul); }
+  .principal { background:var(--azul); color:#fff; border-color:var(--azul); }
+  main { display:grid; grid-template-columns:230px 1fr; min-height:calc(100vh - 56px); }
+  aside { background:#fff; border-right:1px solid var(--linea); overflow:auto; max-height:calc(100vh - 56px); padding:8px; }
+  aside button { display:flex; justify-content:space-between; width:100%; margin:3px 0; text-align:left; }
+  aside button.activo { background:#e8f0f8; border-color:var(--azul); }
+  .hecho { color:var(--ok); font-weight:600; }
+  section { padding:16px 20px; }
+  .tira { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .tira button { padding:5px 9px; font-size:14px; min-width:46px; }
+  .tira .activo { background:#e8f0f8; border-color:var(--azul); }
+  .tira .c1 { border-bottom:3px solid var(--ok); } .tira .c0 { border-bottom:3px solid var(--mal); }
+  .tira .dud { outline:2px dashed var(--aviso); }
+  h2 { margin:0 0 4px; font-size:20px; } .sub { color:var(--suave); margin:0 0 12px; }
+  .par { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  figure { margin:0; background:#fff; border:1px solid var(--linea); border-radius:10px; padding:8px; }
+  figure img { width:100%; max-height:46vh; object-fit:contain; display:block; border-radius:6px; background:#fff; }
+  .repite { display:flex; align-items:center; justify-content:center; min-height:30vh; color:var(--aviso); font-weight:600; text-align:center; padding:12px; }
+  figcaption { font-size:13px; color:var(--suave); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+  .criterio { margin:12px 0; padding:10px 12px; background:#fff; border-left:4px solid var(--azul); border-radius:6px; }
+  .aviso { margin:12px 0; padding:10px 12px; background:#fff4e5; border-left:4px solid var(--aviso); border-radius:6px; }
+  .acciones { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+  .nota { flex:1; min-width:220px; }
+  .b0, .b1 { font-size:22px; font-weight:700; min-width:120px; padding:12px 18px; }
+  .b1.sel { background:var(--ok); border-color:var(--ok); color:#fff; } .b0.sel { background:var(--mal); border-color:var(--mal); color:#fff; }
+  .edad { margin:0 0 12px; display:flex; gap:8px; align-items:center; }
+  .vacio { padding:40px; color:var(--suave); }
+  @media (max-width:800px) { main { grid-template-columns:1fr; } aside { max-height:180px; border-right:0; border-bottom:1px solid var(--linea); } .par { grid-template-columns:1fr; } }
+  @media print { header, aside, .acciones button { display:none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Calificación de figuras (0 = incorrecta, 1 = correcta)</h1>
+  <label>Evaluador <input type="text" id="evaluador" placeholder="tu nombre o iniciales" size="16"></label>
+  <span id="progreso" class="sub" style="margin:0"></span>
+  <button class="principal" id="exportar">Exportar CSV</button>
+  <button id="importar">Cargar avance</button>
+  <input type="file" id="archivo" accept=".csv,.json" hidden>
+</header>
+<main>
+  <aside id="lista"></aside>
+  <section id="panel"></section>
+</main>
+
+<script>
+const D = __DATOS__;
+const CLAVE = "visor_calificacion_v1_" + (D.orden ?? "sin_orden");
+const FIG = Array.from({length:15}, (_, i) => "F" + String(i + 1).padStart(2, "0"));
+let E = JSON.parse(localStorage.getItem(CLAVE) || "{}");   // {nino:{edad, p:{F01:0/1}, dud:{F01:true}, nota:{F01:"..."}}}
+let ni = 0, fi = 0;
+
+const $ = (id) => document.getElementById(id);
+const reg = (n) => (E[n] ??= {edad:"", p:{}, dud:{}, nota:{}});
+const guardar = () => { localStorage.setItem(CLAVE, JSON.stringify({...E, _evaluador:$("evaluador").value})); };
+const calificables = (n) => FIG.filter(f => D.ninos[n].figuras[f] && !D.ninos[n].figuras[f].repetir);
+const completo = (n) => calificables(n).every(f => reg(D.ninos[n].id).p[f] !== undefined);
+
+function pintarLista() {
+  $("lista").innerHTML = "";
+  D.ninos.forEach((n, i) => {
+    const b = document.createElement("button");
+    const hechas = calificables(i).filter(f => reg(n.id).p[f] !== undefined).length;
+    b.className = i === ni ? "activo" : "";
+    b.innerHTML = `<span>${n.id}</span><span class="${completo(i) ? "hecho" : ""}">${completo(i) ? "✓" : hechas + "/" + calificables(i).length}</span>`;
+    b.onclick = () => { ni = i; fi = 0; pintar(); };
+    $("lista").appendChild(b);
+  });
+  const t = D.ninos.filter((_, i) => completo(i)).length;
+  $("progreso").textContent = `${t} de ${D.ninos.length} niños completos`;
+}
+
+function pintar() {
+  const n = D.ninos[ni], r = reg(n.id), f = FIG[fi], fig = n.figuras[f];
+  let h = `<div class="tira">` + FIG.map((x, j) => {
+    const p = r.p[x], c = p === 1 ? "c1" : p === 0 ? "c0" : "";
+    return `<button class="${j === fi ? "activo" : ""} ${c} ${r.dud[x] ? "dud" : ""}" onclick="ir(${j})">${x.slice(1)}</button>`;
+  }).join("") + `</div>`;
+  h += `<div class="edad"><label>Edad de ${n.id} en meses <input type="number" min="30" max="90" id="edad" value="${r.edad}" style="width:80px"></label></div>`;
+  h += `<h2>${n.id} · Figura ${Number(f.slice(1))} de 15</h2><p class="sub">${D.nombres[f] || ""}</p>`;
+  if (!fig) {
+    h += `<div class="vacio">Esta figura no tiene imagen (la hoja no se pudo segmentar). No calificar.</div>`;
+  } else {
+    if (!fig.repetir) h += `<div class="acciones">
+      <button class="b0 ${r.p[f] === 0 ? "sel" : ""}" onclick="poner(0)">0 · Incorrecta</button>
+      <button class="b1 ${r.p[f] === 1 ? "sel" : ""}" onclick="poner(1)">1 · Correcta</button>
+      <label><input type="checkbox" id="dud" ${r.dud[f] ? "checked" : ""}> Dudosa</label>
+      <input type="text" class="nota" id="nota" placeholder="Nota (opcional)" value="${(r.nota[f] || "").replace(/"/g, "&quot;")}">
+    </div>`;
+    if (fig.sale) h += `<div class="aviso">El trazo toca el borde de la celda: puede estar cortado o salirse de ella.</div>`;
+    h += `<div class="par"><figure><figcaption>Modelo</figcaption><img src="${D.modelos[f]}"></figure>
+          <figure><figcaption>Copia del niño</figcaption>${fig.repetir
+            ? `<div class="repite">Foto por repetir.<br>No se muestra ni se califica todavía.</div>`
+            : `<img src="${fig.img}">`}</figure></div>`;
+    h += `<div class="criterio"><b>Criterio del manual:</b> ${D.criterios[f] || "<i>[COMPLETAR: criterio de esta figura, Apéndice C]</i>"}</div>`;
+  }
+  h += `<div class="acciones"><button onclick="mover(-1)">← Anterior</button><button onclick="mover(1)">Siguiente →</button>
+        <span class="sub" style="margin:0">Teclas: 0 / 1 califica, ← → navega, D marca dudosa</span></div>`;
+  $("panel").innerHTML = h;
+  $("edad").onchange = (e) => { r.edad = e.target.value; guardar(); };
+  if ($("dud")) { $("dud").onchange = (e) => { r.dud[f] = e.target.checked; guardar(); pintar(); }; $("nota").oninput = (e) => { r.nota[f] = e.target.value; guardar(); }; }
+  pintarLista();
+}
+
+function ir(j) { fi = j; pintar(); }
+function mover(d) {
+  fi += d;
+  if (fi > 14) { fi = 0; ni = Math.min(ni + 1, D.ninos.length - 1); }
+  if (fi < 0) { fi = 14; ni = Math.max(ni - 1, 0); }
+  pintar();
+}
+function poner(v) {
+  const n = D.ninos[ni], f = FIG[fi];
+  if (!n.figuras[f] || n.figuras[f].repetir) return;
+  reg(n.id).p[f] = v; guardar(); mover(1);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if (e.key === "0") poner(0); else if (e.key === "1") poner(1);
+  else if (e.key === "ArrowRight") mover(1); else if (e.key === "ArrowLeft") mover(-1);
+  else if (e.key.toLowerCase() === "d") { const n = D.ninos[ni], f = FIG[fi]; reg(n.id).dud[f] = !reg(n.id).dud[f]; guardar(); pintar(); }
+});
+
+$("exportar").onclick = () => {
+  const cab = ["child_id", "edad_meses", ...FIG, "evaluador", "dudosas", "notas"];
+  const filas = D.ninos.map((n) => {
+    const r = reg(n.id);
+    const dud = FIG.filter(f => r.dud[f]).join(" ");
+    const notas = FIG.filter(f => r.nota[f]).map(f => f + ": " + r.nota[f]).join(" | ").replace(/"/g, "'");
+    return [n.id, r.edad, ...FIG.map(f => r.p[f] ?? ""), $("evaluador").value, dud, `"${notas}"`].join(",");
+  });
+  const blob = new Blob(["﻿" + [cab.join(","), ...filas].join("\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  const quien = ($("evaluador").value || "evaluador").replace(/[^\w-]+/g, "_");
+  a.href = URL.createObjectURL(blob); a.download = `calificaciones_${quien}.csv`; a.click();
+};
+
+$("importar").onclick = () => $("archivo").click();
+$("archivo").onchange = async (e) => {   // recarga un CSV exportado antes (por si se cambia de computador)
+  const txt = (await e.target.files[0].text()).replace(/^﻿/, "").trim().split("\n");
+  const cab = txt[0].split(",");
+  txt.slice(1).forEach((ln) => {
+    const c = ln.split(","), id = c[0];
+    if (!D.ninos.some(n => n.id === id)) return;
+    const r = reg(id); r.edad = c[cab.indexOf("edad_meses")] || "";
+    FIG.forEach(f => { const v = c[cab.indexOf(f)]; if (v === "0" || v === "1") r.p[f] = Number(v); });
+  });
+  guardar(); pintar();
+};
+
+$("evaluador").value = (JSON.parse(localStorage.getItem(CLAVE) || "{}"))._evaluador || "";
+$("evaluador").oninput = guardar;
+pintar();
+</script>
+</body>
+</html>

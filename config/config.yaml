@@ -80,6 +80,19 @@ modelo:                              # MODELO A: indicadores + XGBoost + SHAP
     reg_lambda: [1.0, 3.0]
   metrica_busqueda: f1_macro         # métrica que optimiza el Grid Search
   class_weight: balanced             # desbalance por figura (efecto suelo a los 3 años)
+  entrada:                           # columnas que recibe el modelo (src/grafomotor/model/columnas.py)
+    # Un ÚNICO modelo para las 15 figuras (ver skill 5.5). Con "onehot" recibe además qué figura
+    # califica: 4 esquinas están bien en el cuadrado y mal en el triángulo. "ninguna" = solo
+    # los indicadores (comportamiento anterior al 16/10/2026).
+    figura: onehot                   # ninguna | onehot
+    crudos: true                     # añade las 6 medidas crudas (raw_*) que extraer-features ya calcula
+  umbral:                            # punto de corte de "figura correcta" (src/grafomotor/model/train.py)
+    # Con class_weight balanced el modelo queda demasiado estricto y la PD sale baja (sesgo de
+    # -1.6 puntos con 32 niños reales, 16/10/2026). Se elige SOLO con los niños de entrenamiento.
+    #   fijo             -> 0.5 (comportamiento anterior)
+    #   prevalencia      -> CV interna: marca "correcta" tantas figuras como el evaluador
+    #   correccion_pesos -> deshace en forma analítica el efecto de los pesos balanceados
+    modo: prevalencia
 
 scoring:
   # NIVELES DEL NIÑO: de la PD y la edad -> percentil (Tabla B.9) -> nivel.

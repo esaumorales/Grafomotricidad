@@ -96,8 +96,10 @@ def localizar_cuadricula(gris: np.ndarray, p: ParamsHoja) -> np.ndarray | None:
         # marco de la foto o sombra del borde, no la tabla
         if w > 0.97 * ancho and h > 0.97 * alto:
             continue
-        if w * h > mejor_area:
-            mejor, mejor_area = i, w * h
+        # entre los candidatos gana el de más tinta: la tabla (muchas líneas) y no el contorno
+        # de la hoja ni su sombra, que tienen una caja mayor pero casi nada de trazo
+        if area > mejor_area:
+            mejor, mejor_area = i, area
     if mejor is None:
         return None
     cont, _ = cv2.findContours((lab == mejor).astype(np.uint8), cv2.RETR_EXTERNAL,

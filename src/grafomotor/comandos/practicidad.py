@@ -46,8 +46,9 @@ def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     etiquetas = cargar_etiquetas(cfg.ruta("labels"))
     ninos = sorted(etiquetas["child_id"].unique())[: args.hojas]
 
+    modelo_a, manifiesto_a = cargar_modelo(art.dir_modelo_ml)
     predictores = {
-        "A": PredictorA(cfg, {"final": cargar_modelo(art.dir_modelo_ml)[0]}),
+        "A": PredictorA(cfg, {"final": modelo_a}, manifiesto_a.get("feature_names")),
         "B": PredictorB.desde_variante(cfg, variante, "final"),
     }
     blanco = np.full((224, 224), 255, np.uint8)

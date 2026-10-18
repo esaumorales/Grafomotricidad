@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from grafomotor import ORDEN
+from grafomotor.model.columnas import fila
 
 
 @dataclass
@@ -29,8 +30,11 @@ class PrediccionSesion:
         return len(self.figuras)
 
 
-def predecir_figura(modelo, vector: dict[str, float], figura_id: str) -> PrediccionFigura:
-    x = np.array([[vector[k] for k in ORDEN]], dtype=float)
+def predecir_figura(modelo, vector: dict[str, float], figura_id: str,
+                    crudos: dict[str, float] | None = None,
+                    nombres: list[str] | None = None) -> PrediccionFigura:
+    """nombres: columnas del modelo (manifiesto); por defecto, los 6 indicadores."""
+    x = np.array([fila(vector, crudos or {}, figura_id, nombres or ORDEN)], dtype=float)
     prob = float(modelo.predict_proba(x)[0, 1])
     return PrediccionFigura(
         figura_id=figura_id,

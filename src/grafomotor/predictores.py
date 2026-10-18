@@ -13,13 +13,13 @@ from collections.abc import Hashable, Mapping, Sequence
 import numpy as np
 import pandas as pd
 
-from grafomotor import ORDEN
 from grafomotor.artefactos import Artefactos
 from grafomotor.config import Config
 from grafomotor.evaluation.particiones import folds_de
 from grafomotor.features.extract import extraer_indicadores
 from grafomotor.io import cargar_plantillas
 from grafomotor.logs import obtener_logger
+from grafomotor.model.columnas import fila, nombres_columnas
 from grafomotor.model.dataset import Datos, construir
 from grafomotor.model.registry import cargar_modelo
 from grafomotor.model.train import ajustar_anidado, ajustar_por_fold
@@ -37,26 +37,28 @@ def modelos_ml_por_fold(cfg: Config, etiquetas: pd.DataFrame, particiones: pd.Da
     rápido pero optimista, solo para pruebas.
     """
     art = Artefactos.de_config(cfg)
-    datos = construir(pd.read_parquet(art.features), etiquetas)
+    datos = construir(pd.read_parquet(art.features), etiquetas, nombres_columnas(cfg))
     fold = folds_de(datos.grupos, particiones)
     cfg_modelo = cfg.get("modelo", default={})
     if cfg.get("modelo", "cv", "anidada", default=True):
         modelos, params = ajustar_anidado(datos, fold, cfg_modelo)
     else:
         base, _ = cargar_modelo(art.dir_modelo_ml)
-        modelos = ajustar_por_fold(datos, fold, base.get_params(),
-                                   cfg_modelo.get("class_weight") == "balanced")
+        modelos = ajustar_por_fold(datos, fold, base.get_params(), cfg_modelo)
         params = dict.fromkeys(modelos, "modelo final (sin anidar)")
     return modelos, datos, params
 
 
 class PredictorA:
-    """Visión clásica + 6 indicadores + XGBoost."""
+    """Visión clásica + indicadores + XGBoost."""
 
     nombre = "A"
 
-    def __init__(self, cfg: Config, modelos: Mapping[Hashable, object]):
+    def __init__(self, cfg: Config, modelos: Mapping[Hashable, object],
+                 nombres: Sequence[str] | None = None):
+        """nombres: columnas con que se entrenaron los modelos (por defecto, las de cfg)."""
         self.modelos = dict(modelos)
+        self.nombres = list(nombres or nombres_columnas(cfg))
         self.plantillas = cargar_plantillas(cfg)
         self.meta = cfg.figuras
         self.pre_cfg = cfg.get("preprocesamiento", default={})
@@ -71,7 +73,7 @@ class PredictorA:
         except Exception as e:
             log.debug("modelo A no pudo medir %s: %s", figura_id, e)
             return float("nan")
-        x = np.array([[vec.valores[k] for k in ORDEN]])
+        x = np.array([fila(vec.valores, vec.raw, figura_id, self.nombres)])
         return float(self.modelos[clave].predict_proba(x)[0, 1])
 
     def predecir_lote(self, grises: Sequence[np.ndarray], figuras: Sequence[str],

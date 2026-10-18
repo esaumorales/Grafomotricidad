@@ -9,12 +9,15 @@ def test_tramos_tabla_b9():
     assert tramo_de_edad(43) == "43_48"
     assert tramo_de_edad(60) == "55_60"
     assert tramo_de_edad(71) == "67_78"
+    assert tramo_de_edad(78) == "67_78"
 
 
 def test_tramo_fuera_de_rango():
     import pytest
     with pytest.raises(ValueError):
-        tramo_de_edad(72)   # 6;0 queda fuera del estudio (3-5)
+        tramo_de_edad(79)   # 6;7 queda fuera de la Tabla B.9
+    with pytest.raises(ValueError):
+        tramo_de_edad(35)
 
 
 def test_cortes_percentil_2_clases():

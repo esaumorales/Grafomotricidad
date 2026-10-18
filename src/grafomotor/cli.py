@@ -46,6 +46,7 @@ COMANDOS: dict[str, tuple[str, str]] = {
     "segmentar-hojas": ("segmentar_hojas", "R1"),
     "preparar-reales": ("preparar_reales", "R2"),
     "cargar-calificaciones": ("cargar_calificaciones", "R3"),
+    "generar-visor": ("generar_visor", "R4"),
     "todo": ("todo", "-"),
 }
 

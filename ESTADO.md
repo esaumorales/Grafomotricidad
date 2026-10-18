@@ -67,7 +67,15 @@ sin necesitar calificaciones, `data/real/interim` (modelo A), `data/real/interim
 reales; si cambias parámetros en config.yaml, cópialos allí). Con las calificaciones llenas en
 `data/hojas_reales/calificacion_46_ninos.xlsx`, `grafomotor cargar-calificaciones` produce
 `data/real/labels/etiquetas.csv` y se entrena con `grafomotor --config config/config_real.yaml ...`.
-Pendiente: repetir fotos de NIN-06 (hoja 1), NIN-10 (hoja 2) y NIN-11 (hojas 2 y 3).
+Pendiente: repetir fotos de NIN-06 (hoja 1), NIN-10 (hoja 2), NIN-11 (hojas 2 y 3) y NIN-55 (hoja 2:
+la línea entre modelo y copia se detectó mal y F07 sale casi vacía).
+
+Lote 2 (12/10/2026): 10 niños más, fotos HEIC (4 por niño: la 1.ª es la hoja de registro, las
+3 siguientes son las hojas de figuras). En el ZIP venían como NIN-28..37, códigos que YA
+existían (los niños escaneados en PDF), así que se importaron como **NIN-47..NIN-56**; el
+mapeo está en `data/hojas_reales/mapa_codigos.csv`. Total: **56 niños, 840 figuras**. El Excel
+de calificación tiene ya las filas NIN-47..56 (el nombre del archivo sigue siendo
+`calificacion_46_ninos.xlsx` para no romper las rutas).
 
 ## Listo y probado de punta a punta
 

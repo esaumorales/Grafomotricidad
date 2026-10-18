@@ -22,6 +22,8 @@ class Manifiesto:
     n_clases_nivel: int
     version_baremo: str
     notas: str = ""
+    umbral: float = 0.5                  # punto de corte de "figura correcta" (modelo.umbral)
+    modo_umbral: str = "fijo"
 
 
 def _git_hash() -> str:
@@ -58,4 +60,6 @@ def nuevo_manifiesto(res, cfg) -> Manifiesto:
         cv_f1_macro=round(res.cv_f1_macro, 4),
         n_clases_nivel=len(CriterioNiveles.de_config(cfg).etiquetas),
         version_baremo=str(cfg.get("scoring", "version_baremo", default="")),
+        umbral=round(float(getattr(res.modelo, "umbral", 0.5)), 4),
+        modo_umbral=str(getattr(res.modelo, "modo", "fijo")),
     )
