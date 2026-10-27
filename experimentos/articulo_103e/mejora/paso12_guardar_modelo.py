@@ -41,7 +41,7 @@ def guardar(datos, nombre, descripcion):
     joblib.dump(m, carpeta / "modelo.joblib")
     man = {"version": nombre, "descripcion": descripcion, "fecha": date.today().isoformat(),
            "n_ninos": int(datos.child_id.nunique()), "n_figuras": int(len(datos)),
-           "feature_names": cols, "punto_de_corte": round(c, 4),
+           "feature_names": cols, "punto_de_corte": c,
            "limites_confianza": {"incorrecta_si_prob_menor_o_igual": lim["a_incorrecta"],
                                  "correcta_si_prob_mayor_o_igual": lim["b_correcta"]},
            "hiperparametros": {k: (None if v is None else v) for k, v in params.items()},
