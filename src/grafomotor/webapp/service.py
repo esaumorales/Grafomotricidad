@@ -39,6 +39,24 @@ from grafomotor.webapp import db
 log = logging.getLogger(__name__)
 
 
+def _leer_gris(contenido: bytes) -> np.ndarray | None:
+    """Foto (JPG, PNG, HEIC del iPhone...) -> gris, respetando la orientación del celular. None si no se abre."""
+    gris = cv2.imdecode(np.frombuffer(contenido, np.uint8), cv2.IMREAD_GRAYSCALE)
+    if gris is not None:
+        return gris
+    try:
+        import io
+
+        from PIL import Image, ImageOps
+        from pillow_heif import register_heif_opener
+
+        register_heif_opener()
+        with Image.open(io.BytesIO(contenido)) as im:
+            return np.asarray(ImageOps.exif_transpose(im).convert("L"))
+    except Exception:
+        return None
+
+
 class ErrorHoja(ValueError):
     """Una foto de hoja no se pudo usar; el mensaje está escrito para el docente."""
 
@@ -129,7 +147,7 @@ class Servicio:
         por_pagina: dict[int, tuple[str, object]] = {}
         avisos: list[str] = []
         for nombre, contenido in hojas:
-            gris = cv2.imdecode(np.frombuffer(contenido, np.uint8), cv2.IMREAD_GRAYSCALE)
+            gris = _leer_gris(contenido)
             if gris is None:
                 raise ErrorHoja(f"No pude abrir el archivo «{nombre}». Sube una foto (JPG o PNG).")
             try:

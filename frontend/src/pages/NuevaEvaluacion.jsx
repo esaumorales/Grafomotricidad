@@ -30,6 +30,9 @@ function figuraDesdeNombre(nombre) {
   return null
 }
 
+// Windows deja con tipo vacío las fotos HEIC del iPhone: se reconocen también por la extensión.
+const esFoto = (f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp|bmp|tiff?|heic|heif)$/i.test(f.name)
+
 export default function NuevaEvaluacion() {
   const navigate = useNavigate()
   const [childId, setChildId] = useState('')
@@ -50,7 +53,7 @@ export default function NuevaEvaluacion() {
   const previewsHojas = useMemo(() => hojas.map((f) => URL.createObjectURL(f)), [hojas])
 
   function agregarHojas(fileList) {
-    setHojas((prev) => [...prev, ...fileList.filter((f) => f.type.startsWith('image/'))].slice(0, 3))
+    setHojas((prev) => [...prev, ...fileList.filter(esFoto)].slice(0, 3))
   }
   const previews = useMemo(() => {
     const out = {}
@@ -231,7 +234,7 @@ export default function NuevaEvaluacion() {
                 </div>
               </div>
               <label htmlFor="input-hojas" className="visually-hidden">Elegir las fotos de las hojas</label>
-              <input id="input-hojas" ref={inputHojasRef} type="file" accept="image/*" multiple hidden
+              <input id="input-hojas" ref={inputHojasRef} type="file" accept="image/*,.heic,.heif" multiple hidden
                 onChange={(e) => { agregarHojas(Array.from(e.target.files)); e.target.value = '' }} />
               <button type="button" className="btn-primary" style={{ background: 'var(--peach)', boxShadow: 'none', padding: '13px 26px', fontSize: 14.5 }}
                 onClick={() => inputHojasRef.current.click()} disabled={hojas.length >= 3}>
@@ -249,7 +252,8 @@ export default function NuevaEvaluacion() {
                 }}>
                   {hojas[i] ? (
                     <>
-                      <img src={previewsHojas[i]} alt={`Hoja ${i + 1}`} style={{ width: '100%', maxHeight: 130, objectFit: 'contain', borderRadius: 8 }} />
+                      <img src={previewsHojas[i]} alt={`Hoja ${i + 1}`} style={{ width: '100%', maxHeight: 130, objectFit: 'contain', borderRadius: 8 }}
+                        onError={(e) => { e.currentTarget.style.display = 'none' }} />
                       <div style={{ fontSize: 12, fontWeight: 700, wordBreak: 'break-all' }}>{hojas[i].name}</div>
                       <button type="button" onClick={() => setHojas((prev) => prev.filter((_, j) => j !== i))}
                         style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
