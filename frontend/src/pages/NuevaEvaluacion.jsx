@@ -33,12 +33,28 @@ function figuraDesdeNombre(nombre) {
 // Windows deja con tipo vacío las fotos HEIC del iPhone: se reconocen también por la extensión.
 const esFoto = (f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp|bmp|tiff?|heic|heif)$/i.test(f.name)
 
+const EDAD_MIN_MESES = 36 // 3 años
+const EDAD_MAX_MESES = 78 // 6 años y 6 meses (fin de la Tabla B.9)
+
+const hoyISO = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** Meses cumplidos a la fecha de evaluación (fechas AAAA-MM-DD); null si falta alguna. */
+function edadEnMeses(nacimiento, evaluacion) {
+  if (!nacimiento || !evaluacion) return null
+  const [a, m, d] = nacimiento.split('-').map(Number)
+  const [a2, m2, d2] = evaluacion.split('-').map(Number)
+  return (a2 - a) * 12 + (m2 - m) - (d2 < d ? 1 : 0)
+}
+
 export default function NuevaEvaluacion() {
   const navigate = useNavigate()
   const [childId, setChildId] = useState('')
   const [nombreNino, setNombreNino] = useState('')
-  const [anios, setAnios] = useState(4)
-  const [meses, setMeses] = useState(0)
+  const [nacimiento, setNacimiento] = useState('')
+  const [evaluacion, setEvaluacion] = useState(hoyISO())
   const [mano, setMano] = useState('D')
   const [archivos, setArchivos] = useState({}) // { F01: File, ... } (modo figura por figura)
   const [modo, setModo] = useState('hojas') // 'hojas' (3 fotos de hojas) | 'figuras' (15 fotos)
@@ -102,8 +118,16 @@ export default function NuevaEvaluacion() {
     e.target.value = ''
   }
 
-  const edadMeses = anios * 12 + meses
-  const listoParaEnviar = childId.trim() && !enviando
+  const edadMeses = edadEnMeses(nacimiento, evaluacion)
+  const edadOk = edadMeses !== null && edadMeses >= EDAD_MIN_MESES && edadMeses <= EDAD_MAX_MESES
+  let textoEdad = 'Indica las dos fechas para calcular la edad.'
+  if (edadMeses !== null) {
+    textoEdad = edadMeses < 0
+      ? 'La fecha de evaluación es anterior a la de nacimiento.'
+      : `Edad: ${Math.floor(edadMeses / 12)} años y ${edadMeses % 12} meses (${edadMeses} meses)`
+      + (edadOk ? '' : '. Fuera del rango de la prueba: de 3 años a 6 años y 6 meses.')
+  }
+  const listoParaEnviar = childId.trim() && edadOk && !enviando
     && (modo === 'hojas' ? hojas.length === 3 : subidas === 15)
 
   async function onSubmit(e) {
@@ -114,7 +138,8 @@ export default function NuevaEvaluacion() {
     try {
       const fd = new FormData()
       fd.append('child_id', childId.trim())
-      fd.append('edad_meses', String(edadMeses))
+      fd.append('fecha_nacimiento', nacimiento)
+      fd.append('fecha_evaluacion', evaluacion)
       fd.append('nombre_nino', nombreNino.trim())
       let res
       if (modo === 'hojas') {
@@ -156,19 +181,22 @@ export default function NuevaEvaluacion() {
               />
             </Campo>
 
-            <fieldset style={fieldsetStyle}>
-              <legend style={legendStyle}>Edad</legend>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <label htmlFor="campo-anios" className="visually-hidden">Años</label>
-                <input id="campo-anios" type="number" min={3} max={5} value={anios}
-                  onChange={(e) => setAnios(Number(e.target.value))} style={{ ...inputStyle, width: 64 }} />
-                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 700 }}>años</span>
-                <label htmlFor="campo-meses" className="visually-hidden">Meses</label>
-                <input id="campo-meses" type="number" min={0} max={11} value={meses}
-                  onChange={(e) => setMeses(Number(e.target.value))} style={{ ...inputStyle, width: 64 }} />
-                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 700 }}>meses</span>
-              </div>
-            </fieldset>
+            <Campo id="campo-nacimiento" label="Fecha de nacimiento">
+              <input id="campo-nacimiento" type="date" required value={nacimiento} max={evaluacion || undefined}
+                onChange={(e) => setNacimiento(e.target.value)} style={inputStyle} />
+            </Campo>
+
+            <Campo id="campo-evaluacion" label="Fecha de la evaluación">
+              <input id="campo-evaluacion" type="date" required value={evaluacion}
+                onChange={(e) => setEvaluacion(e.target.value)} style={inputStyle} />
+            </Campo>
+
+            <div aria-live="polite" style={{
+              gridColumn: '1 / -1', fontSize: 14, fontWeight: 800,
+              color: edadMeses === null ? 'var(--text-muted)' : edadOk ? 'var(--mint-dark)' : 'var(--yellow-dark)',
+            }}>
+              {textoEdad}
+            </div>
 
             <fieldset style={fieldsetStyle}>
               <legend style={legendStyle}>Mano usada</legend>

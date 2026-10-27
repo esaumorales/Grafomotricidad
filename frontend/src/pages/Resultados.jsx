@@ -37,6 +37,7 @@ export default function Resultados() {
           <h1 style={{ fontSize: 30 }}>{sesion.nombre_nino || sesion.child_id}</h1>
           <span style={{ color: 'var(--text-muted)', fontSize: 15, fontWeight: 700 }}>
             {sesion.child_id} · {Math.floor(sesion.edad_meses / 12)} años {sesion.edad_meses % 12} meses
+            {sesion.fecha_evaluacion && ` · evaluado el ${sesion.fecha_evaluacion.split('-').reverse().join('/')}`}
           </span>
         </div>
       </div>
