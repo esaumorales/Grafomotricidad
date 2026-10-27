@@ -1,0 +1,10 @@
+set -e
+C="$(cd "$(dirname "$0")" && pwd)"; RAIZ="$(cd "$C/../.." && pwd)"; PY="${PY:-python}"
+export PYTHONIOENCODING=utf-8 PYTHONPATH="$RAIZ/src:$C:$C/mejora"
+cd "$C/mejora"
+"$PY" paso2_criterios2.py > log_c2.txt 2>&1; echo "criterios2 listo"
+"$PY" paso1_red.py > log_red.txt 2>&1; echo "red listo"
+"$PY" paso3_evaluar.py > log_eval.txt 2>&1; echo "variantes listo"
+"$PY" paso4_prueba.py > log_prueba.txt 2>&1; echo "prueba listo"
+"$PY" paso5_confianza_V0.py > log_confianza.txt 2>&1; echo "confianza listo"
+cd "$C"; "$PY" resumen_sin_kappa.py > log_sin_kappa.txt 2>&1; echo "resumen listo"

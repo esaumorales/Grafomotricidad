@@ -1,0 +1,196 @@
+augmentacion:
+  activar: true
+  por_figura_min_muestras: 40
+  transformaciones:
+  - elastica_leve
+  - grosor_trazo
+  - brillo_contraste
+comparacion:
+  agrupar_por: nino
+  folds: 5
+  n_boot: 2000
+  robustez:
+    degradaciones:
+    - sombra
+    - desenfoque
+    - inclinacion
+    - brillo
+    muestra_ninos: 40
+    niveles:
+    - leve
+    - moderada
+    - fuerte
+datos:
+  min_minoritaria_dl: 100
+  min_minoritaria_ml: 30
+dl:
+  arquitectura: resnet18
+  aumento: moderado
+  epocas_fase1: 8
+  epocas_fase2: 15
+  fraccion_validacion: 0.15
+  lado_px: 224
+  lote: 64
+  lr_fase1: 0.001
+  lr_fase2_cabezas: 0.0003
+  lr_fase2_red: 0.0001
+  paciencia: 5
+  peso_decaimiento: 0.0001
+  semilla: 20260930
+  tta: false
+explicacion:
+  idioma: es-PE
+  incluir_panel_tecnico: true
+  max_dificultades: 3
+  max_fortalezas: 2
+  publico: docente
+  pulido_llm:
+    activar: false
+    modelo: ''
+  umbral_confianza_baja: 0.6
+  umbral_relevancia_shap: 0.03
+figuras:
+  F01:
+    intersecciones_esperadas: 0
+    nombre: línea recta
+    vertices_esperados: 2
+  F02:
+    intersecciones_esperadas: 0
+    nombre: dos líneas horizontales
+    vertices_esperados: 2
+  F03:
+    intersecciones_esperadas: 6
+    nombre: cruz
+    vertices_esperados: 8
+  F04:
+    intersecciones_esperadas: 0
+    nombre: círculo
+    vertices_esperados: 8
+  F05:
+    intersecciones_esperadas: 0
+    nombre: cuadrado
+    vertices_esperados: 4
+  F06:
+    intersecciones_esperadas: 1
+    nombre: triángulo
+    vertices_esperados: 3
+  F07:
+    intersecciones_esperadas: 4
+    nombre: x (aspa)
+    vertices_esperados: 8
+  F08:
+    intersecciones_esperadas: 0
+    nombre: línea ondulada
+    vertices_esperados: 12
+  F09:
+    intersecciones_esperadas: 18
+    nombre: rectángulo con x interna
+    vertices_esperados: 4
+  F10:
+    intersecciones_esperadas: 0
+    nombre: rombo
+    vertices_esperados: 4
+  F11:
+    intersecciones_esperadas: 6
+    nombre: círculo + triángulo
+    vertices_esperados: 9
+  F12:
+    intersecciones_esperadas: 4
+    nombre: u
+    vertices_esperados: 11
+  F13:
+    intersecciones_esperadas: 7
+    nombre: lazo
+    vertices_esperados: 12
+  F14:
+    intersecciones_esperadas: 9
+    nombre: doble pico ondulado
+    vertices_esperados: 16
+  F15:
+    intersecciones_esperadas: 12
+    nombre: cuadrado + círculo
+    vertices_esperados: 8
+identificacion:
+  umbral_alto: 0.8
+  umbral_bajo: 0.2
+indicadores:
+  opcionales:
+  - rectitud
+  - correcciones
+  usar:
+  - precision_modelo
+  - vertices
+  - error_angular
+  - cierre
+  - intersecciones
+  - proporcion
+modelo:
+  algoritmo: xgboost
+  class_weight: balanced
+  cv:
+    anidada: true
+    folds: 5
+    tipo: grupo_por_nino
+  entrada:
+    crudos: true
+    figura: onehot
+  grid_search:
+    learning_rate:
+    - 0.03
+    - 0.05
+    - 0.1
+    max_depth:
+    - 2
+    - 3
+    - 4
+    n_estimators:
+    - 200
+    - 400
+    - 800
+    reg_lambda:
+    - 1.0
+    - 3.0
+    subsample:
+    - 0.8
+    - 1.0
+  metrica_busqueda: f1_macro
+  objetivo: binary:logistic
+  umbral:
+    modo: prevalencia
+preprocesamiento:
+  fraccion_min_trazo: 0.05
+  lado_normalizado_px: 512
+  min_area_figura_px: 400
+  registro: traslacion
+  suavizado_registro_px: 31
+  umbral_binarizado: adaptativo
+rutas:
+  baremos: D:/Proyecto Grafomotricidad - Tesis/config/baremos.csv
+  db: D:/Datos niños/Experimento_103e/app.db
+  doble_calificacion: D:/Datos niños/Experimento_103/doble_calificacion.csv
+  fotos_aula: D:/Datos niños/Experimento_103/fotos_aula.csv
+  interim: D:/Proyecto Grafomotricidad - Tesis/data/final_e/interim
+  interim_dl: D:/Proyecto Grafomotricidad - Tesis/data/final_e/interim_dl
+  labels: D:/Datos niños/Experimento_103e/etiquetas.csv
+  models: D:/Datos niños/Experimento_103e/models
+  processed: D:/Datos niños/Experimento_103e/processed
+  raw: D:/Proyecto Grafomotricidad - Tesis/data/raw_final
+  templates: D:/Proyecto Grafomotricidad - Tesis/data/templates_cumanin
+scoring:
+  n_fallos_parada: 4
+  niveles:
+    base: percentil
+    cortes:
+    - accion: derivar
+      maximo: 2
+      nombre: En riesgo
+    - accion: reforzar_y_revaluar
+      maximo: 16
+      nombre: En riesgo
+    - accion: ninguna
+      maximo: 100
+      nombre: Adecuado
+    fuente: 'PROVISIONAL: convención psicométrica ~ -1 DE (Pc 16) y ~ -2 DE (Pc 2);
+      sin verificar pág. 98-99 del manual'
+  version_baremo: CUMANIN original, Tabla B.9 pág.83 — transcrita de foto del libro
+    físico 2026-09-15

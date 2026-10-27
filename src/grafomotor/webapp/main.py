@@ -2,7 +2,8 @@
 API FastAPI para el Dashboard Docente.
 
   GET   /api/salud                              -> estado del servicio
-  POST  /api/evaluar                             -> evalúa una sesión (fotos -> informe), la guarda
+  POST  /api/evaluar                             -> evalúa una sesión (15 fotos de figuras -> informe), la guarda
+  POST  /api/evaluar-hojas                       -> igual, pero con las 3 fotos de las hojas (recorta solo)
   GET   /api/sesiones                            -> historial (resumen)
   GET   /api/ninos/{child_id}/sesiones           -> evaluaciones de un niño en el tiempo
   GET   /api/sesiones/{id}                       -> informe completo de una sesión guardada
@@ -18,6 +19,7 @@ Arranque:  python scripts/06_servir_web.py   (o  uvicorn grafomotor.webapp.main:
 """
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -25,8 +27,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from grafomotor.scoring.edad import edad_en_meses, edad_valida
 from grafomotor.webapp.schemas import CorregirFiguraIn, EvaluarOut, SesionResumen
-from grafomotor.webapp.service import Servicio
+from grafomotor.webapp.service import ErrorHoja, Servicio
 
 app = FastAPI(title="Evaluación grafomotora infantil", version="0.2.0")
 
@@ -49,6 +52,24 @@ def servicio() -> Servicio:
     return _servicio
 
 
+def _edad(edad_meses: int | None, fecha_nacimiento: str | None, fecha_evaluacion: str | None):
+    """(edad en meses, fecha de evaluación ISO o None). La edad sale de las dos fechas (AAAA-MM-DD);
+    `edad_meses` directo solo se acepta si no vienen fechas."""
+    if fecha_nacimiento and fecha_evaluacion:
+        try:
+            edad = edad_en_meses(date.fromisoformat(fecha_nacimiento), date.fromisoformat(fecha_evaluacion))
+        except ValueError as e:
+            raise HTTPException(422, f"Fechas no válidas: {e}") from None
+    elif edad_meses is not None:
+        edad, fecha_evaluacion = edad_meses, None
+    else:
+        raise HTTPException(422, "Indica la fecha de nacimiento y la fecha de la evaluación.")
+    if not edad_valida(edad):
+        raise HTTPException(422, f"La edad calculada ({edad // 12} años {edad % 12} meses) está fuera del "
+                                 "rango de la prueba: de 3 años a 6 años y 6 meses.")
+    return edad, fecha_evaluacion
+
+
 @app.get("/api/salud")
 def salud() -> dict:
     try:
@@ -62,12 +83,15 @@ def salud() -> dict:
 @app.post("/api/evaluar", response_model=EvaluarOut)
 async def evaluar(
     child_id: str = Form(...),
-    edad_meses: int = Form(...),
+    edad_meses: int | None = Form(None),
+    fecha_nacimiento: str | None = Form(None, description="AAAA-MM-DD"),
+    fecha_evaluacion: str | None = Form(None, description="AAAA-MM-DD"),
     nombre_nino: str | None = Form(None),
     figura_ids: str = Form(
         ..., description="ids separados por coma, en el mismo orden que los archivos"),
     fotos: list[UploadFile] = File(...),
 ) -> EvaluarOut:
+    edad, f_eval = _edad(edad_meses, fecha_nacimiento, fecha_evaluacion)
     ids = [x.strip() for x in figura_ids.split(",") if x.strip()]
     if len(ids) != len(fotos):
         raise HTTPException(400, f"llegaron {len(fotos)} fotos pero {len(ids)} ids de figura")
@@ -77,7 +101,27 @@ async def evaluar(
         sufijo = Path(up.filename or "").suffix or ".jpg"
         destino = s.guardar_foto(child_id, fid, await up.read(), sufijo)
         rutas[fid] = str(destino)
-    res = s.evaluar_sesion(child_id, edad_meses, rutas, nombre_nino)
+    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, fecha_evaluacion=f_eval)
+    return EvaluarOut(**res)
+
+
+@app.post("/api/evaluar-hojas", response_model=EvaluarOut)
+async def evaluar_hojas(
+    child_id: str = Form(...),
+    edad_meses: int | None = Form(None),
+    fecha_nacimiento: str | None = Form(None, description="AAAA-MM-DD"),
+    fecha_evaluacion: str | None = Form(None, description="AAAA-MM-DD"),
+    nombre_nino: str | None = Form(None),
+    hojas: list[UploadFile] = File(..., description="las 3 fotos de las hojas, en cualquier orden"),
+) -> EvaluarOut:
+    edad, f_eval = _edad(edad_meses, fecha_nacimiento, fecha_evaluacion)
+    s = servicio()
+    try:
+        contenidos = [(up.filename or "foto", await up.read()) for up in hojas]
+        rutas, avisos = s.recortar_hojas(child_id, contenidos)
+    except ErrorHoja as e:
+        raise HTTPException(422, str(e)) from None
+    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, avisos, f_eval)
     return EvaluarOut(**res)
 
 

@@ -22,6 +22,10 @@ export function evaluar(formData) {
   return fetch(`${BASE}/evaluar`, { method: 'POST', body: formData }).then(json)
 }
 
+export function evaluarHojas(formData) {
+  return fetch(`${BASE}/evaluar-hojas`, { method: 'POST', body: formData }).then(json)
+}
+
 export function listarSesiones() {
   return fetch(`${BASE}/sesiones`).then(json)
 }

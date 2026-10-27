@@ -11,6 +11,8 @@ class FiguraOut(BaseModel):
     puntaje_docente: int | None = None
     prob: float
     indicadores: dict[str, float]
+    decision: str | None = Field(
+        default=None, description="correcta | incorrecta | revisar (la califica el docente)")
 
 
 class EvaluarOut(BaseModel):
@@ -18,6 +20,7 @@ class EvaluarOut(BaseModel):
     child_id: str
     nombre_nino: str | None = None
     edad_meses: int
+    fecha_evaluacion: str | None = None   # AAAA-MM-DD; la edad se calculó a esta fecha
     # --- para el docente ---
     informe_docente_md: str
     accion: str = Field(

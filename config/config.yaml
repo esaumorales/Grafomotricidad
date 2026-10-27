@@ -13,6 +13,12 @@ rutas:
   models: models
   db: data/app.db                    # sesiones evaluadas desde el Dashboard Docente (SQLite)
 
+# Modelo final del artículo (Random Forest + revisión por confianza). Se instala con
+# scripts/instalar_modelo_final.py en models/final/<versión>/. Si no está, la aplicación usa models/actual.
+# modelo_rf_103e_103 = entrenado con los 103 niños (uso real); modelo_rf_103e_83 = con 83 (pruebas con los 20 apartados).
+modelo_final:
+  version: modelo_rf_103e_103
+
 preprocesamiento:
   lado_normalizado_px: 512           # cada figura se reescala a este lienzo cuadrado
   umbral_binarizado: adaptativo      # adaptativo | otsu

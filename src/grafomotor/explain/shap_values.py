@@ -23,11 +23,20 @@ def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str]) -> 
     import shap
 
     # ModeloConUmbral: SHAP sobre el XGBoost; el desplazamiento solo mueve el valor base
-    explainer = shap.TreeExplainer(getattr(modelo, "base", modelo))
+    base_modelo = getattr(modelo, "base", modelo)
+    if hasattr(base_modelo, "named_steps"):      # modelo final: imputador + Random Forest
+        previo = base_modelo[:-1]
+        X_figuras = previo.transform(X_figuras)
+        # el imputador descarta las columnas vacías en el entrenamiento: quedan menos que las de entrada
+        feature_names = list(previo.get_feature_names_out(np.array(feature_names)))
+        base_modelo = base_modelo[-1]
+    explainer = shap.TreeExplainer(base_modelo)
     sv = explainer.shap_values(X_figuras)
     if isinstance(sv, list):        # algunas versiones devuelven [clase0, clase1]
         sv = sv[1]
     sv = np.asarray(sv, dtype=float)
+    if sv.ndim == 3:                # Random Forest: (figuras, columnas, clases) -> clase "correcta"
+        sv = sv[:, :, 1]
 
     columnas = [dict(zip(feature_names, row, strict=True)) for row in sv]
     indicadores = [i for i in ORDEN if any(indicador_de(f) == i for f in feature_names)]
@@ -37,8 +46,8 @@ def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str]) -> 
     ]
     agg_signed = {i: float(np.mean([pf[i] for pf in por_figura])) for i in indicadores}
     agg_abs = {i: float(np.mean([abs(pf[i]) for pf in por_figura])) for i in indicadores}
-    base = explainer.expected_value
-    base = float(base[1]) if hasattr(base, "__len__") else float(base)
+    base = np.ravel(explainer.expected_value)
+    base = float(base[1]) if len(base) > 1 else float(base[0])
     base += float(getattr(modelo, "desplazamiento", 0.0))
     return {
         "por_figura": por_figura,
