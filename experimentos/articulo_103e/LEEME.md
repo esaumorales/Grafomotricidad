@@ -20,11 +20,16 @@ hay que ajustarlas a la ubicación local de los datos.
 | 3 | `mejora/paso0_apartar.py` | Aparta 20 niños (estratificados por tercil de la PD, semilla fija) antes de ajustar el modelo final. |
 | 4 | `correr_mejora.sh` | Modelo final con los 83 niños de desarrollo, prueba única con los 20 apartados (`paso4_prueba.py`), límites de la revisión por confianza (`paso5_confianza_V0.py`) y resumen de métricas sin kappa (`resumen_sin_kappa.py` → `resultados_sin_kappa.json`). |
 | 5 | `mejora/paso10_etiquetas_mayoria.py` y `mejora/paso11_mayoria.py` | Etiquetas por mayoría de la revisión a ciegas y análisis de sensibilidad. |
-| 6 | `figuras_resultados_103e.py <carpeta>` | Figuras 5 a 8 del artículo (PNG, TIF a 400 ppp y PDF) y los datos de cada una en CSV. |
+| 6 | `mejora/paso12_guardar_modelo.py` | Guarda el modelo final para la aplicación en `modelos/modelo_rf_103e_83` (83 niños, para probar el sistema con los 20 apartados) y `modelos/modelo_rf_103e_103` (103 niños, uso real): `modelo.joblib` + `manifiesto.json` (columnas, punto de corte, límites de confianza 0.25/0.72, medidas de las plantillas). Comprueba que reproduce exactamente las predicciones de la prueba. |
+| 7 | `figuras_resultados_103e.py <carpeta>` | Figuras 5 a 8 del artículo (PNG, TIF a 400 ppp y PDF) y los datos de cada una en CSV. |
 
 Los scripts `.sh` usan el Python de la variable `PY` (por defecto `python`) y ponen `src/` en `PYTHONPATH`.
 
 ## Archivos
+
+- `prediccion_final.py`: código de referencia para la aplicación web. Desde la figura binaria que deja
+  `preprocesar_figura` calcula las mismas columnas del entrenamiento y devuelve la probabilidad, la nota y la
+  decisión de la revisión por confianza (correcta, incorrecta o revisar).
 
 - `criterios.py`: indicadores por criterio del manual (número de partes, contacto, puntas libres, cruces,
   ondulaciones, esquinas, giro máximo e inclinación), medidos en el dibujo y en la figura modelo.
