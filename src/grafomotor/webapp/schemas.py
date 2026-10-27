@@ -11,6 +11,8 @@ class FiguraOut(BaseModel):
     puntaje_docente: int | None = None
     prob: float
     indicadores: dict[str, float]
+    decision: str | None = Field(
+        default=None, description="correcta | incorrecta | revisar (la califica el docente)")
 
 
 class EvaluarOut(BaseModel):
