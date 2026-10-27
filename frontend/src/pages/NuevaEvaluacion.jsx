@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { IconCheck, IconSubir } from '../components/icons'
 import { FIGURAS } from '../figuras'
-import { evaluar } from '../api'
+import { evaluar, evaluarHojas } from '../api'
 
 /**
  * Intenta leer el número de figura SOLO cuando el nombre del archivo lo dice de forma
@@ -37,13 +37,21 @@ export default function NuevaEvaluacion() {
   const [anios, setAnios] = useState(4)
   const [meses, setMeses] = useState(0)
   const [mano, setMano] = useState('D')
-  const [archivos, setArchivos] = useState({}) // { F01: File, ... }
+  const [archivos, setArchivos] = useState({}) // { F01: File, ... } (modo figura por figura)
+  const [modo, setModo] = useState('hojas') // 'hojas' (3 fotos de hojas) | 'figuras' (15 fotos)
+  const [hojas, setHojas] = useState([]) // File[] (modo hojas, en cualquier orden)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
   const inputMasivoRef = useRef(null)
   const inputIndividualRef = useRef({})
+  const inputHojasRef = useRef(null)
 
   const subidas = Object.keys(archivos).length
+  const previewsHojas = useMemo(() => hojas.map((f) => URL.createObjectURL(f)), [hojas])
+
+  function agregarHojas(fileList) {
+    setHojas((prev) => [...prev, ...fileList.filter((f) => f.type.startsWith('image/'))].slice(0, 3))
+  }
   const previews = useMemo(() => {
     const out = {}
     for (const [fid, file] of Object.entries(archivos)) out[fid] = URL.createObjectURL(file)
@@ -92,7 +100,8 @@ export default function NuevaEvaluacion() {
   }
 
   const edadMeses = anios * 12 + meses
-  const listoParaEnviar = childId.trim() && subidas === 15 && !enviando
+  const listoParaEnviar = childId.trim() && !enviando
+    && (modo === 'hojas' ? hojas.length === 3 : subidas === 15)
 
   async function onSubmit(e) {
     e.preventDefault()
@@ -104,12 +113,18 @@ export default function NuevaEvaluacion() {
       fd.append('child_id', childId.trim())
       fd.append('edad_meses', String(edadMeses))
       fd.append('nombre_nino', nombreNino.trim())
-      fd.append('figura_ids', FIGURAS.map((f) => f.id).join(','))
-      for (const f of FIGURAS) fd.append('fotos', archivos[f.id])
-      const res = await evaluar(fd)
+      let res
+      if (modo === 'hojas') {
+        for (const h of hojas) fd.append('hojas', h)
+        res = await evaluarHojas(fd)
+      } else {
+        fd.append('figura_ids', FIGURAS.map((f) => f.id).join(','))
+        for (const f of FIGURAS) fd.append('fotos', archivos[f.id])
+        res = await evaluar(fd)
+      }
       navigate(`/resultados/${res.id}`)
     } catch (err) {
-      setError(err.message || 'No se pudo evaluar la sesión.')
+      setError((err.message || 'No se pudo evaluar la sesión.').replace(/^\d+:\s*/, ''))
       setEnviando(false)
     }
   }
@@ -119,7 +134,7 @@ export default function NuevaEvaluacion() {
       <div>
         <h1 style={{ fontSize: 32 }}>Nueva evaluación</h1>
         <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 15 }}>
-          Completa los datos del niño o la niña y sube las 15 fotos de las figuras que copió.
+          Completa los datos del niño o la niña y sube las 3 fotos de las hojas donde copió las figuras.
         </p>
       </div>
 
@@ -184,6 +199,86 @@ export default function NuevaEvaluacion() {
           </div>
         </div>
 
+        {modo === 'hojas' && (
+          <div className="card" style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+              <h2 style={{ fontSize: 18 }}>Fotos de las 3 hojas</h2>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--mint-dark)' }} aria-live="polite">
+                {hojas.length} de 3 hojas subidas
+              </div>
+            </div>
+            <div role="progressbar" aria-valuenow={hojas.length} aria-valuemin={0} aria-valuemax={3} aria-label="Hojas subidas"
+              style={{ height: 8, borderRadius: 99, background: 'var(--border)', overflow: 'hidden', marginBottom: 22 }}>
+              <div style={{ width: `${(hojas.length / 3) * 100}%`, height: '100%', background: 'var(--mint-icon)', borderRadius: 99, transition: 'width .2s' }} />
+            </div>
+
+            <div
+              onDrop={(e) => { e.preventDefault(); agregarHojas(Array.from(e.dataTransfer.files)) }}
+              onDragOver={(e) => e.preventDefault()}
+              style={{
+                borderRadius: 'var(--radius-lg)', border: '3px dashed var(--peach)', background: 'var(--peach-light)',
+                padding: '28px 32px', display: 'flex', alignItems: 'center', gap: 22, marginBottom: 26, flexWrap: 'wrap',
+              }}
+            >
+              <div aria-hidden="true" style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--peach-icon)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <IconSubir stroke="white" />
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontWeight: 800, fontSize: 16.5 }}>Arrastra aquí las 3 hojas, todas a la vez</div>
+                <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                  Una foto por hoja, con la hoja completa a la vista. No importa el orden ni si la foto salió girada:
+                  el sistema reconoce cada hoja y recorta las figuras solo.
+                </div>
+              </div>
+              <label htmlFor="input-hojas" className="visually-hidden">Elegir las fotos de las hojas</label>
+              <input id="input-hojas" ref={inputHojasRef} type="file" accept="image/*" multiple hidden
+                onChange={(e) => { agregarHojas(Array.from(e.target.files)); e.target.value = '' }} />
+              <button type="button" className="btn-primary" style={{ background: 'var(--peach)', boxShadow: 'none', padding: '13px 26px', fontSize: 14.5 }}
+                onClick={() => inputHojasRef.current.click()} disabled={hojas.length >= 3}>
+                Elegir fotos
+              </button>
+            </div>
+
+            <div className="figuras-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{
+                  borderRadius: 'var(--radius-md)', padding: 14, minHeight: 150, display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', gap: 8, position: 'relative',
+                  border: hojas[i] ? '2px solid var(--mint-light)' : '2.5px dashed var(--border)',
+                  background: hojas[i] ? 'var(--mint-light)' : 'transparent',
+                }}>
+                  {hojas[i] ? (
+                    <>
+                      <img src={previewsHojas[i]} alt={`Hoja ${i + 1}`} style={{ width: '100%', maxHeight: 130, objectFit: 'contain', borderRadius: 8 }} />
+                      <div style={{ fontSize: 12, fontWeight: 700, wordBreak: 'break-all' }}>{hojas[i].name}</div>
+                      <button type="button" onClick={() => setHojas((prev) => prev.filter((_, j) => j !== i))}
+                        style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
+                        Quitar
+                      </button>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)' }}>Hoja {i + 1} · pendiente</div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {error && (
+              <div role="alert" style={{ marginTop: 20, color: 'var(--yellow-dark)', fontWeight: 700, fontSize: 14 }}>{error}</div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 28 }}>
+              <button type="button" onClick={() => { setModo('figuras'); setError(null) }}
+                style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
+                Prefiero subir figura por figura
+              </button>
+              <button type="submit" className="btn-primary" disabled={!listoParaEnviar}>
+                {enviando ? 'Evaluando…' : 'Evaluar ahora'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {modo === 'figuras' && (
         <div className="card" style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
             <h2 style={{ fontSize: 18 }}>Fotos de las 15 figuras</h2>
@@ -290,7 +385,14 @@ export default function NuevaEvaluacion() {
               )}
             </button>
           </div>
+          <div style={{ marginTop: 16 }}>
+            <button type="button" onClick={() => { setModo('hojas'); setError(null) }}
+              style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
+              Mejor subir las 3 hojas
+            </button>
+          </div>
         </div>
+        )}
       </form>
     </Layout>
   )

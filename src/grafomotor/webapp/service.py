@@ -16,6 +16,7 @@ import logging
 import os
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from grafomotor import ORDEN
@@ -29,12 +30,17 @@ from grafomotor.model.final import ModeloFinal
 from grafomotor.model.predict import PrediccionFigura, agregar_sesion, predecir_figura
 from grafomotor.model.registry import cargar_modelo
 from grafomotor.preprocessing import preprocesar_figura
+from grafomotor.preprocessing.hoja import normalizar_celda, segmentar_hoja
 from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
 from grafomotor.scoring.niveles import CriterioNiveles, NivelResultado
 from grafomotor.webapp import db
 
 
 log = logging.getLogger(__name__)
+
+
+class ErrorHoja(ValueError):
+    """Una foto de hoja no se pudo usar; el mensaje está escrito para el docente."""
 
 
 class Servicio:
@@ -102,11 +108,62 @@ class Servicio:
         return coincidencias[0] if coincidencias else None
 
     # ------------------------------------------------------------------ #
+    def _plantillas_gris(self) -> dict[str, np.ndarray]:
+        """Plantillas en gris (como las lee el detector de hojas para comparar la columna del modelo)."""
+        if getattr(self, "_gris", None) is None:
+            self._gris = {}
+            for fid in sorted(self.plantillas):
+                ruta = self.ruta_plantilla(fid)
+                if ruta is not None:
+                    self._gris[fid] = cv2.imread(str(ruta), cv2.IMREAD_GRAYSCALE)
+        return self._gris
+
+    def recortar_hojas(self, child_id: str, hojas: list[tuple[str, bytes]]) -> tuple[dict[str, Path], list[str]]:
+        """Fotos de las hojas -> una imagen por figura (las 5 celdas de la copia de cada hoja).
+
+        Las hojas pueden venir en cualquier orden y giradas: la página (1.ª a 3.ª) se reconoce
+        comparando la columna del modelo con las plantillas. Se necesitan las 3 hojas.
+        Devuelve ({figura_id: ruta de la imagen recortada}, avisos para el panel técnico)."""
+        ids = sorted(self.plantillas)
+        plantillas = self._plantillas_gris()
+        por_pagina: dict[int, tuple[str, object]] = {}
+        avisos: list[str] = []
+        for nombre, contenido in hojas:
+            gris = cv2.imdecode(np.frombuffer(contenido, np.uint8), cv2.IMREAD_GRAYSCALE)
+            if gris is None:
+                raise ErrorHoja(f"No pude abrir el archivo «{nombre}». Sube una foto (JPG o PNG).")
+            try:
+                h = segmentar_hoja(gris, plantillas, None, imagen_completa_si_falla=True)
+            except ValueError:
+                raise ErrorHoja(
+                    f"No encontré la hoja en la foto «{nombre}». Toma la foto con toda la hoja a la vista, "
+                    "sobre una mesa lisa y con buena luz.") from None
+            if h.pagina in por_pagina:
+                raise ErrorHoja(f"Las fotos «{por_pagina[h.pagina][0]}» y «{nombre}» parecen ser la misma "
+                                f"hoja (la de las figuras {(h.pagina - 1) * 5 + 1} a {h.pagina * 5}).")
+            por_pagina[h.pagina] = (nombre, h)
+        faltan = [p for p in (1, 2, 3) if p not in por_pagina]
+        if faltan:
+            rangos = ", ".join(f"figuras {(p - 1) * 5 + 1} a {p * 5}" for p in faltan)
+            raise ErrorHoja(f"Faltan hojas: no encontré la de las {rangos}. Se necesitan las 3 hojas.")
+        fotos: dict[str, Path] = {}
+        for pag in (1, 2, 3):
+            nombre, h = por_pagina[pag]
+            for a in h.avisos:
+                avisos.append(f"hoja de las figuras {(pag - 1) * 5 + 1} a {pag * 5}: {a}")
+            for i, celda in enumerate(h.copias):
+                fid = ids[(pag - 1) * 5 + i]
+                ok, jpg = cv2.imencode(".jpg", normalizar_celda(celda), [cv2.IMWRITE_JPEG_QUALITY, 95])
+                fotos[fid] = self.guardar_foto(child_id, fid, jpg.tobytes(), ".jpg")
+                if h.toca_borde[i]:
+                    avisos.append(f"{fid}: el trazo toca el borde de la casilla (revisar el recorte)")
+        return fotos, avisos
+
     def evaluar_sesion(
         self, child_id: str, edad_meses: int, fotos: dict[str, str | Path],
-        nombre_nino: str | None = None,
+        nombre_nino: str | None = None, avisos_previos: list[str] | None = None,
     ) -> dict:
-        preds, X, avisos = [], [], []
+        preds, X, avisos = [], [], list(avisos_previos or [])
         for fid, ruta in fotos.items():
             if fid not in self.plantillas:
                 avisos.append(f"sin plantilla para {fid}, figura omitida")

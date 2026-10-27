@@ -2,7 +2,8 @@
 API FastAPI para el Dashboard Docente.
 
   GET   /api/salud                              -> estado del servicio
-  POST  /api/evaluar                             -> evalúa una sesión (fotos -> informe), la guarda
+  POST  /api/evaluar                             -> evalúa una sesión (15 fotos de figuras -> informe), la guarda
+  POST  /api/evaluar-hojas                       -> igual, pero con las 3 fotos de las hojas (recorta solo)
   GET   /api/sesiones                            -> historial (resumen)
   GET   /api/ninos/{child_id}/sesiones           -> evaluaciones de un niño en el tiempo
   GET   /api/sesiones/{id}                       -> informe completo de una sesión guardada
@@ -26,7 +27,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from grafomotor.webapp.schemas import CorregirFiguraIn, EvaluarOut, SesionResumen
-from grafomotor.webapp.service import Servicio
+from grafomotor.webapp.service import ErrorHoja, Servicio
 
 app = FastAPI(title="Evaluación grafomotora infantil", version="0.2.0")
 
@@ -78,6 +79,23 @@ async def evaluar(
         destino = s.guardar_foto(child_id, fid, await up.read(), sufijo)
         rutas[fid] = str(destino)
     res = s.evaluar_sesion(child_id, edad_meses, rutas, nombre_nino)
+    return EvaluarOut(**res)
+
+
+@app.post("/api/evaluar-hojas", response_model=EvaluarOut)
+async def evaluar_hojas(
+    child_id: str = Form(...),
+    edad_meses: int = Form(...),
+    nombre_nino: str | None = Form(None),
+    hojas: list[UploadFile] = File(..., description="las 3 fotos de las hojas, en cualquier orden"),
+) -> EvaluarOut:
+    s = servicio()
+    try:
+        contenidos = [(up.filename or "foto", await up.read()) for up in hojas]
+        rutas, avisos = s.recortar_hojas(child_id, contenidos)
+    except ErrorHoja as e:
+        raise HTTPException(422, str(e)) from None
+    res = s.evaluar_sesion(child_id, edad_meses, rutas, nombre_nino, avisos)
     return EvaluarOut(**res)
 
 
