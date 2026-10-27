@@ -40,7 +40,9 @@ def corregir_perspectiva(gris: np.ndarray) -> np.ndarray:
     """Detecta el rectángulo de la hoja y rectifica la perspectiva.
 
     Base: contorno cuadrilátero de mayor área -> warpPerspective a un rectángulo.
-    Si no encuentra un cuadrilátero claro, devuelve la imagen sin cambios.
+    Si no encuentra un cuadrilátero claro, devuelve la imagen sin cambios. Tampoco cambia
+    nada si fuera del cuadrilátero hay papel tan claro como dentro: entonces no es la hoja
+    sobre la mesa sino un dibujo (cuadrado, rombo, triángulo) en un recorte ya enderezado.
     """
     bordes = cv2.Canny(cv2.GaussianBlur(gris, (5, 5), 0), 50, 150)
     contornos, _ = cv2.findContours(bordes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -50,6 +52,11 @@ def corregir_perspectiva(gris: np.ndarray) -> np.ndarray:
     peri = cv2.arcLength(c, True)
     aprox = cv2.approxPolyDP(c, 0.02 * peri, True)
     if len(aprox) != 4 or cv2.contourArea(c) < 0.2 * gris.size:
+        return gris
+    dentro = np.zeros(gris.shape, np.uint8)
+    cv2.fillPoly(dentro, [aprox.reshape(4, 2)], 1)
+    fuera = cv2.erode(1 - dentro, np.ones((15, 15), np.uint8)) > 0   # sin el borde del trazo
+    if fuera.mean() < 0.02 or np.median(gris[fuera]) > 0.85 * np.median(gris[dentro > 0]):
         return gris
     src = _ordenar_esquinas(aprox.reshape(4, 2).astype("float32"))
     w = int(max(np.linalg.norm(src[0] - src[1]), np.linalg.norm(src[2] - src[3])))
