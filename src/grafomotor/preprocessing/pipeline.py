@@ -25,6 +25,7 @@ class PreprocResultado:
     traslacion_px: tuple[float, float]
     calidad: float                  # 0..1: heurística de calidad de la imagen de entrada
     aviso: str | None = None        # p.ej. "foto borrosa", "registro no convergió"
+    sin_trazo: bool = False         # el niño no copió la figura (en el CUMANIN vale 0)
 
 
 # --------------------------------------------------------------------------- #
@@ -100,6 +101,13 @@ def aislar_figura(binaria: np.ndarray, min_area: int = 400,
     return np.where(np.isin(lab, conservar), 255, 0).astype(np.uint8)
 
 
+def hoja_en_blanco(binaria: np.ndarray, min_area: int = 400) -> bool:
+    """La figura no tiene trazo: ninguna mancha llega a `min_area` píxeles. En las 1,545 figuras del
+    estudio, las que estaban en blanco tenían como mucho 106 px de motas y el trazo real más chico, 472."""
+    n, _, stats, _ = cv2.connectedComponentsWithStats(binaria, connectivity=8)
+    return n <= 1 or int(stats[1:, cv2.CC_STAT_AREA].max()) < min_area
+
+
 def registrar_a_plantilla(
     figura: np.ndarray, plantilla: np.ndarray, modo: str = "similaridad", lado: int = 512,
     suavizado: int = 31,
@@ -128,6 +136,10 @@ def registrar_a_plantilla(
         ok = cc > 0.2
     except cv2.error:
         ok = False
+    if not ok:
+        # si no converge, el ECC puede dejar una traslación enorme que saca el dibujo del lienzo;
+        # se deja el dibujo centrado por su caja, como quedó al encajarlo
+        warp = np.eye(2, 3, dtype=np.float32)
     alineada = cv2.warpAffine(figura, warp, (lado, lado), flags=cv2.INTER_NEAREST)
     sx = float(np.hypot(warp[0, 0], warp[1, 0]))
     ang = float(np.degrees(np.arctan2(warp[1, 0], warp[0, 0])))
@@ -181,11 +193,14 @@ def preprocesar_gris(
     gris = normalizar_iluminacion(gris)
     binaria = binarizar(gris, metodo_bin)
     figura = aislar_figura(binaria, min_area, fraccion_min)
+    sin_trazo = hoja_en_blanco(binaria, min_area)
     alineada, reg = registrar_a_plantilla(figura, plantilla_bin, modo_reg, lado,
                                           int(cfg.get("suavizado_registro_px", 31)))
 
     aviso = None
-    if q < 0.35:
+    if sin_trazo:
+        aviso = "sin trazo: el niño no copió la figura"
+    elif q < 0.35:
         aviso = "foto poco nítida"
     elif not reg["ok"]:
         aviso = "el registro con la plantilla no convergió"
@@ -198,6 +213,7 @@ def preprocesar_gris(
         traslacion_px=reg["traslacion_px"],
         calidad=q,
         aviso=aviso,
+        sin_trazo=sin_trazo,
     )
 
 

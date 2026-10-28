@@ -2,7 +2,7 @@
 import cv2
 import numpy as np
 
-from grafomotor.preprocessing.pipeline import aislar_figura, calidad_imagen, registrar_a_plantilla
+from grafomotor.preprocessing.pipeline import aislar_figura, calidad_imagen, hoja_en_blanco, registrar_a_plantilla
 
 
 def _dos_lineas():
@@ -26,6 +26,24 @@ def test_registro_por_traslacion_no_gira():
     cv2.line(inclinada, (50, 100), (250, 200), 255, 5)
     _, reg = registrar_a_plantilla(inclinada, plantilla, "traslacion")
     assert reg["rotacion_deg"] == 0.0
+
+
+def test_registro_que_no_converge_no_saca_el_dibujo_del_lienzo():
+    plantilla = np.zeros((300, 300), np.uint8)
+    cv2.circle(plantilla, (150, 150), 80, 255, 3)
+    garabato = np.zeros((300, 300), np.uint8)
+    cv2.line(garabato, (20, 280), (60, 240), 255, 4)
+    alineada, reg = registrar_a_plantilla(garabato, plantilla, "traslacion")
+    if not reg["ok"]:
+        assert reg["traslacion_px"] == (0.0, 0.0)
+    assert alineada.any()
+
+
+def test_hoja_en_blanco_distingue_motas_de_un_trazo():
+    motas = np.zeros((300, 300), np.uint8)
+    motas[50:55, 50:55] = 255
+    assert hoja_en_blanco(motas)
+    assert not hoja_en_blanco(_dos_lineas())
 
 
 def test_calidad_penaliza_desenfoque():

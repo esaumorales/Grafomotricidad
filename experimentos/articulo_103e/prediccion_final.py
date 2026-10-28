@@ -5,10 +5,11 @@ Entrada: la figura binaria ya procesada (trazo blanco, 512 px, alineada con la p
 `grafomotor.preprocessing.preprocesar_figura` en `figura_bin`. Salida: probabilidad de que la figura sea
 correcta, la nota (1/0) con el punto de corte del modelo y la decisión de la revisión por confianza:
 nota automática si la probabilidad es <= límite inferior (incorrecta) o >= límite superior (correcta);
-si no, "revisar" (la califica el docente).
+si no, "revisar" (la califica el docente). Si la figura está en blanco (`sin_trazo` del preprocesamiento), la nota
+es 0 sin consultar al modelo, como en el CUMANIN: la figura que no se copia no cumple los criterios.
 
     m = ModeloFinal("modelos/modelo_rf_103e_83")      # carpeta con modelo.joblib + manifiesto.json
-    r = m.predecir(figura_bin, "F05")                 # {'prob': .., 'nota': .., 'decision': ..}
+    r = m.predecir(res.figura_bin, "F05", plantilla, meta, res.sin_trazo)   # {'prob', 'nota', 'decision'}
 """
 from __future__ import annotations
 
@@ -60,7 +61,9 @@ class ModeloFinal:
         return float(self.modelo.predict_proba(fila_entrada(binaria, figura_id, plantilla, meta, self.ref,
                                                             self.nombres))[0, 1])
 
-    def predecir(self, binaria, figura_id, plantilla, figura_meta) -> dict:
+    def predecir(self, binaria, figura_id, plantilla, figura_meta, sin_trazo: bool = False) -> dict:
+        if sin_trazo:
+            return {"prob": 0.0, "nota": 0, "decision": "sin trazo"}
         p = self.probabilidad(binaria, figura_id, plantilla, figura_meta)
         decision = "incorrecta" if p <= self.li else "correcta" if p >= self.ls else "revisar"
         return {"prob": round(p, 4), "nota": int(p >= self.corte), "decision": decision}
