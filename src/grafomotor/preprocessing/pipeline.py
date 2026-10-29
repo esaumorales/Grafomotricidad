@@ -136,11 +136,12 @@ def registrar_a_plantilla(
         ok = cc > 0.2
     except cv2.error:
         ok = False
-    if not ok:
-        # si no converge, el ECC puede dejar una traslación enorme que saca el dibujo del lienzo;
-        # se deja el dibujo centrado por su caja, como quedó al encajarlo
-        warp = np.eye(2, 3, dtype=np.float32)
     alineada = cv2.warpAffine(figura, warp, (lado, lado), flags=cv2.INTER_NEAREST)
+    if not ok and np.count_nonzero(alineada) < 0.9 * np.count_nonzero(figura):
+        # si no converge, el ECC a veces deja una traslación enorme que saca el dibujo (o parte)
+        # del lienzo; solo en ese caso se deja el dibujo centrado por su caja, como al encajarlo
+        warp = np.eye(2, 3, dtype=np.float32)
+        alineada = figura.copy()
     sx = float(np.hypot(warp[0, 0], warp[1, 0]))
     ang = float(np.degrees(np.arctan2(warp[1, 0], warp[0, 0])))
     return alineada, {
