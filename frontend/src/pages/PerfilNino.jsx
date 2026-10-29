@@ -35,7 +35,7 @@ function GraficoEvolucion({ sesiones }) {
 
   return (
     <div className="card" style={{ padding: '22px 26px' }}>
-      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 14 }}>
+      <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 14 }}>
         Evolución del percentil en el tiempo
       </div>
       <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }} role="img" aria-label="Gráfico de evolución del percentil a lo largo de las evaluaciones">
@@ -58,7 +58,7 @@ function GraficoEvolucion({ sesiones }) {
           </text>
         ))}
       </svg>
-      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>
+      <div style={{ fontSize: 19, color: 'var(--text-muted)', marginTop: 4 }}>
         Zona sombreada: percentil ≤ 16 (en riesgo, ver <code>scoring/niveles.py</code>).
       </div>
     </div>
@@ -82,11 +82,11 @@ export default function PerfilNino() {
   return (
     <Layout>
       <div>
-        <Link to="/historial" style={{ fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <Link to="/historial" style={{ fontSize: 19, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <IconFlechaIzq /> Volver al historial
         </Link>
-        <h1 style={{ fontSize: 28, marginTop: 8 }}>Seguimiento de {nombre}</h1>
-        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 15 }}>
+        <h1 style={{ fontSize: 37, marginTop: 8 }}>Seguimiento de {nombre}</h1>
+        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 23 }}>
           Código: {childId} · {sesiones ? `${sesiones.length} evaluación(es) registrada(s)` : '…'}
         </p>
       </div>
@@ -104,13 +104,13 @@ export default function PerfilNino() {
         <>
           <GraficoEvolucion sesiones={sesiones} />
           {sesiones.length < 2 && (
-            <div className="card" style={{ color: 'var(--text-muted)', fontSize: 13.5 }}>
+            <div className="card" style={{ color: 'var(--text-muted)', fontSize: 20 }}>
               Todavía hay una sola evaluación — el gráfico de evolución aparece a partir de la segunda.
             </div>
           )}
 
           <div className="card no-scroll-x" style={{ padding: '14px 18px' }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', padding: '6px 18px 14px' }}>
+            <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', padding: '6px 18px 14px' }}>
               Línea de tiempo (de la más antigua a la más reciente)
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -127,17 +127,17 @@ export default function PerfilNino() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, minWidth: 110 }}>{fechaCorta(s.fecha)}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 700 }}>{edadTexto(s.edad_meses)}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, minWidth: 110 }}>{fechaCorta(s.fecha)}</div>
+                      <div style={{ fontSize: 19, color: 'var(--text-muted)', fontWeight: 700 }}>{edadTexto(s.edad_meses)}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: 19, color: 'var(--text-muted)' }}>
                         PD {s.pd_total}/15{s.percentil != null ? ` · Pc ${s.percentil}` : ''}
                       </span>
                       <span className="badge-pill" style={{ background: adecuado ? 'var(--mint-light)' : 'var(--yellow-light)', color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)' }}>
                         {s.nivel}
                       </span>
-                      <span style={{ fontWeight: 800, fontSize: 13 }}>Ver informe →</span>
+                      <span style={{ fontWeight: 800, fontSize: 19 }}>Ver informe →</span>
                     </div>
                   </Link>
                 )

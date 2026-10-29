@@ -30,12 +30,12 @@ export default function Resultados() {
   return (
     <Layout>
       <div>
-        <Link to="/" style={{ fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <Link to="/" style={{ fontSize: 19, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <IconFlechaIzq /> Volver
         </Link>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 10, flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: 30 }}>{sesion.nombre_nino || sesion.child_id}</h1>
-          <span style={{ color: 'var(--text-muted)', fontSize: 15, fontWeight: 700 }}>
+          <h1 style={{ fontSize: 39 }}>{sesion.nombre_nino || sesion.child_id}</h1>
+          <span style={{ color: 'var(--text-muted)', fontSize: 23, fontWeight: 700 }}>
             {sesion.child_id} · {Math.floor(sesion.edad_meses / 12)} años {sesion.edad_meses % 12} meses
             {sesion.fecha_evaluacion && ` · evaluado el ${sesion.fecha_evaluacion.split('-').reverse().join('/')}`}
           </span>
@@ -61,13 +61,13 @@ export default function Resultados() {
           <IconCheck width={44} height={44} strokeWidth={2.8} stroke="white" />
         </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          <div style={{ fontSize: 19, fontWeight: 800, color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
             Nivel de desempeño grafomotor
           </div>
-          <h2 style={{ fontSize: 32, color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)', marginTop: 4 }}>
+          <h2 style={{ fontSize: 43, color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)', marginTop: 4 }}>
             {tecnico.nivel}
           </h2>
-          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, fontWeight: 700 }}>
+          <div style={{ fontSize: 22, color: 'var(--text-muted)', marginTop: 6, fontWeight: 700 }}>
             {logradas} de {sesion.figuras.length} figuras copiadas correctamente
             {tecnico.percentil != null && ` · percentil ${tecnico.percentil} (tramo ${tecnico.tramo_edad})`}
           </div>
@@ -75,7 +75,7 @@ export default function Resultados() {
       </div>
 
       <div className="card">
-        <h2 style={{ fontSize: 18, marginBottom: 20 }}>Resultado por figura</h2>
+        <h2 style={{ fontSize: 26, marginBottom: 20 }}>Resultado por figura</h2>
         <div className="figuras-grid">
           {sesion.figuras.map((f, i) => {
             const puntaje = f.puntaje_docente ?? f.puntaje
@@ -91,13 +91,13 @@ export default function Resultados() {
                 }}
               >
                 <FigureIcon figuraId={f.figura_id} color={lograda ? 'var(--mint-dark)' : 'var(--yellow-dark)'} />
-                <div style={{ fontSize: 11, fontWeight: 800, marginTop: 8, color: 'var(--text)' }}>{i + 1} · {f.nombre}</div>
+                <div style={{ fontSize: 19, fontWeight: 800, marginTop: 8, color: 'var(--text)' }}>{i + 1} · {f.nombre}</div>
                 {lograda ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 800, color: 'var(--mint-dark)', marginTop: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 19, fontWeight: 800, color: 'var(--mint-dark)', marginTop: 4 }}>
                     <IconCheck width={11} height={11} strokeWidth={4} /> Lograda
                   </div>
                 ) : (
-                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--yellow-dark)', marginTop: 4 }}>Necesita apoyo</div>
+                  <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--yellow-dark)', marginTop: 4 }}>Necesita apoyo</div>
                 )}
               </button>
             )

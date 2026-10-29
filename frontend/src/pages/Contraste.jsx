@@ -33,11 +33,11 @@ export default function Contraste() {
   return (
     <Layout>
       <div>
-        <Link to={`/informe/${sesion.id}`} style={{ fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <Link to={`/informe/${sesion.id}`} style={{ fontSize: 19, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <IconFlechaIzq /> Volver al informe
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, flexWrap: 'wrap', gap: 12 }}>
-          <h1 style={{ fontSize: 28 }}>Comparar figura · {sesion.nombre_nino || sesion.child_id}</h1>
+          <h1 style={{ fontSize: 37 }}>Comparar figura · {sesion.nombre_nino || sesion.child_id}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--surface)', borderRadius: 99, padding: '8px 10px', boxShadow: 'var(--shadow)' }}>
             <BotonNav
               disabled={!anterior}
@@ -46,7 +46,7 @@ export default function Contraste() {
             >
               <IconFlechaIzq stroke="var(--peach-dark)" aria-hidden="true" />
             </BotonNav>
-            <div style={{ fontWeight: 800, fontSize: 14 }} aria-live="polite">Figura {idx + 1} de {sesion.figuras.length}</div>
+            <div style={{ fontWeight: 800, fontSize: 22 }} aria-live="polite">Figura {idx + 1} de {sesion.figuras.length}</div>
             <BotonNav
               disabled={!siguiente}
               activo
@@ -67,7 +67,7 @@ export default function Contraste() {
 
       <div className="comparar-grid">
         <div className="comparar-columna">
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 12 }}>
+          <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 12 }}>
             Dibujo de {sesion.nombre_nino || 'el niño / la niña'}
           </div>
           <div className="card" style={{ padding: 18, transform: 'rotate(-0.6deg)' }}>
@@ -78,7 +78,7 @@ export default function Contraste() {
         </div>
 
         <div className="comparar-columna">
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 12 }}>
+          <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 12 }}>
             Plantilla de referencia
           </div>
           <div className="card" style={{ padding: 18 }}>

@@ -42,10 +42,10 @@ export default function Informe() {
   return (
     <Layout>
       <div>
-        <Link to={`/resultados/${sesion.id}`} style={{ fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <Link to={`/resultados/${sesion.id}`} style={{ fontSize: 19, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <IconFlechaIzq /> Volver a resultados
         </Link>
-        <h1 style={{ fontSize: 28, marginTop: 8 }}>Informe para {sesion.nombre_nino || sesion.child_id}</h1>
+        <h1 style={{ fontSize: 37, marginTop: 8 }}>Informe para {sesion.nombre_nino || sesion.child_id}</h1>
       </div>
 
       <ComparacionIA sesion={sesion} />
@@ -64,9 +64,9 @@ export default function Informe() {
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <IconBarras stroke="var(--text-muted)" aria-hidden="true" />
-                <span style={{ fontWeight: 800, fontSize: 14.5, color: 'var(--text-muted)' }}>Panel técnico (para especialistas)</span>
+                <span style={{ fontWeight: 800, fontSize: 22, color: 'var(--text-muted)' }}>Panel técnico (para especialistas)</span>
               </span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--peach-dark)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--peach-dark)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 {panelAbierto ? 'Ocultar' : 'Mostrar'}
                 {panelAbierto ? <IconChevronArriba aria-hidden="true" /> : <IconChevronAbajo aria-hidden="true" />}
               </span>
@@ -75,7 +75,7 @@ export default function Informe() {
             {panelAbierto && (
               <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 10 }}>Resumen de la sesión</div>
+                  <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 10 }}>Resumen de la sesión</div>
                   <FilaTecnica etiqueta="PD (0-15)" valor={tecnico.PD} />
                   <FilaTecnica etiqueta="Percentil" valor={tecnico.percentil} />
                   <FilaTecnica etiqueta="Tramo de edad" valor={tecnico.tramo_edad} />
@@ -83,16 +83,16 @@ export default function Informe() {
                   <FilaTecnica etiqueta="Descriptor" valor={tecnico.descriptor_verbal} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 10 }}>Probabilidad por figura</div>
+                  <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 10 }}>Probabilidad por figura</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflowY: 'auto' }}>
                     {sesion.figuras.map((f) => (
-                      <div key={f.figura_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
+                      <div key={f.figura_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 19 }}>
                         <span style={{ color: 'var(--text-muted)' }}>{f.figura_id} · {f.nombre}</span>
                         <span>{f.prob}</span>
                       </div>
                     ))}
                   </div>
-                  <div style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.8, marginTop: 14 }}>
+                  <div style={{ fontSize: 19, color: 'var(--text-muted)', lineHeight: 1.8, marginTop: 14 }}>
                     Baremo: {sesion.version_baremo}<br />
                     Modelo: {sesion.modelo_git_hash}
                   </div>
@@ -104,12 +104,12 @@ export default function Informe() {
 
         <div className="informe-lateral">
           <div style={{ background: 'var(--yellow-light)', borderRadius: 'var(--radius-lg)', padding: '22px 24px' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--yellow-dark)', textTransform: 'uppercase', letterSpacing: '.03em' }}>Sugerencia</div>
-            <div style={{ fontSize: 15, fontWeight: 800, marginTop: 6, lineHeight: 1.4 }}>{SUGERENCIA_POR_ACCION[sesion.accion]}</div>
+            <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--yellow-dark)', textTransform: 'uppercase', letterSpacing: '.03em' }}>Sugerencia</div>
+            <div style={{ fontSize: 23, fontWeight: 800, marginTop: 6, lineHeight: 1.4 }}>{SUGERENCIA_POR_ACCION[sesion.accion]}</div>
           </div>
 
           <div className="card" style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>Acciones</div>
+            <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>Acciones</div>
             <button className="btn-secondary no-print" onClick={() => window.print()}>
               <IconDescargar stroke="var(--peach-dark)" aria-hidden="true" /> Exportar informe
             </button>
@@ -125,13 +125,13 @@ export default function Informe() {
                 {sesion.figuras.map((f) => {
                   const actual = f.puntaje_docente ?? f.puntaje
                   return (
-                    <div key={f.figura_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, gap: 8 }}>
+                    <div key={f.figura_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 19, gap: 8 }}>
                       <span>{f.figura_id} · {f.nombre}</span>
                       <button
                         onClick={() => alternarPuntaje(f.figura_id, actual)}
                         aria-label={`${f.nombre}: marcada como ${actual === 1 ? 'lograda' : 'no lograda'}. Cambiar.`}
                         style={{
-                          fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 99, flexShrink: 0,
+                          fontSize: 19, fontWeight: 800, padding: '4px 10px', borderRadius: 99, flexShrink: 0,
                           background: actual === 1 ? 'var(--mint-light)' : 'var(--yellow-light)',
                           color: actual === 1 ? 'var(--mint-dark)' : 'var(--yellow-dark)',
                         }}
@@ -152,7 +152,7 @@ export default function Informe() {
 
 function FilaTecnica({ etiqueta, valor }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 8 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 19, marginBottom: 8 }}>
       <span style={{ color: 'var(--text-muted)' }}>{etiqueta}</span>
       <span style={{ fontWeight: 700 }}>{valor ?? '—'}</span>
     </div>

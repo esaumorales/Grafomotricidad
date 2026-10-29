@@ -12,7 +12,7 @@ export default function Sidebar() {
     <nav className="sidebar" aria-label="Navegación principal">
       <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 6px' }}>
         <LogoTrazo aria-hidden="true" />
-        <div style={{ fontFamily: "'Baloo 2'", fontWeight: 800, fontSize: 22, color: 'var(--peach-dark)' }}>
+        <div style={{ fontFamily: "'Baloo 2'", fontWeight: 800, fontSize: 29, color: 'var(--peach-dark)' }}>
           Trazo
         </div>
       </Link>
@@ -52,8 +52,8 @@ export default function Sidebar() {
           MR
         </div>
         <div className="sidebar-footer-texto">
-          <div style={{ fontWeight: 800, fontSize: 13 }}>Milagros Rojas</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Docente de inicial</div>
+          <div style={{ fontWeight: 800, fontSize: 19 }}>Milagros Rojas</div>
+          <div style={{ fontSize: 19, color: 'var(--text-muted)' }}>Docente de inicial</div>
         </div>
       </div>
     </nav>
