@@ -160,15 +160,15 @@ export default function NuevaEvaluacion() {
   return (
     <Layout>
       <div>
-        <h1 style={{ fontSize: 32 }}>Nueva evaluación</h1>
-        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 15 }}>
+        <h1 style={{ fontSize: 43 }}>Nueva evaluación</h1>
+        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 23 }}>
           Completa los datos del niño o la niña y sube las 3 fotos de las hojas donde copió las figuras.
         </p>
       </div>
 
       <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
         <div className="card">
-          <h2 style={{ fontSize: 18, marginBottom: 20 }}>Datos del niño o la niña</h2>
+          <h2 style={{ fontSize: 26, marginBottom: 20 }}>Datos del niño o la niña</h2>
           <div className="form-grid">
             <Campo id="campo-child-id" label="Código del niño/a">
               <input
@@ -192,7 +192,7 @@ export default function NuevaEvaluacion() {
             </Campo>
 
             <div aria-live="polite" style={{
-              gridColumn: '1 / -1', fontSize: 14, fontWeight: 800,
+              gridColumn: '1 / -1', fontSize: 22, fontWeight: 800,
               color: edadMeses === null ? 'var(--text-muted)' : edadOk ? 'var(--mint-dark)' : 'var(--yellow-dark)',
             }}>
               {textoEdad}
@@ -208,10 +208,10 @@ export default function NuevaEvaluacion() {
                     onClick={() => setMano(v)}
                     aria-pressed={mano === v}
                     style={{
-                      flex: 1, textAlign: 'center', padding: '11px 0', borderRadius: 'var(--radius-sm)',
+                      flex: 1, textAlign: 'center', padding: '16px 0', borderRadius: 'var(--radius-sm)',
                       fontWeight: mano === v ? 800 : 700,
                       background: mano === v ? 'var(--peach)' : 'var(--bg)',
-                      color: mano === v ? 'var(--text)' : 'var(--text-muted)',
+                      color: mano === v ? '#fff' : 'var(--text-muted)',
                       border: mano === v ? 'none' : '2px solid var(--border)',
                     }}
                   >
@@ -221,10 +221,10 @@ export default function NuevaEvaluacion() {
               </div>
             </fieldset>
 
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div style={{ gridColumn: 'span 2' }}>
               <Campo id="campo-nombre" label="Nombre (opcional, solo para tu referencia)">
                 <input id="campo-nombre" value={nombreNino} onChange={(e) => setNombreNino(e.target.value)}
-                  placeholder="Valentina" style={{ ...inputStyle, maxWidth: 340 }} />
+                  placeholder="Valentina" style={inputStyle} />
               </Campo>
             </div>
           </div>
@@ -233,8 +233,8 @@ export default function NuevaEvaluacion() {
         {modo === 'hojas' && (
           <div className="card" style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-              <h2 style={{ fontSize: 18 }}>Fotos de las 3 hojas</h2>
-              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--mint-dark)' }} aria-live="polite">
+              <h2 style={{ fontSize: 26 }}>Fotos de las 3 hojas</h2>
+              <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--mint-dark)' }} aria-live="polite">
                 {hojas.length} de 3 hojas subidas
               </div>
             </div>
@@ -255,8 +255,8 @@ export default function NuevaEvaluacion() {
                 <IconSubir stroke="white" />
               </div>
               <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ fontWeight: 800, fontSize: 16.5 }}>Arrastra aquí las 3 hojas, todas a la vez</div>
-                <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                <div style={{ fontWeight: 800, fontSize: 25 }}>Arrastra aquí las 3 hojas, todas a la vez</div>
+                <div style={{ fontSize: 20, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
                   Una foto por hoja, con la hoja completa a la vista. No importa el orden ni si la foto salió girada:
                   el sistema reconoce cada hoja y recorta las figuras solo.
                 </div>
@@ -264,7 +264,7 @@ export default function NuevaEvaluacion() {
               <label htmlFor="input-hojas" className="visually-hidden">Elegir las fotos de las hojas</label>
               <input id="input-hojas" ref={inputHojasRef} type="file" accept="image/*,.heic,.heif" multiple hidden
                 onChange={(e) => { agregarHojas(Array.from(e.target.files)); e.target.value = '' }} />
-              <button type="button" className="btn-primary" style={{ background: 'var(--peach)', boxShadow: 'none', padding: '13px 26px', fontSize: 14.5 }}
+              <button type="button" className="btn-primary" style={{ background: 'var(--peach)', boxShadow: 'none', padding: '18px 36px', fontSize: 22 }}
                 onClick={() => inputHojasRef.current.click()} disabled={hojas.length >= 3}>
                 Elegir fotos
               </button>
@@ -282,25 +282,25 @@ export default function NuevaEvaluacion() {
                     <>
                       <img src={previewsHojas[i]} alt={`Hoja ${i + 1}`} style={{ width: '100%', maxHeight: 130, objectFit: 'contain', borderRadius: 8 }}
                         onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                      <div style={{ fontSize: 12, fontWeight: 700, wordBreak: 'break-all' }}>{hojas[i].name}</div>
+                      <div style={{ fontSize: 19, fontWeight: 700, wordBreak: 'break-all' }}>{hojas[i].name}</div>
                       <button type="button" onClick={() => setHojas((prev) => prev.filter((_, j) => j !== i))}
-                        style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
+                        style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
                         Quitar
                       </button>
                     </>
                   ) : (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)' }}>Hoja {i + 1} · pendiente</div>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)' }}>Hoja {i + 1} · pendiente</div>
                   )}
                 </div>
               ))}
             </div>
 
             {error && (
-              <div role="alert" style={{ marginTop: 20, color: 'var(--yellow-dark)', fontWeight: 700, fontSize: 14 }}>{error}</div>
+              <div role="alert" style={{ marginTop: 20, color: 'var(--yellow-dark)', fontWeight: 700, fontSize: 22 }}>{error}</div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 28 }}>
               <button type="button" onClick={() => { setModo('figuras'); setError(null) }}
-                style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
+                style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
                 Prefiero subir figura por figura
               </button>
               <button type="submit" className="btn-primary" disabled={!listoParaEnviar}>
@@ -313,8 +313,8 @@ export default function NuevaEvaluacion() {
         {modo === 'figuras' && (
         <div className="card" style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-            <h2 style={{ fontSize: 18 }}>Fotos de las 15 figuras</h2>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--mint-dark)' }} aria-live="polite">
+            <h2 style={{ fontSize: 26 }}>Fotos de las 15 figuras</h2>
+            <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--mint-dark)' }} aria-live="polite">
               {subidas} de 15 fotos subidas
             </div>
           </div>
@@ -338,21 +338,21 @@ export default function NuevaEvaluacion() {
               <IconSubir stroke="white" />
             </div>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ fontWeight: 800, fontSize: 16.5 }}>Arrastra aquí las 15 fotos, todas a la vez</div>
-              <div style={{ fontSize: 13.5, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+              <div style={{ fontWeight: 800, fontSize: 25 }}>Arrastra aquí las 15 fotos, todas a la vez</div>
+              <div style={{ fontSize: 20, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
                 O haz clic para elegirlas juntas desde tu galería. No importa el orden en que las sueltes:
                 las acomodamos solas por figura y puedes corregir cualquiera abajo.
               </div>
             </div>
             <label htmlFor="input-masivo" className="visually-hidden">Elegir las 15 fotos a la vez</label>
             <input id="input-masivo" ref={inputMasivoRef} type="file" accept="image/*" multiple hidden onChange={onElegirMasivo} />
-            <button type="button" className="btn-primary" style={{ background: 'var(--peach)', boxShadow: 'none', padding: '13px 26px', fontSize: 14.5 }}
+            <button type="button" className="btn-primary" style={{ background: 'var(--peach)', boxShadow: 'none', padding: '18px 36px', fontSize: 22 }}
               onClick={() => inputMasivoRef.current.click()}>
               Elegir fotos
             </button>
           </div>
 
-          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 12 }}>
+          <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 12 }}>
             Revisa que cada foto quedó en su figura
           </div>
 
@@ -386,16 +386,16 @@ export default function NuevaEvaluacion() {
                         <IconCheck width={13} height={13} strokeWidth={3} stroke="white" />
                       </div>
                       <img src={previews[f.id]} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8 }} />
-                      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', marginTop: 10 }}>Figura {f.numero}</div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700 }}>{f.nombre}</div>
+                      <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', marginTop: 10 }}>Figura {f.numero}</div>
+                      <div style={{ fontSize: 19, fontWeight: 700 }}>{f.nombre}</div>
                     </>
                   ) : (
                     <>
                       <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
                       </svg>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)' }}>Figura {f.numero} · {f.nombre}</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>Pendiente</div>
+                      <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)' }}>Figura {f.numero} · {f.nombre}</div>
+                      <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-muted)' }}>Pendiente</div>
                     </>
                   )}
                 </button>
@@ -404,7 +404,7 @@ export default function NuevaEvaluacion() {
           </div>
 
           {error && (
-            <div role="alert" style={{ marginTop: 20, color: 'var(--yellow-dark)', fontWeight: 700, fontSize: 14 }}>{error}</div>
+            <div role="alert" style={{ marginTop: 20, color: 'var(--yellow-dark)', fontWeight: 700, fontSize: 22 }}>{error}</div>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
@@ -419,7 +419,7 @@ export default function NuevaEvaluacion() {
           </div>
           <div style={{ marginTop: 16 }}>
             <button type="button" onClick={() => { setModo('hojas'); setError(null) }}
-              style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
+              style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
               Mejor subir las 3 hojas
             </button>
           </div>
@@ -431,20 +431,20 @@ export default function NuevaEvaluacion() {
 }
 
 const inputStyle = {
-  padding: '12px 14px', border: '2px solid var(--border)', borderRadius: 'var(--radius-sm)',
-  fontSize: 14, color: 'var(--text)', background: 'var(--bg)', width: '100%',
+  padding: '16px 18px', border: '2px solid var(--border)', borderRadius: 'var(--radius-sm)',
+  fontSize: 22, color: 'var(--text)', background: 'var(--bg)', width: '100%',
 }
 
-const fieldsetStyle = { border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }
+const fieldsetStyle = { border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }
 const legendStyle = {
-  fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase',
+  fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase',
   letterSpacing: '.03em', padding: 0, marginBottom: 2,
 }
 
 function Campo({ id, label, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>
+      <label htmlFor={id} style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>
         {label}
       </label>
       {children}

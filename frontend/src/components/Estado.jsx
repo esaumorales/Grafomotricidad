@@ -45,7 +45,7 @@ export function ErrorConReintento({ mensaje, onReintentar }) {
         <button
           onClick={onReintentar}
           style={{
-            background: 'var(--yellow-dark)', color: 'white', fontWeight: 800, fontSize: 13,
+            background: 'var(--yellow-dark)', color: 'white', fontWeight: 800, fontSize: 19,
             padding: '8px 18px', borderRadius: 'var(--radius-sm)', flexShrink: 0,
           }}
         >

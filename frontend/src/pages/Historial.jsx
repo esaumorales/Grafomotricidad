@@ -43,8 +43,8 @@ export default function Historial() {
     <Layout>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 style={{ fontSize: 32 }}>Historial de evaluaciones</h1>
-          <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 15 }}>
+          <h1 style={{ fontSize: 43 }}>Historial de evaluaciones</h1>
+          <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 23 }}>
             Vuelve a ver el informe de cualquier evaluación anterior.
           </p>
         </div>
@@ -56,7 +56,7 @@ export default function Historial() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre o código…"
-            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 14, fontWeight: 600, width: '100%' }}
+            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 22, fontWeight: 600, width: '100%' }}
           />
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function Historial() {
 
       {sesiones && sesiones.length > 0 && (
         <div className="card no-scroll-x" style={{ padding: '14px 18px' }}>
-          <div className="historial-fila" style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em', padding: '6px 18px 14px' }}>
+          <div className="historial-fila" style={{ color: 'var(--text-muted)', fontSize: 19, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em', padding: '6px 18px 14px' }}>
             <span />
             <span>Niño / a</span>
             <span className="col-edad">Edad</span>
@@ -91,23 +91,23 @@ export default function Historial() {
                 className="historial-fila"
                 style={{ padding: '16px 18px', borderRadius: 'var(--radius-md)', color: 'var(--text)' }}
               >
-                <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', background: av.bg, color: av.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontFamily: "'Baloo 2'", fontSize: 13, flexShrink: 0 }}>
+                <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', background: av.bg, color: av.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontFamily: "'Baloo 2'", fontSize: 19, flexShrink: 0 }}>
                   {iniciales(nombre)}
                 </div>
                 <Link to={`/ninos/${encodeURIComponent(s.child_id)}`} title="Ver seguimiento de este niño / a" style={{ color: 'var(--text)' }}>
-                  <div style={{ fontWeight: 800, fontSize: 14.5 }}>{nombre}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.child_id} · seguimiento →</div>
+                  <div style={{ fontWeight: 800, fontSize: 22 }}>{nombre}</div>
+                  <div style={{ fontSize: 19, color: 'var(--text-muted)' }}>{s.child_id} · seguimiento →</div>
                 </Link>
-                <div className="col-edad" style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 700 }}>
+                <div className="col-edad" style={{ fontSize: 22, color: 'var(--text-muted)', fontWeight: 700 }}>
                   {Math.floor(s.edad_meses / 12)} a. {s.edad_meses % 12} m.
                 </div>
-                <div className="col-fecha" style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 700 }}>{fechaCorta(s.fecha)}</div>
+                <div className="col-fecha" style={{ fontSize: 22, color: 'var(--text-muted)', fontWeight: 700 }}>{fechaCorta(s.fecha)}</div>
                 <div>
                   <span className="badge-pill" style={{ background: adecuado ? 'var(--mint-light)' : 'var(--yellow-light)', color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)' }}>
                     {s.nivel}
                   </span>
                 </div>
-                <Link to={`/informe/${s.id}`} className="col-accion" style={{ fontWeight: 800, fontSize: 13.5, textAlign: 'right', color: 'var(--text)' }}>Ver informe →</Link>
+                <Link to={`/informe/${s.id}`} className="col-accion" style={{ fontWeight: 800, fontSize: 20, textAlign: 'right', color: 'var(--text)' }}>Ver informe →</Link>
               </div>
             )
           })}
