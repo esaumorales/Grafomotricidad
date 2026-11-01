@@ -28,6 +28,8 @@ def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str]) -> 
     if isinstance(sv, list):        # algunas versiones devuelven [clase0, clase1]
         sv = sv[1]
     sv = np.asarray(sv, dtype=float)
+    if sv.ndim == 3:                # otras devuelven (n_figuras, n_columnas, n_clases)
+        sv = sv[:, :, 1]
 
     columnas = [dict(zip(feature_names, row, strict=True)) for row in sv]
     indicadores = [i for i in ORDEN if any(indicador_de(f) == i for f in feature_names)]

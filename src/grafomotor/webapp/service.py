@@ -12,14 +12,13 @@ from pathlib import Path
 import numpy as np
 
 from grafomotor import ORDEN
-from grafomotor.model.columnas import fila
 from grafomotor.artefactos import Artefactos
 from grafomotor.config import load_config
 from grafomotor.explain import construir_informe, explicar_para_docente, shap_por_sesion
 from grafomotor.features.extract import extraer_indicadores
 from grafomotor.io import cargar_plantillas, ruta_plantilla
-from grafomotor.model.predict import agregar_sesion, predecir_figura
-from grafomotor.model.registry import cargar_modelo
+from grafomotor.model.final import ModeloFinal
+from grafomotor.model.predict import PrediccionFigura, agregar_sesion
 from grafomotor.preprocessing import preprocesar_figura
 from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
 from grafomotor.scoring.niveles import CriterioNiveles, NivelResultado
@@ -31,9 +30,8 @@ class Servicio:
 
     def __init__(self, config_path: str | None = None):
         self.cfg = load_config(config_path)
-        self.modelo, self.manifiesto = cargar_modelo(Artefactos.de_config(self.cfg).dir_modelo_ml)
-        # columnas con que se entrenó el modelo cargado (los modelos antiguos solo tienen las 6)
-        self.nombres = list(self.manifiesto.get("feature_names") or ORDEN)
+        self.modelo = ModeloFinal(Artefactos.de_config(self.cfg).dir_modelo_ml)
+        self.manifiesto = self.modelo.manifiesto
         self.baremo = cargar_baremo(self.cfg.ruta("baremos"))
         self.plantillas = cargar_plantillas(self.cfg, estricto=False)
         self.figuras_meta = self.cfg.figuras
@@ -84,16 +82,20 @@ class Servicio:
             )
             if pre.aviso:
                 avisos.append(f"{fid}: {pre.aviso}")
-            vec = extraer_indicadores(
-                pre.figura_bin, self.plantillas[fid], fid, self.figuras_meta.get(fid, {})
-            )
-            preds.append(predecir_figura(self.modelo, vec.valores, fid, vec.raw, self.nombres))
-            X.append(fila(vec.valores, vec.raw, fid, self.nombres))
+            meta = self.figuras_meta.get(fid, {})
+            r = self.modelo.predecir(pre.figura_bin, fid, self.plantillas[fid], meta, pre.sin_trazo)
+            vec = extraer_indicadores(pre.figura_bin, self.plantillas[fid], fid, meta)
+            preds.append(PrediccionFigura(
+                figura_id=fid, puntaje=r["nota"], prob=r["prob"],
+                indicadores={k: round(float(vec.valores[k]), 3) for k in ORDEN},
+            ))
+            X.append(self.modelo.fila(pre.figura_bin, fid, self.plantillas[fid], meta)[0])
 
         sesion = agregar_sesion(child_id, edad_meses, preds)
         tPc, nivel = self._nivel(sesion.PD, edad_meses)
 
-        shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), self.nombres)
+        estimador, X_shap, nombres_shap = self.modelo.shap_entrada(np.array(X, dtype=float))
+        shap_out = shap_por_sesion(estimador, X_shap, nombres_shap)
         nombres_fig = {fid: m.get("nombre", fid) for fid, m in self.figuras_meta.items()}
 
         exp = explicar_para_docente(
@@ -130,8 +132,8 @@ class Servicio:
                 }
                 for p in preds
             ],
-            "version_baremo": self.manifiesto.get("version_baremo", ""),
-            "modelo_git_hash": self.manifiesto.get("git_hash", ""),
+            "version_baremo": self.cfg.ruta("baremos").stem,
+            "modelo_git_hash": self.manifiesto.get("version", ""),
             "alertas_estilo": informe.alertas_estilo,
         }
         resultado["id"] = db.guardar_sesion(self.db_path, resultado)

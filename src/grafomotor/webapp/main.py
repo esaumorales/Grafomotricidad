@@ -53,8 +53,8 @@ def servicio() -> Servicio:
 def salud() -> dict:
     try:
         s = servicio()
-        return {"ok": True, "modelo": s.manifiesto.get("git_hash"),
-                "baremo": s.manifiesto.get("version_baremo")}
+        return {"ok": True, "modelo": s.manifiesto.get("version"),
+                "baremo": s.cfg.ruta("baremos").stem}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
