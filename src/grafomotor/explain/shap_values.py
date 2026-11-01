@@ -7,7 +7,8 @@ from grafomotor import ORDEN
 from grafomotor.model.columnas import indicador_de
 
 
-def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str]) -> dict:
+def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str],
+                    excluir_por_figura: list[set[str]] | None = None) -> dict:
     """
     Devuelve:
       por_figura : list[dict]  contribución de cada indicador a cada figura (con signo)
@@ -44,6 +45,12 @@ def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str]) -> 
         {i: float(sum(v for f, v in c.items() if indicador_de(f) == i)) for i in indicadores}
         for c in columnas
     ]
+    # indicadores que el modelo no usa en esa figura (p. ej. error angular fuera de las figuras con
+    # ángulos): su "faltaba el dato" no describe el dibujo, así que no se presenta como razón
+    for pf, fuera in zip(por_figura, excluir_por_figura or [], strict=False):
+        for i in fuera:
+            if i in pf:
+                pf[i] = 0.0
     agg_signed = {i: float(np.mean([pf[i] for pf in por_figura])) for i in indicadores}
     agg_abs = {i: float(np.mean([abs(pf[i]) for pf in por_figura])) for i in indicadores}
     base = np.ravel(explainer.expected_value)
