@@ -15,6 +15,8 @@ class PrediccionFigura:
     puntaje: int          # 0/1
     prob: float           # probabilidad de "correcta"
     indicadores: dict[str, float]
+    # revisión por confianza (modelo final): correcta | incorrecta | revisar; "" en los modelos antiguos
+    decision: str = ""
 
 
 @dataclass

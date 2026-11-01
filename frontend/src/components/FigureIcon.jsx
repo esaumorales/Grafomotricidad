@@ -1,38 +1,38 @@
+// Trazos medidos sobre las plantillas de la escala (lienzo de 40 x 40), para que cada ícono se parezca a su figura.
 const PATHS = {
-  F01: <path d="M20 8v24" />,
-  F02: <path d="M8 15h24M8 25h18" />,
-  F03: <path d="M20 8v24M8 20h24" />,
-  F04: <ellipse cx="20" cy="20" rx="12" ry="10" />,
-  F05: <rect x="9" y="9" width="22" height="22" rx="2" />,
-  F06: <polygon points="20,8 32,31 8,31" />,
-  F07: <path d="M9 9l22 22M31 9 9 31" />,
-  F08: <path d="M7 20c3-8 7-8 10 0s7 8 10 0 7-8 10 0" />,
+  F01: <path d="M20 4v32" />,
+  F02: <path d="M4.5 15h31M5 25h30" />,
+  F03: <path d="M20 6v28M4 20h32" />,
+  F04: <circle cx="20" cy="20" r="16" />,
+  F05: <rect x="4.5" y="5.5" width="31" height="29" />,
+  F06: <polygon points="20,7 36,33 4,33" />,
+  F07: <path d="M4.5 5.5l31 29M35.5 5.5l-31 29" />,
+  F08: <path d="M4 19C5 13 9 12 13 12C17 12 20 15 20 20C20 25 23 28 27 28C31 28 35 25 35.5 21.5" />,
   F09: (
     <>
-      <rect x="6" y="12" width="28" height="16" />
-      <line x1="6" y1="12" x2="34" y2="28" />
-      <line x1="34" y1="12" x2="6" y2="28" />
+      <rect x="4" y="11.5" width="32" height="17" />
+      <path d="M4 11.5l32 17M36 11.5l-32 17" />
     </>
   ),
-  F10: <polygon points="20,8 32,20 20,32 8,20" />,
+  F10: <polygon points="20,4.5 32.5,20 20,35.5 7.5,20" />,
   F11: (
     <>
-      <circle cx="20" cy="13" r="6" />
-      <polygon points="20,19 30,35 10,35" />
+      <circle cx="20" cy="12" r="8" />
+      <polygon points="20,20.5 28.5,35.5 11.5,35.5" />
     </>
   ),
-  F12: <path d="M9 30h22M13 14v9a7 7 0 0 0 14 0v-9" />,
-  F13: <path d="M12 12c-6 4-6 12 0 16c3-8 1-16-8-16m24 0c6 4 6 12 0 16c-3-8-1-16 8-16" />,
+  F12: <path d="M4 28h32M10.4 12v6a9.8 9.8 0 0 0 19.6 0v-6" />,
+  F13: <path d="M4 12.6h7C17 12.6 20 15 20 20.2c0 4.8-3 7.4-9 7.4H4M36 12.6h-7C23 12.6 20 15 20 20.2c0 4.8 3 7.4 9 7.4h7" />,
   F14: (
     <>
-      <path d="M9 17 20 8l11 9" />
-      <path d="M6 24c3-6 6-6 9 0s6 6 9 0 6-6 9 0" />
+      <path d="M10.8 30 20 10l9.2 20" />
+      <path d="M4 21.5C5 17 8 16.5 11 17.5C14 18.5 15 25 20 27C25 25 26 18.5 29 17.5C32 16.5 35 17 36 21.5" />
     </>
   ),
   F15: (
     <>
-      <rect x="6" y="6" width="18" height="18" rx="2" />
-      <circle cx="26" cy="26" r="9" />
+      <rect x="4.5" y="4.5" width="19" height="19" />
+      <circle cx="25" cy="25" r="10.6" />
     </>
   ),
 }

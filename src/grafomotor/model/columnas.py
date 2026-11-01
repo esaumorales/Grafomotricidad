@@ -33,6 +33,22 @@ CRUDOS = {
 }
 PREFIJO_FIGURA = "fig_"
 
+# Medidas por criterio del manual (modelo final: columnas cr_<medida> y dif_<medida>) -> indicador para la
+# docente. Se agrupan por lo que miran: cuántas partes hay y qué tan juntas están, puntas libres, cruces,
+# esquinas y ondas, e inclinación. Lo usa solo la explicación; el modelo recibe todas las columnas.
+CRITERIOS = {
+    "partes": "precision_modelo",
+    "partes_juntas": "precision_modelo",
+    "dist_partes": "precision_modelo",
+    "extremos": "cierre",
+    "cruces": "intersecciones",
+    "ondas": "vertices",
+    "esquinas": "vertices",
+    "giro_max": "vertices",
+    "incl_partes": "error_angular",
+    "angulo": "error_angular",
+}
+
 
 def nombres_columnas(cfg) -> list[str]:
     """Columnas de entrada según `modelo.entrada` de la configuración."""
@@ -50,8 +66,11 @@ def nombres_columnas(cfg) -> list[str]:
 
 def indicador_de(nombre: str) -> str | None:
     """Indicador al que pertenece una columna; None para las columnas de figura."""
+    nombre = nombre.removeprefix("missingindicator_")   # "falta el dato" que agrega el imputador
     if nombre in ORDEN:
         return nombre
+    if nombre.startswith(("cr_", "dif_")):
+        return CRITERIOS.get(nombre.split("_", 1)[1])
     return CRUDOS.get(nombre)
 
 

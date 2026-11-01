@@ -13,7 +13,7 @@ export default function ComparacionIA({ sesion }) {
       style={{
         display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'baseline',
         background: 'var(--surface-alt)', border: '1.5px dashed var(--peach)',
-        borderRadius: 'var(--radius-md)', padding: '14px 18px', fontSize: 13.5,
+        borderRadius: 'var(--radius-md)', padding: '14px 18px', fontSize: 20,
       }}
     >
       <span style={{ fontWeight: 800, color: 'var(--peach-dark)' }}>Con correcciones del docente:</span>

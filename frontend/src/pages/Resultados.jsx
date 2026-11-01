@@ -1,49 +1,25 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import Layout from '../components/Layout'
-import FigureIcon from '../components/FigureIcon'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useEvaluacion } from '../components/EvaluacionShell'
 import ComparacionIA from '../components/ComparacionIA'
-import { Cargando, ErrorConReintento } from '../components/Estado'
-import { IconCheck, IconFlechaDer, IconFlechaIzq } from '../components/icons'
-import { obtenerSesion } from '../api'
+import { IconCheck, IconFlechaDer } from '../components/icons'
+import { urlPlantilla } from '../api'
 
 export default function Resultados() {
-  const { id } = useParams()
   const navigate = useNavigate()
-  const [sesion, setSesion] = useState(null)
-  const [error, setError] = useState(null)
-
-  const cargar = useCallback(() => {
-    setError(null)
-    obtenerSesion(id).then(setSesion).catch((e) => setError(e.message))
-  }, [id])
-
-  useEffect(cargar, [cargar])
-
-  if (error) return <Layout><ErrorConReintento mensaje={error} onReintentar={cargar} /></Layout>
-  if (!sesion) return <Layout><Cargando /></Layout>
+  const { sesion } = useEvaluacion()
+  const [filtro, setFiltro] = useState('todas')
 
   const adecuado = sesion.accion === 'ninguna'
   const tecnico = sesion.panel_tecnico.resumen
   const logradas = sesion.figuras.filter((f) => (f.puntaje_docente ?? f.puntaje) === 1).length
 
   return (
-    <Layout>
-      <div>
-        <Link to="/" style={{ fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <IconFlechaIzq /> Volver
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 10, flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: 30 }}>{sesion.nombre_nino || sesion.child_id}</h1>
-          <span style={{ color: 'var(--text-muted)', fontSize: 15, fontWeight: 700 }}>
-            {sesion.child_id} · {Math.floor(sesion.edad_meses / 12)} años {sesion.edad_meses % 12} meses
-          </span>
-        </div>
-      </div>
-
+    <>
       <ComparacionIA sesion={sesion} />
 
       <div
+        className="result-summary"
         style={{
           background: adecuado ? 'var(--mint-light)' : 'var(--yellow-light)', borderRadius: 'var(--radius-lg)',
           padding: '32px 36px', display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap',
@@ -60,56 +36,44 @@ export default function Resultados() {
           <IconCheck width={44} height={44} strokeWidth={2.8} stroke="white" />
         </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          <div style={{ fontSize: 19, fontWeight: 800, color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
             Nivel de desempeño grafomotor
           </div>
-          <h2 style={{ fontSize: 32, color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)', marginTop: 4 }}>
+          <h2 style={{ fontSize: 43, color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)', marginTop: 4 }}>
             {tecnico.nivel}
           </h2>
-          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, fontWeight: 700 }}>
+          <div style={{ fontSize: 22, color: 'var(--text-muted)', marginTop: 6, fontWeight: 700 }}>
             {logradas} de {sesion.figuras.length} figuras copiadas correctamente
             {tecnico.percentil != null && ` · percentil ${tecnico.percentil} (tramo ${tecnico.tramo_edad})`}
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <h2 style={{ fontSize: 18, marginBottom: 20 }}>Resultado por figura</h2>
-        <div className="figuras-grid">
-          {sesion.figuras.map((f, i) => {
-            const puntaje = f.puntaje_docente ?? f.puntaje
-            const lograda = puntaje === 1
-            return (
-              <button
-                key={f.figura_id}
-                onClick={() => navigate(`/comparar/${sesion.id}/${f.figura_id}`)}
-                aria-label={`Figura ${i + 1}, ${f.nombre}: ${lograda ? 'lograda' : 'necesita apoyo'}. Ver comparación.`}
-                style={{
-                  borderRadius: 'var(--radius-md)', background: lograda ? 'var(--mint-light)' : 'var(--yellow-light)',
-                  padding: 14, textAlign: 'center', cursor: 'pointer', textDecoration: 'none',
-                }}
-              >
-                <FigureIcon figuraId={f.figura_id} color={lograda ? 'var(--mint-dark)' : 'var(--yellow-dark)'} />
-                <div style={{ fontSize: 11, fontWeight: 800, marginTop: 8, color: 'var(--text)' }}>{i + 1} · {f.nombre}</div>
-                {lograda ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 800, color: 'var(--mint-dark)', marginTop: 4 }}>
-                    <IconCheck width={11} height={11} strokeWidth={4} /> Lograda
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--yellow-dark)', marginTop: 4 }}>Necesita apoyo</div>
-                )}
-              </button>
-            )
+      <section className="figure-results" aria-labelledby="figure-results-title">
+        <div className="figure-results-heading"><div><h2 id="figure-results-title">Revisar los dibujos</h2><p>Aquí se muestran las figuras de referencia. Selecciona una para compararla con el dibujo del niño o la niña.</p></div></div>
+        <div className="results-toolbar">
+        <div className="figure-filters" role="group" aria-label="Filtrar figuras">
+          {[['todas', 'Todas'], ['revisar', 'Por revisar'], ['apoyo', 'Necesita apoyo'], ['logradas', 'Logradas']].map(([valor, etiqueta]) => {
+            const contar = sesion.figuras.filter((f) => valor === 'todas' || (valor === 'revisar' ? f.decision === 'revisar' && f.puntaje_docente == null : valor === 'logradas' ? (f.puntaje_docente ?? f.puntaje) === 1 : (f.puntaje_docente ?? f.puntaje) === 0)).length
+            return <button type="button" key={valor} aria-pressed={filtro === valor} onClick={() => setFiltro(valor)}>{etiqueta}<span>{contar}</span></button>
           })}
         </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 26 }}>
-          <button className="btn-primary" onClick={() => navigate(`/informe/${sesion.id}`)}>
-            Ver informe detallado
-            <IconFlechaDer stroke="var(--text)" />
-          </button>
+        <div className="result-report-action"><button className="btn-primary" onClick={() => navigate(`/informe/${sesion.id}`)}>Ver informe detallado <IconFlechaDer aria-hidden="true" /></button></div>
         </div>
-      </div>
-    </Layout>
+        <div className="result-figure-grid">
+          {sesion.figuras.filter((f) => filtro === 'todas' || (filtro === 'revisar' ? f.decision === 'revisar' && f.puntaje_docente == null : filtro === 'logradas' ? (f.puntaje_docente ?? f.puntaje) === 1 : (f.puntaje_docente ?? f.puntaje) === 0)).map((f) => {
+            const revisar = f.decision === 'revisar' && f.puntaje_docente == null
+            const lograda = (f.puntaje_docente ?? f.puntaje) === 1
+            const estado = revisar ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'
+            return <Link key={f.figura_id} className="result-figure" to={`/comparar/${sesion.id}/${f.figura_id}`}>
+              <div className="result-drawing"><span>Imagen no disponible</span><img loading="lazy" className="reference-display" src={urlPlantilla(f.figura_id)} alt={`Figura de referencia: ${f.nombre}`} onError={(e) => { e.currentTarget.style.display = 'none' }} /></div>
+              <div className="result-figure-caption"><strong>{Number(f.figura_id.slice(1))} · {f.nombre}</strong><span className={`figure-status ${revisar || !lograda ? 'needs-review' : ''}`}>{lograda && !revisar && <IconCheck width={14} height={14} aria-hidden="true" />}{estado}</span><span className="figure-compare-link">Comparar dibujo <IconFlechaDer width={14} height={14} aria-hidden="true" /></span></div>
+            </Link>
+          })}
+        </div>
+        {sesion.figuras.filter((f) => filtro === 'todas' || (filtro === 'revisar' ? f.decision === 'revisar' && f.puntaje_docente == null : filtro === 'logradas' ? (f.puntaje_docente ?? f.puntaje) === 1 : (f.puntaje_docente ?? f.puntaje) === 0)).length === 0 && <p role="status" className="result-empty">No hay figuras en este grupo.</p>}
+
+      </section>
+    </>
   )
 }

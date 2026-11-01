@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 
 from grafomotor.config import Config
 
@@ -16,6 +17,9 @@ def agregar_argumentos(p: argparse.ArgumentParser) -> None:
 
 def ejecutar(args: argparse.Namespace, cfg: Config) -> int:
     import uvicorn
+
+    if cfg.source is not None:
+        os.environ["GRAFOMOTOR_CONFIG"] = str(cfg.source)
 
     uvicorn.run("grafomotor.webapp.main:app", host=args.host, port=args.puerto,
                 reload=not args.sin_recarga)

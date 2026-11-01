@@ -265,10 +265,17 @@ def decidir_orientacion(vertical: np.ndarray, plantillas: dict[str, np.ndarray],
 # --------------------------------------------------------------------------- #
 def segmentar_hoja(gris: np.ndarray, plantillas: dict[str, np.ndarray],
                    pagina_esperada: int | None = None,
-                   p: ParamsHoja | None = None) -> HojaSegmentada:
+                   p: ParamsHoja | None = None,
+                   imagen_completa_si_falla: bool = False) -> HojaSegmentada:
+    """`imagen_completa_si_falla`: si no se halla el borde de la cuadrícula, se toma la imagen entera como
+    cuadrícula (sirve para hojas ya recortadas, donde la tabla llena la foto). Queda un aviso."""
     p = p or ParamsHoja()
     avisos: list[str] = []
     esq = localizar_cuadricula(gris, p)
+    if esq is None and imagen_completa_si_falla:
+        alto, ancho = gris.shape[:2]
+        esq = np.array([[0, 0], [ancho - 1, 0], [ancho - 1, alto - 1], [0, alto - 1]], dtype="float32")
+        avisos.append("no se vio el borde de la hoja: se usó la foto completa como hoja")
     if esq is None:
         raise ValueError("no se encontró la cuadrícula de la hoja")
     vertical = _poner_vertical(rectificar(gris, esq))

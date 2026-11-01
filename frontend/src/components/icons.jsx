@@ -101,7 +101,7 @@ export const IconSubir = (p) => (
 
 export const LogoTrazo = (p) => (
   <svg width="34" height="34" viewBox="0 0 34 34" fill="none" {...p}>
-    <circle cx="17" cy="17" r="16" fill="var(--peach)" />
-    <path d="M10 20 C13 12, 16 24, 19 15 C21 9, 23 13, 24 17" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <circle cx="17" cy="17" r="16" fill="var(--gold)" />
+    <path d="M10 20 C13 12, 16 24, 19 15 C21 9, 23 13, 24 17" stroke="var(--navy)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
   </svg>
 )

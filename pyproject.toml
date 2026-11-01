@@ -16,6 +16,7 @@ dependencies = [
     "opencv-python-headless>=4.9",
     "scikit-image>=0.22",
     "Pillow>=10.2",
+    "pillow-heif>=0.18",
     "scikit-learn>=1.4",
     "xgboost>=2.0",
     "shap>=0.45",
