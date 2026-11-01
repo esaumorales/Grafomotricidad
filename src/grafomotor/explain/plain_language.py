@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 
 from grafomotor.explain import phrases as P
 from grafomotor.explain.suggestions import sugerencias_para
+from grafomotor.explain.tabla_s1 import aplica
 
 # palabras que NO deben aparecer en el texto para el docente
 JERGA_PROHIBIDA = [
@@ -62,18 +63,24 @@ def _severidad(valor_medio: float) -> str | None:
     return "marcada"
 
 
+def _figuras_donde_aplica(sesion, ind: str) -> list:
+    """Solo las figuras en que el manual revisa lo que mide el indicador (Tabla S1): así el informe no
+    dice, por ejemplo, que la línea recta 'queda abierta' (una línea recta siempre es abierta)."""
+    return [f for f in sesion.figuras if ind in f.indicadores and aplica(ind, f.figura_id)]
+
+
 def _valor_medio_indicador(sesion, ind: str) -> float:
-    vals = [f.indicadores[ind] for f in sesion.figuras if ind in f.indicadores]
+    vals = [f.indicadores[ind] for f in _figuras_donde_aplica(sesion, ind)]
     return sum(vals) / len(vals) if vals else 1.0
 
 
 def _peores_figuras(sesion, ind: str, nombres_fig: dict, k: int = 2) -> list[str]:
-    ordenadas = sorted(sesion.figuras, key=lambda f: f.indicadores.get(ind, 1.0))
+    ordenadas = sorted(_figuras_donde_aplica(sesion, ind), key=lambda f: f.indicadores[ind])
     return [nombres_fig.get(f.figura_id, f.figura_id) for f in ordenadas[:k]]
 
 
 def _mejores_figuras(sesion, ind: str, nombres_fig: dict, k: int = 2) -> list[str]:
-    ordenadas = sorted(sesion.figuras, key=lambda f: -f.indicadores.get(ind, 0.0))
+    ordenadas = sorted(_figuras_donde_aplica(sesion, ind), key=lambda f: -f.indicadores[ind])
     return [nombres_fig.get(f.figura_id, f.figura_id) for f in ordenadas[:k]]
 
 

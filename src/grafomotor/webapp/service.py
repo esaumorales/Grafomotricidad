@@ -21,7 +21,6 @@ from grafomotor.config import load_config
 from grafomotor.explain import construir_informe, explicar_para_docente, shap_por_sesion
 from grafomotor.features.extract import extraer_indicadores
 from grafomotor.io import a_binaria, cargar_plantillas, leer_gris, ruta_plantilla
-from grafomotor.model.columnas import indicador_de
 from grafomotor.model.final_103h import ModeloFinal
 from grafomotor.model.predict import PrediccionFigura, agregar_sesion
 from grafomotor.preprocessing import preprocesar_figura
@@ -190,9 +189,8 @@ class Servicio:
         sesion = agregar_sesion(child_id, edad_meses, preds)
         tPc, nivel = self._nivel(sesion.PD, edad_meses)
 
-        apagado = {indicador_de(self.final.nombres[j]) for j in self.final.solo_cols}
-        excluir = [set() if p.figura_id in self.final.solo_figs else apagado for p in preds]
-        shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), self.nombres, excluir)
+        shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), self.nombres,
+                                   [p.figura_id for p in preds])
         nombres_fig = {fid: m.get("nombre", fid) for fid, m in self.cfg.figuras.items()}
 
         exp = explicar_para_docente(
