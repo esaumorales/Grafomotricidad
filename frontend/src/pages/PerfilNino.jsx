@@ -1,151 +1,68 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { Cargando, ErrorConReintento } from '../components/Estado'
-import { IconFlechaIzq } from '../components/icons'
+import { IconFlechaIzq, IconFlechaDer } from '../components/icons'
 import { sesionesDeNino } from '../api'
 
-function fechaCorta(iso) {
-  return new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
-}
+const fechaCorta = (iso) => new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Lima' })
+const edadTexto = (meses) => `${Math.floor(meses / 12)} años ${meses % 12} meses`
+const colorNivel = (s) => s.accion === 'ninguna' ? 'adequate' : s.accion === 'derivar' ? 'support' : 'review'
 
-function edadTexto(meses) {
-  return `${Math.floor(meses / 12)} a. ${meses % 12} m.`
-}
-
-/** Gráfico de evolución (percentil a lo largo del tiempo), sin librería externa. */
 function GraficoEvolucion({ sesiones }) {
-  const conDato = sesiones.filter((s) => s.percentil != null)
-  if (conDato.length < 2) return null
-
-  const w = 640
-  const h = 200
-  const pad = { top: 20, right: 20, bottom: 34, left: 36 }
-  const innerW = w - pad.left - pad.right
-  const innerH = h - pad.top - pad.bottom
-
-  const x = (i) => pad.left + (innerW * i) / (conDato.length - 1)
-  const y = (pc) => pad.top + innerH * (1 - pc / 100)
-
-  const puntos = conDato.map((s, i) => [x(i), y(s.percentil)])
-  const linea = puntos.map(([px, py], i) => `${i === 0 ? 'M' : 'L'}${px.toFixed(1)},${py.toFixed(1)}`).join(' ')
-
-  // banda de riesgo: percentil <= 16 (mismo corte que scoring/niveles.py)
-  const yRiesgo = y(16)
-
-  return (
-    <div className="card" style={{ padding: '22px 26px' }}>
-      <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 14 }}>
-        Evolución del percentil en el tiempo
-      </div>
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }} role="img" aria-label="Gráfico de evolución del percentil a lo largo de las evaluaciones">
-        {/* banda de riesgo (percentil <= 16) */}
-        <rect x={pad.left} y={yRiesgo} width={innerW} height={pad.top + innerH - yRiesgo} fill="var(--yellow-light)" opacity="0.6" />
-        {/* eje */}
-        <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + innerH} stroke="var(--border)" strokeWidth="1.5" />
-        <line x1={pad.left} y1={pad.top + innerH} x2={pad.left + innerW} y2={pad.top + innerH} stroke="var(--border)" strokeWidth="1.5" />
-        {[0, 50, 100].map((v) => (
-          <text key={v} x={pad.left - 8} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--text-muted)">{v}</text>
-        ))}
-        {/* línea de evolución */}
-        <path d={linea} fill="none" stroke="var(--peach-dark)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {puntos.map(([px, py], i) => (
-          <circle key={i} cx={px} cy={py} r="4.5" fill="var(--peach-dark)" stroke="var(--surface)" strokeWidth="1.5" />
-        ))}
-        {conDato.map((s, i) => (
-          <text key={s.id} x={x(i)} y={h - 10} textAnchor="middle" fontSize="10.5" fill="var(--text-muted)">
-            {fechaCorta(s.fecha).replace(/ de \d+$/, '')}
-          </text>
-        ))}
-      </svg>
-      <div style={{ fontSize: 19, color: 'var(--text-muted)', marginTop: 4 }}>
-        Zona sombreada: percentil ≤ 16 (en riesgo, ver <code>scoring/niveles.py</code>).
-      </div>
-    </div>
-  )
+  const datos = sesiones.filter((s) => s.percentil != null && Number.isFinite(Number(s.percentil)))
+  const [elegida, setElegida] = useState(null)
+  const actual = datos.find((s) => s.id === elegida) || datos[datos.length - 1]
+  if (!datos.length) return <section className="tracking-chart"><h2>Evolución del percentil</h2><p>No hay percentiles disponibles para representar.</p></section>
+  const w = 680, h = 230, pad = {left: 38, right: 40, top: 28, bottom: 32}
+  const times = datos.map((s) => new Date(s.fecha).getTime())
+  const span = times[times.length-1] - times[0]
+  const x = (i) => pad.left + (w-pad.left-pad.right)*(span ? (times[i]-times[0])/span : datos.length > 1 ? i/(datos.length-1) : .5)
+  const y = (v) => pad.top+(h-pad.top-pad.bottom)*(1-v/100)
+  const path = datos.map((s,i) => `${i ? 'L' : 'M'}${x(i)},${y(s.percentil)}`).join(' ')
+  return <section className="tracking-chart" aria-labelledby="tracking-chart-title">
+    <div className="tracking-section-head"><div><h2 id="tracking-chart-title">Evolución del percentil</h2><p>Selecciona un punto para consultar la evaluación.</p></div><span className="tracking-scale">Escala de 0 a 100</span></div>
+    <svg viewBox={`0 0 ${w} ${h}`} className="tracking-svg" role="group" aria-label="Percentiles por fecha de registro">
+      {[0,25,50,75,100].map((v) => <g key={v}><line x1={pad.left} y1={y(v)} x2={w-pad.right} y2={y(v)} stroke="var(--border)" strokeDasharray={v === 0 ? undefined : '3 5'} /><text x={pad.left-10} y={y(v)+4} textAnchor="end" fontSize="11" fill="var(--text-muted)">{v}</text></g>)}
+      {datos.length > 1 && <path d={path} fill="none" stroke="var(--navy)" strokeWidth="2.5" strokeLinejoin="round" />}
+      {datos.map((s,i) => <g key={s.id} role="button" tabIndex={0} aria-label={`${fechaCorta(s.fecha)}, percentil ${s.percentil}`} aria-pressed={actual.id === s.id} onClick={() => setElegida(s.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault();setElegida(s.id) } }}>
+        <circle cx={x(i)} cy={y(s.percentil)} r="18" fill="transparent" />
+        {actual.id === s.id && <circle cx={x(i)} cy={y(s.percentil)} r="10" fill="var(--gold)" />}
+        <circle cx={x(i)} cy={y(s.percentil)} r="4.5" fill="var(--navy)" stroke="white" strokeWidth="1.5" />
+        <text x={x(i)} y={y(s.percentil)-14} textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--navy)">{s.percentil}</text>
+      </g>)}
+      <text x={pad.left} y={h-8} fontSize="11" fill="var(--text-muted)">{fechaCorta(datos[0].fecha)}</text>
+      {datos.length > 1 && <text x={w-pad.right} y={h-8} textAnchor="end" fontSize="11" fill="var(--text-muted)">{fechaCorta(datos[datos.length-1].fecha)}</text>}
+    </svg>
+    <div className="tracking-selected" aria-live="polite"><div><strong>{fechaCorta(actual.fecha)}</strong><span>{edadTexto(actual.edad_meses)} · {actual.pd_total}/15 puntos · Percentil {actual.percentil}</span></div><Link to={`/informe/${actual.id}`}>Ver informe <IconFlechaDer width={15} height={15} aria-hidden="true" /></Link></div>
+    <p className="tracking-chart-note">Las fechas corresponden al registro. El percentil se calcula según la edad de cada evaluación.</p>
+  </section>
 }
 
-export default function PerfilNino() {
-  const { childId } = useParams()
+export default function PerfilNino({ childId: childIdProp, embedded = false }) {
+  const params = useParams()
+  const childId = childIdProp || params.childId
   const [sesiones, setSesiones] = useState(null)
   const [error, setError] = useState(null)
-
-  const cargar = useCallback(() => {
-    setError(null)
-    sesionesDeNino(childId).then(setSesiones).catch((e) => setError(e.message))
-  }, [childId])
-
+  const cargar = useCallback(() => { setError(null); sesionesDeNino(childId).then(setSesiones).catch((e) => setError(e.message)) }, [childId])
   useEffect(cargar, [cargar])
-
-  const nombre = useMemo(() => sesiones?.find((s) => s.nombre_nino)?.nombre_nino || childId, [sesiones, childId])
-
-  return (
-    <Layout>
-      <div>
-        <Link to="/historial" style={{ fontSize: 19, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <IconFlechaIzq /> Volver al historial
-        </Link>
-        <h1 style={{ fontSize: 37, marginTop: 8 }}>Seguimiento de {nombre}</h1>
-        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 23 }}>
-          Código: {childId} · {sesiones ? `${sesiones.length} evaluación(es) registrada(s)` : '…'}
-        </p>
-      </div>
-
-      {error && <ErrorConReintento mensaje={error} onReintentar={cargar} />}
-      {!error && !sesiones && <Cargando filas={4} />}
-
-      {sesiones && sesiones.length === 0 && (
-        <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-          No hay evaluaciones registradas para este código todavía.
-        </div>
-      )}
-
-      {sesiones && sesiones.length > 0 && (
-        <>
-          <GraficoEvolucion sesiones={sesiones} />
-          {sesiones.length < 2 && (
-            <div className="card" style={{ color: 'var(--text-muted)', fontSize: 20 }}>
-              Todavía hay una sola evaluación — el gráfico de evolución aparece a partir de la segunda.
-            </div>
-          )}
-
-          <div className="card no-scroll-x" style={{ padding: '14px 18px' }}>
-            <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', padding: '6px 18px 14px' }}>
-              Línea de tiempo (de la más antigua a la más reciente)
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {[...sesiones].reverse().map((s) => {
-                const adecuado = s.accion === 'ninguna'
-                return (
-                  <Link
-                    key={s.id}
-                    to={`/informe/${s.id}`}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-                      padding: '14px 18px', borderRadius: 'var(--radius-md)', color: 'var(--text)',
-                      borderTop: '1px solid var(--border)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, minWidth: 110 }}>{fechaCorta(s.fecha)}</div>
-                      <div style={{ fontSize: 19, color: 'var(--text-muted)', fontWeight: 700 }}>{edadTexto(s.edad_meses)}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <span style={{ fontSize: 19, color: 'var(--text-muted)' }}>
-                        PD {s.pd_total}/15{s.percentil != null ? ` · Pc ${s.percentil}` : ''}
-                      </span>
-                      <span className="badge-pill" style={{ background: adecuado ? 'var(--mint-light)' : 'var(--yellow-light)', color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)' }}>
-                        {s.nivel}
-                      </span>
-                      <span style={{ fontWeight: 800, fontSize: 19 }}>Ver informe →</span>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </>
-      )}
-    </Layout>
-  )
+  const ordenadas = useMemo(() => [...(sesiones || [])].sort((a,b) => a.fecha.localeCompare(b.fecha)), [sesiones])
+  const ultima = ordenadas[ordenadas.length-1]
+  const nombre = ultima?.nombre_nino || ordenadas.find((s) => s.nombre_nino)?.nombre_nino || childId
+  if (!embedded && ultima) return <Navigate to={`/seguimiento/${ultima.id}`} replace />
+  const Container = embedded ? Fragment : Layout
+  return <Container><div className="tracking-page">
+    {!embedded && <header className="tracking-header"><Link className="report-back" to="/historial"><IconFlechaIzq aria-hidden="true" />Volver al historial</Link><div className="tracking-header-row"><div><h1>Seguimiento de {nombre}</h1><p>Código: {childId}</p></div><Link className="history-new" to={`/?${new URLSearchParams({childId, nombre: ultima?.nombre_nino || ordenadas.find((s) => s.nombre_nino)?.nombre_nino || ''}).toString()}`}>+ Nueva evaluación para este niño</Link></div></header>}
+    {error && <ErrorConReintento mensaje={error} onReintentar={cargar} />}
+    {!error && !sesiones && <Cargando filas={4} />}
+    {!error && sesiones && !ordenadas.length && <div className="history-empty"><h2>Aún no hay evaluaciones</h2><p>Las evaluaciones de este código aparecerán aquí.</p><Link to="/">Nueva evaluación</Link></div>}
+    {!error && ultima && <>
+      {embedded && <div className="tracking-embedded-top"><div><h2>Seguimiento de {nombre}</h2><p>Consulta las evaluaciones registradas con el código {childId}.</p></div><Link className="history-new" to={`/?${new URLSearchParams({childId, nombre: ultima?.nombre_nino || ordenadas.find((s) => s.nombre_nino)?.nombre_nino || ''}).toString()}`}>+ Nueva evaluación para este niño</Link></div>}
+      <div className="tracking-summary"><div><span>Evaluaciones registradas</span><strong>{ordenadas.length}</strong></div><div><span>Último registro</span><strong>{fechaCorta(ultima.fecha)}</strong></div><div><span>Último nivel registrado</span><span className={`history-level ${colorNivel(ultima)}`}><span aria-hidden="true" />{ultima.nivel}</span></div></div>
+      <GraficoEvolucion sesiones={ordenadas} />
+      <section className="tracking-records" aria-labelledby="tracking-records-title"><div className="tracking-section-head"><div><h2 id="tracking-records-title">Evaluaciones registradas</h2><p>De la más reciente a la más antigua.</p></div><span className="tracking-scale">{ordenadas.length} registros</span></div>
+        <ol>{[...ordenadas].reverse().map((s) => <li key={s.id}><div className="tracking-record-date"><strong>{fechaCorta(s.fecha)}</strong><span>{edadTexto(s.edad_meses)}</span></div><div className="tracking-record-score"><strong>{s.pd_total}<small> / 15</small></strong><span>puntos</span></div><div className="tracking-record-score"><strong>{s.percentil ?? '—'}</strong><span>percentil</span></div><span className={`history-level ${colorNivel(s)}`}><span aria-hidden="true" />{s.nivel}</span><div className="tracking-record-actions"><Link className="history-open" to={`/resultados/${s.id}`}>Resultados</Link><Link className="history-open" to={`/informe/${s.id}`}>Ver informe <IconFlechaDer width={15} height={15} aria-hidden="true" /></Link></div></li>)}</ol>
+      </section>
+    </>}
+  </div></Container>
 }

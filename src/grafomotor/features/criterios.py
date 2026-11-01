@@ -14,7 +14,11 @@
 
 Los parámetros se fijaron antes de ver resultados y no se ajustan mirando las métricas.
 Para cada figura se mide lo mismo en la plantilla del modelo, y el modelo recibe el valor del
-niño y la diferencia con el modelo (dif_*)."""
+niño y la diferencia con el modelo (dif_*).
+
+Copia de `experimentos/articulo_103e/criterios.py`: ese archivo queda congelado para que el
+experimento del artículo siga siendo reproducible; esta es la versión que usa la aplicación.
+"""
 from __future__ import annotations
 
 from collections import deque

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { IconCheck, IconSubir } from '../components/icons'
 import { FIGURAS } from '../figuras'
@@ -51,8 +51,10 @@ function edadEnMeses(nacimiento, evaluacion) {
 
 export default function NuevaEvaluacion() {
   const navigate = useNavigate()
-  const [childId, setChildId] = useState('')
-  const [nombreNino, setNombreNino] = useState('')
+  const [parametros] = useSearchParams()
+  const paraMismoNino = Boolean(parametros.get('childId'))
+  const [childId, setChildId] = useState(() => parametros.get('childId') || '')
+  const [nombreNino, setNombreNino] = useState(() => parametros.get('nombre') || '')
   const [nacimiento, setNacimiento] = useState('')
   const [evaluacion, setEvaluacion] = useState(hoyISO())
   const [mano, setMano] = useState('D')
@@ -61,6 +63,8 @@ export default function NuevaEvaluacion() {
   const [hojas, setHojas] = useState([]) // File[] (modo hojas, en cualquier orden)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
+  const [fotoAQuitar, setFotoAQuitar] = useState(null)
+  const quitarDialogRef = useRef(null)
   const inputMasivoRef = useRef(null)
   const inputIndividualRef = useRef({})
   const inputHojasRef = useRef(null)
@@ -157,297 +161,130 @@ export default function NuevaEvaluacion() {
     }
   }
 
+  const total = modo === 'hojas' ? 3 : 15
+  const cantidad = modo === 'hojas' ? hojas.length : subidas
+  const pendiente = !childId.trim() ? 'Completa el código del niño o la niña.'
+    : !edadOk ? 'Completa las fechas y comprueba la edad.'
+    : cantidad < total ? `Selecciona ${total - cantidad} ${modo === 'hojas' ? 'foto(s) de las hojas' : 'foto(s) de las figuras'} para continuar.`
+    : 'Todo listo para evaluar.'
+
   return (
     <Layout>
-      <div>
-        <h1 style={{ fontSize: 43 }}>Nueva evaluación</h1>
-        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 23 }}>
-          Completa los datos del niño o la niña y sube las 3 fotos de las hojas donde copió las figuras.
-        </p>
-      </div>
-
-      <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-        <div className="card">
-          <h2 style={{ fontSize: 26, marginBottom: 20 }}>Datos del niño o la niña</h2>
-          <div className="form-grid">
-            <Campo id="campo-child-id" label="Código del niño/a">
-              <input
-                id="campo-child-id"
-                required
-                value={childId}
-                onChange={(e) => setChildId(e.target.value)}
-                placeholder="NINO_0034"
-                style={inputStyle}
-              />
-            </Campo>
-
-            <Campo id="campo-nacimiento" label="Fecha de nacimiento">
-              <input id="campo-nacimiento" type="date" required value={nacimiento} max={evaluacion || undefined}
-                onChange={(e) => setNacimiento(e.target.value)} style={inputStyle} />
-            </Campo>
-
-            <Campo id="campo-evaluacion" label="Fecha de la evaluación">
-              <input id="campo-evaluacion" type="date" required value={evaluacion}
-                onChange={(e) => setEvaluacion(e.target.value)} style={inputStyle} />
-            </Campo>
-
-            <div aria-live="polite" style={{
-              gridColumn: '1 / -1', fontSize: 22, fontWeight: 800,
-              color: edadMeses === null ? 'var(--text-muted)' : edadOk ? 'var(--mint-dark)' : 'var(--yellow-dark)',
-            }}>
-              {textoEdad}
+      <div className="evaluation-page">
+        <header className="evaluation-header">
+          <h1>{paraMismoNino ? `Nueva evaluación para ${nombreNino || childId}` : 'Nueva evaluación'}</h1>
+          <p>Completa los datos y añade las fotografías de la prueba.</p>
+        </header>
+        {paraMismoNino && <div className="repeat-evaluation-note"><div><strong>Se añadirá al seguimiento de {childId}</strong><p>Confirma la fecha de nacimiento y añade las fotos de esta evaluación.</p></div><Link to={`/ninos/${encodeURIComponent(childId)}`}>Volver al seguimiento</Link></div>}
+        <form className="evaluation-form" onSubmit={onSubmit} aria-busy={enviando}>
+          <section className="evaluation-section" aria-labelledby="datos-title">
+            <div className="evaluation-section-heading">
+              <span className="section-number" aria-hidden="true">1</span>
+              <div><h2 id="datos-title">Datos del niño o la niña</h2><p>La edad se calcula a partir de las fechas.</p></div>
             </div>
+            <div className="evaluation-fields">
+              <Campo id="campo-child-id" label="Código del niño o la niña">
+                <input id="campo-child-id" required readOnly={paraMismoNino} value={childId} onChange={(e) => setChildId(e.target.value)} aria-describedby="codigo-ayuda" />
+                <span id="codigo-ayuda" className="field-help">Por ejemplo: NINO_0034</span>
+              </Campo>
+              <Campo id="campo-nombre" label={<>Nombre <span className="optional-label">(opcional)</span></>}>
+                <input id="campo-nombre" value={nombreNino} onChange={(e) => setNombreNino(e.target.value)} aria-describedby="nombre-ayuda" />
+                <span id="nombre-ayuda" className="field-help">Solo para tu referencia.</span>
+              </Campo>
+              <Campo id="campo-nacimiento" label="Fecha de nacimiento">
+                <input id="campo-nacimiento" type="date" required value={nacimiento} max={evaluacion || undefined} onChange={(e) => setNacimiento(e.target.value)} />
+              </Campo>
+              <Campo id="campo-evaluacion" label="Fecha de evaluación">
+                <input id="campo-evaluacion" type="date" required value={evaluacion} onChange={(e) => setEvaluacion(e.target.value)} />
+              </Campo>
+              <p className={`evaluation-age ${edadMeses !== null && !edadOk ? 'has-warning' : ''}`} aria-live="polite">{textoEdad}</p>
+              <fieldset className="hand-field">
+                <legend>Mano usada</legend>
+                <div className="hand-options">
+                  {['D', 'I'].map((v) => (
+                    <button type="button" key={v} aria-pressed={mano === v} onClick={() => setMano(v)}>
+                      {mano === v && <IconCheck width={16} height={16} aria-hidden="true" />}
+                      {v === 'D' ? 'Derecha' : 'Izquierda'}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
+          </section>
 
-            <fieldset style={fieldsetStyle}>
-              <legend style={legendStyle}>Mano usada</legend>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {['D', 'I'].map((v) => (
-                  <button
-                    type="button"
-                    key={v}
-                    onClick={() => setMano(v)}
-                    aria-pressed={mano === v}
-                    style={{
-                      flex: 1, textAlign: 'center', padding: '16px 0', borderRadius: 'var(--radius-sm)',
-                      fontWeight: mano === v ? 800 : 700,
-                      background: mano === v ? 'var(--peach)' : 'var(--bg)',
-                      color: mano === v ? '#fff' : 'var(--text-muted)',
-                      border: mano === v ? 'none' : '2px solid var(--border)',
-                    }}
-                  >
-                    {v === 'D' ? 'Derecha' : 'Izquierda'}
-                  </button>
+          <section className="evaluation-section" aria-labelledby="fotos-title">
+            <div className="evaluation-section-heading photo-heading">
+              <span className="section-number" aria-hidden="true">2</span>
+              <div><h2 id="fotos-title">{modo === 'hojas' ? 'Fotografías de las hojas' : 'Fotografías de las figuras'}</h2>
+                <p>{modo === 'hojas' ? 'Una foto por hoja, con todos sus bordes visibles.' : 'Comprueba que cada fotografía corresponde a su figura.'}</p>
+              </div>
+              <span className="photo-count" role="status">{cantidad} de {total} seleccionadas</span>
+            </div>
+            <details className="upload-sheet-guide">
+              <summary><svg width="17" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 12h6M9 17h4"/></svg><span>Plantilla de ejemplo · Así debe verse la hoja</span><span className="sheet-guide-orientation">Vertical</span></summary>
+              <div className="upload-sheet-guide-body"><div><p>Coloca la hoja en vertical, con el título arriba, los modelos a la izquierda y los dibujos a la derecha.</p><p>Fotografía la hoja completa, de frente y con sus cuatro bordes visibles.</p><a href="/api/guia/hoja-modelo/pdf" target="_blank" rel="noreferrer">Abrir plantilla de ejemplo ↗</a></div><a href="/api/guia/hoja-modelo/png" target="_blank" rel="noreferrer" aria-label="Ampliar hoja de ejemplo"><img src="/api/guia/hoja-modelo/png" alt="Hoja vertical: figuras 1 a 5 a la izquierda y espacio de copia a la derecha" loading="lazy" /></a></div>
+            </details>
+            {cantidad < total && <div className="evaluation-upload" onDragOver={(e) => e.preventDefault()} onDrop={modo === 'hojas' ? (e) => { e.preventDefault(); agregarHojas(Array.from(e.dataTransfer.files)) } : onDrop}>
+              <IconSubir width={28} height={28} aria-hidden="true" />
+              <div className="evaluation-upload-copy"><strong>{cantidad === 0 ? (modo === 'hojas' ? 'Añade las 3 fotos de las hojas' : 'Añade las fotos de las 15 figuras') : `Añade ${total - cantidad === 1 ? 'la foto que falta' : `las ${total - cantidad} fotos que faltan`}`}</strong>
+                <p>Arrástralas aquí o selecciónalas desde tu dispositivo.</p>
+              </div>
+              <button type="button" className="evaluation-select" disabled={enviando || (modo === 'hojas' && hojas.length >= 3)} onClick={() => (modo === 'hojas' ? inputHojasRef : inputMasivoRef).current.click()}>Elegir fotos</button>
+            </div>}
+            <input aria-label="Elegir fotos de las hojas" ref={inputHojasRef} type="file" accept="image/*,.heic,.heif" multiple hidden onChange={(e) => { agregarHojas(Array.from(e.target.files)); e.target.value = '' }} />
+            <input aria-label="Elegir fotos de las figuras" ref={inputMasivoRef} type="file" accept="image/*" multiple hidden onChange={onElegirMasivo} />
+            <p className="photo-guidance">{modo === 'hojas' ? 'Puedes elegirlas en cualquier orden. Al evaluar, el sistema identifica las hojas y recorta las figuras.' : 'Los nombres como F01 o figura_1 ayudan a ordenar las fotos. Revisa su ubicación antes de evaluar.'}</p>
+
+            {modo === 'hojas' ? (hojas.length > 0 &&
+              <div className="sheet-previews">
+                {[0, 1, 2].map((i) => (
+                  <div className={`sheet-preview ${hojas[i] ? 'is-selected' : ''}`} key={i}>
+                    <div className="sheet-preview-heading"><span>Foto {i + 1}</span>{hojas[i] ? <span className="photo-state"><IconCheck width={14} height={14} aria-hidden="true" /> Seleccionada</span> : <span className="photo-state">Pendiente</span>}</div>
+                    {hojas[i] ? <>
+                      <div className="sheet-image"><span className="preview-fallback">Vista previa no disponible</span><img src={previewsHojas[i]} alt={`Vista previa de la foto ${i + 1}`} onError={(e) => { e.currentTarget.style.display = 'none' }} /></div>
+                      <div className="sheet-filename" title={hojas[i].name}>{hojas[i].name}</div>
+                      <button className="photo-remove" type="button" disabled={enviando} aria-label={`Quitar foto ${i + 1}`} onClick={() => { setFotoAQuitar(hojas[i]); quitarDialogRef.current.showModal() }}><IconPapelera />Quitar foto</button>
+                    </> : <div className="sheet-empty"><svg width="36" height="44" viewBox="0 0 36 44" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="5" y="2" width="26" height="40" rx="3"/><path d="M12 14h12M12 21h12M12 28h7"/></svg><span>Aún no has añadido una foto</span></div>}
+                  </div>
                 ))}
               </div>
-            </fieldset>
-
-            <div style={{ gridColumn: 'span 2' }}>
-              <Campo id="campo-nombre" label="Nombre (opcional, solo para tu referencia)">
-                <input id="campo-nombre" value={nombreNino} onChange={(e) => setNombreNino(e.target.value)}
-                  placeholder="Valentina" style={inputStyle} />
-              </Campo>
-            </div>
-          </div>
-        </div>
-
-        {modo === 'hojas' && (
-          <div className="card" style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-              <h2 style={{ fontSize: 26 }}>Fotos de las 3 hojas</h2>
-              <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--mint-dark)' }} aria-live="polite">
-                {hojas.length} de 3 hojas subidas
+            ) : (
+              <div className="evaluation-figures">
+                {FIGURAS.map((f) => <div className="figure-preview" key={f.id}>
+                  <button className="figure-photo" type="button" disabled={enviando} onClick={() => inputIndividualRef.current[f.id]?.click()} aria-label={`${f.nombre}: ${archivos[f.id] ? 'cambiar' : 'añadir'} foto`}>
+                    {archivos[f.id] ? <img src={previews[f.id]} alt={`Figura ${f.numero}`} /> : <IconSubir width={24} height={24} aria-hidden="true" />}
+                    <strong>{f.numero} · {f.nombre}</strong><span>{archivos[f.id] ? 'Seleccionada · Cambiar foto' : 'Añadir foto'}</span>
+                  </button>
+                  <input ref={(el) => { inputIndividualRef.current[f.id] = el }} type="file" accept="image/*" hidden aria-label={`Foto de ${f.nombre}`} onChange={(e) => onElegirIndividual(f.id, e)} />
+                </div>)}
               </div>
-            </div>
-            <div role="progressbar" aria-valuenow={hojas.length} aria-valuemin={0} aria-valuemax={3} aria-label="Hojas subidas"
-              style={{ height: 8, borderRadius: 99, background: 'var(--border)', overflow: 'hidden', marginBottom: 22 }}>
-              <div style={{ width: `${(hojas.length / 3) * 100}%`, height: '100%', background: 'var(--mint-icon)', borderRadius: 99, transition: 'width .2s' }} />
-            </div>
-
-            <div
-              onDrop={(e) => { e.preventDefault(); agregarHojas(Array.from(e.dataTransfer.files)) }}
-              onDragOver={(e) => e.preventDefault()}
-              style={{
-                borderRadius: 'var(--radius-lg)', border: '3px dashed var(--peach)', background: 'var(--peach-light)',
-                padding: '28px 32px', display: 'flex', alignItems: 'center', gap: 22, marginBottom: 26, flexWrap: 'wrap',
-              }}
-            >
-              <div aria-hidden="true" style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--peach-icon)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <IconSubir stroke="white" />
-              </div>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ fontWeight: 800, fontSize: 25 }}>Arrastra aquí las 3 hojas, todas a la vez</div>
-                <div style={{ fontSize: 20, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
-                  Una foto por hoja, con la hoja completa a la vista. No importa el orden ni si la foto salió girada:
-                  el sistema reconoce cada hoja y recorta las figuras solo.
-                </div>
-              </div>
-              <label htmlFor="input-hojas" className="visually-hidden">Elegir las fotos de las hojas</label>
-              <input id="input-hojas" ref={inputHojasRef} type="file" accept="image/*,.heic,.heif" multiple hidden
-                onChange={(e) => { agregarHojas(Array.from(e.target.files)); e.target.value = '' }} />
-              <button type="button" className="btn-primary" style={{ background: 'var(--peach)', boxShadow: 'none', padding: '18px 36px', fontSize: 22 }}
-                onClick={() => inputHojasRef.current.click()} disabled={hojas.length >= 3}>
-                Elegir fotos
-              </button>
-            </div>
-
-            <div className="figuras-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-              {[0, 1, 2].map((i) => (
-                <div key={i} style={{
-                  borderRadius: 'var(--radius-md)', padding: 14, minHeight: 150, display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', gap: 8, position: 'relative',
-                  border: hojas[i] ? '2px solid var(--mint-light)' : '2.5px dashed var(--border)',
-                  background: hojas[i] ? 'var(--mint-light)' : 'transparent',
-                }}>
-                  {hojas[i] ? (
-                    <>
-                      <img src={previewsHojas[i]} alt={`Hoja ${i + 1}`} style={{ width: '100%', maxHeight: 130, objectFit: 'contain', borderRadius: 8 }}
-                        onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                      <div style={{ fontSize: 19, fontWeight: 700, wordBreak: 'break-all' }}>{hojas[i].name}</div>
-                      <button type="button" onClick={() => setHojas((prev) => prev.filter((_, j) => j !== i))}
-                        style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
-                        Quitar
-                      </button>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)' }}>Hoja {i + 1} · pendiente</div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {error && (
-              <div role="alert" style={{ marginTop: 20, color: 'var(--yellow-dark)', fontWeight: 700, fontSize: 22 }}>{error}</div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 28 }}>
-              <button type="button" onClick={() => { setModo('figuras'); setError(null) }}
-                style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
-                Prefiero subir figura por figura
-              </button>
-              <button type="submit" className="btn-primary" disabled={!listoParaEnviar}>
-                {enviando ? 'Evaluando…' : 'Evaluar ahora'}
-              </button>
+            <button type="button" className="evaluation-mode" disabled={enviando} onClick={() => { setModo(modo === 'hojas' ? 'figuras' : 'hojas'); setError(null) }}><IconSubir width={18} height={18} aria-hidden="true" />{modo === 'hojas' ? 'Subir figura por figura' : 'Volver a las 3 hojas'}</button>
+          </section>
+          {error && <div role="alert" className="evaluation-error"><strong>No se pudo completar la evaluación</strong><p>{error}</p></div>}
+          <dialog ref={quitarDialogRef} className="photo-confirm-dialog" aria-labelledby="quitar-foto-title" aria-describedby="quitar-foto-description" onClose={() => setFotoAQuitar(null)}>
+            <div className="photo-confirm-heading"><IconPapelera /><h2 id="quitar-foto-title">¿Quitar esta foto?</h2></div>
+            <p id="quitar-foto-description">La foto se quitará de esta evaluación. El archivo original seguirá en tu dispositivo.</p>
+            {fotoAQuitar && <p className="photo-confirm-filename">{fotoAQuitar.name}</p>}
+            <div className="photo-confirm-actions">
+              <button type="button" className="photo-cancel" autoFocus onClick={() => quitarDialogRef.current.close()}>Conservar foto</button>
+              <button type="button" className="photo-confirm-remove" onClick={() => { setHojas((prev) => prev.filter((foto) => foto !== fotoAQuitar)); quitarDialogRef.current.close() }}><IconPapelera />Sí, quitar foto</button>
             </div>
-          </div>
-        )}
-
-        {modo === 'figuras' && (
-        <div className="card" style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-            <h2 style={{ fontSize: 26 }}>Fotos de las 15 figuras</h2>
-            <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--mint-dark)' }} aria-live="polite">
-              {subidas} de 15 fotos subidas
-            </div>
-          </div>
-          <div
-            role="progressbar" aria-valuenow={subidas} aria-valuemin={0} aria-valuemax={15}
-            aria-label="Fotos subidas"
-            style={{ height: 8, borderRadius: 99, background: 'var(--border)', overflow: 'hidden', marginBottom: 22 }}
-          >
-            <div style={{ width: `${(subidas / 15) * 100}%`, height: '100%', background: 'var(--mint-icon)', borderRadius: 99, transition: 'width .2s' }} />
-          </div>
-
-          <div
-            onDrop={onDrop}
-            onDragOver={(e) => e.preventDefault()}
-            style={{
-              borderRadius: 'var(--radius-lg)', border: '3px dashed var(--peach)', background: 'var(--peach-light)',
-              padding: '28px 32px', display: 'flex', alignItems: 'center', gap: 22, marginBottom: 26, flexWrap: 'wrap',
-            }}
-          >
-            <div aria-hidden="true" style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--peach-icon)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <IconSubir stroke="white" />
-            </div>
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ fontWeight: 800, fontSize: 25 }}>Arrastra aquí las 15 fotos, todas a la vez</div>
-              <div style={{ fontSize: 20, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
-                O haz clic para elegirlas juntas desde tu galería. No importa el orden en que las sueltes:
-                las acomodamos solas por figura y puedes corregir cualquiera abajo.
-              </div>
-            </div>
-            <label htmlFor="input-masivo" className="visually-hidden">Elegir las 15 fotos a la vez</label>
-            <input id="input-masivo" ref={inputMasivoRef} type="file" accept="image/*" multiple hidden onChange={onElegirMasivo} />
-            <button type="button" className="btn-primary" style={{ background: 'var(--peach)', boxShadow: 'none', padding: '18px 36px', fontSize: 22 }}
-              onClick={() => inputMasivoRef.current.click()}>
-              Elegir fotos
-            </button>
-          </div>
-
-          <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 12 }}>
-            Revisa que cada foto quedó en su figura
-          </div>
-
-          <div className="figuras-grid">
-            {FIGURAS.map((f) => {
-              const tiene = Boolean(archivos[f.id])
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => inputIndividualRef.current[f.id]?.click()}
-                  aria-label={tiene ? `Figura ${f.numero}, ${f.nombre}: foto cargada. Cambiar foto.` : `Figura ${f.numero}, ${f.nombre}: pendiente. Subir foto.`}
-                  style={{
-                    width: '100%', borderRadius: 'var(--radius-md)', padding: 14, position: 'relative',
-                    textAlign: tiene ? 'left' : 'center',
-                    border: tiene ? '2px solid var(--mint-light)' : '2.5px dashed var(--border)',
-                    background: tiene ? 'var(--mint-light)' : 'transparent',
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: tiene ? 'flex-start' : 'center',
-                    justifyContent: 'center', gap: 8, minHeight: 128,
-                  }}
-                >
-                  <input
-                    ref={(el) => { inputIndividualRef.current[f.id] = el }}
-                    type="file" accept="image/*" hidden onChange={(e) => onElegirIndividual(f.id, e)}
-                    aria-label={`Foto de la figura ${f.numero}, ${f.nombre}`}
-                  />
-                  {tiene ? (
-                    <>
-                      <div aria-hidden="true" style={{ position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: '50%', background: 'var(--mint-icon)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <IconCheck width={13} height={13} strokeWidth={3} stroke="white" />
-                      </div>
-                      <img src={previews[f.id]} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8 }} />
-                      <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', marginTop: 10 }}>Figura {f.numero}</div>
-                      <div style={{ fontSize: 19, fontWeight: 700 }}>{f.nombre}</div>
-                    </>
-                  ) : (
-                    <>
-                      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
-                      </svg>
-                      <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)' }}>Figura {f.numero} · {f.nombre}</div>
-                      <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-muted)' }}>Pendiente</div>
-                    </>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          {error && (
-            <div role="alert" style={{ marginTop: 20, color: 'var(--yellow-dark)', fontWeight: 700, fontSize: 22 }}>{error}</div>
-          )}
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
-            <button type="submit" className="btn-primary" disabled={!listoParaEnviar}>
-              {enviando ? 'Evaluando…' : 'Evaluar ahora'}
-              {!enviando && (
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              )}
-            </button>
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <button type="button" onClick={() => { setModo('hojas'); setError(null) }}
-              style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textDecoration: 'underline' }}>
-              Mejor subir las 3 hojas
-            </button>
-          </div>
-        </div>
-        )}
-      </form>
+          </dialog>
+          <footer className="evaluation-actions">
+            <p role="status">{enviando ? 'Evaluando las fotografías. Espera un momento.' : pendiente}</p>
+            <button type="submit" className="btn-primary" disabled={!listoParaEnviar}>{enviando ? 'Evaluando…' : 'Evaluar ahora'}</button>
+          </footer>
+        </form>
+      </div>
     </Layout>
   )
 }
 
-const inputStyle = {
-  padding: '16px 18px', border: '2px solid var(--border)', borderRadius: 'var(--radius-sm)',
-  fontSize: 22, color: 'var(--text)', background: 'var(--bg)', width: '100%',
-}
-
-const fieldsetStyle = { border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }
-const legendStyle = {
-  fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase',
-  letterSpacing: '.03em', padding: 0, marginBottom: 2,
-}
-
 function Campo({ id, label, children }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label htmlFor={id} style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>
-        {label}
-      </label>
-      {children}
-    </div>
-  )
+  return <div className="evaluation-field"><label htmlFor={id}>{label}</label>{children}</div>
+}
+
+function IconPapelera() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg>
 }

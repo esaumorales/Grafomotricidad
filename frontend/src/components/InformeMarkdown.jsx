@@ -30,8 +30,24 @@ const marked = new Marked({
 
 /** Renderiza el informe_docente_md (Markdown plano generado por el backend) con el
  * mismo lenguaje visual del resto de la app: encabezados con ícono según la sección. */
-export default function InformeMarkdown({ markdown }) {
-  const html = marked.parse(markdown)
+export default function InformeMarkdown({ markdown, compact = false, separateWarning = false }) {
+  const tokens = marked.lexer(markdown)
+  const filtered = tokens.filter((token) => !(compact && token.type === 'heading' && token.depth === 2) && !(separateWarning && token.type === 'blockquote'))
+  const groups = []
+  let current = []
+  for (const token of filtered) {
+    if ((token.type === 'heading' && token.depth === 3) || token.type === 'hr') {
+      if (current.length) groups.push(current)
+      current = []
+    }
+    current.push(token)
+  }
+  if (current.length) groups.push(current)
+  const html = compact ? groups.map((group) => {
+    const section = group.some((token) => token.type === 'heading' && token.depth === 3)
+    const footer = group.some((token) => token.type === 'hr')
+    return `<div class="${section ? 'report-observation' : footer ? 'report-footnote' : 'report-introduction'}">${marked.parser(group)}</div>`
+  }).join('') : marked.parser(filtered)
   // eslint-disable-next-line react/no-danger -- el texto lo genera nuestro propio backend
   // a partir de plantillas fijas; el único dato del usuario que entra (nombre_nino) se
   // escapa en el servidor antes de construir este markdown (ver plain_language.py).

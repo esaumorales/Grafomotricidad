@@ -1,6 +1,7 @@
 """Carga de configuración."""
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ DEFAULT_CONFIG = REPO_ROOT / "config" / "config.yaml"
 @dataclass
 class Config:
     raw: dict[str, Any]
+    source: Path | None = None
 
     # --- accesos cómodos ---
     @property
@@ -41,7 +43,7 @@ class Config:
 
 
 def load_config(path: str | Path | None = None) -> Config:
-    path = Path(path) if path else DEFAULT_CONFIG
+    path = Path(path or os.environ.get("GRAFOMOTOR_CONFIG") or DEFAULT_CONFIG)
     with open(path, encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
-    return Config(raw=raw)
+    return Config(raw=raw, source=path.resolve())

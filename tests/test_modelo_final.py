@@ -54,3 +54,20 @@ def test_revision_por_confianza(tmp_path, p, decision, nota):
         "criterios_plantilla": {}, "figuras": ["F01", "F02"]}), encoding="utf-8")
     r = ModeloFinal(tmp_path)._decidir(p)
     assert (r["decision"], r["nota"]) == (decision, nota)
+
+
+def test_cargador_103h_y_shap(tmp_path):
+    from grafomotor.model.final_103h import ModeloFinal as Modelo103h
+
+    modelo, X = _pipeline()
+    joblib.dump(modelo, tmp_path / "modelo.joblib")
+    (tmp_path / "manifiesto.json").write_text(json.dumps({
+        "version": "prueba_103h", "feature_names": NOMBRES, "punto_de_corte": 0.5,
+        "limites_confianza": {"incorrecta_si_prob_menor_o_igual": 0.25, "correcta_si_prob_mayor_o_igual": 0.72},
+        "criterios_plantilla": {}, "figuras": ["F01", "F02"]}), encoding="utf-8")
+    final = Modelo103h(tmp_path)
+    r = final.predecir(np.zeros((32, 32), dtype=np.uint8), "F01", None, {}, sin_trazo=True)
+    assert r == {"prob": 0.0, "nota": 0, "decision": "sin trazo"}
+    estimador, entrada, nombres = final.shap_entrada(X[:4])
+    np.testing.assert_allclose(estimador.predict_proba(entrada), modelo.predict_proba(X[:4]))
+    assert entrada.shape[1] == len(nombres)

@@ -19,6 +19,8 @@ Arranque:  python scripts/06_servir_web.py   (o  uvicorn grafomotor.webapp.main:
 """
 from __future__ import annotations
 
+import json
+
 from datetime import date
 from pathlib import Path
 
@@ -27,6 +29,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from grafomotor.config import REPO_ROOT, load_config
+from grafomotor.webapp import db
 from grafomotor.scoring.edad import edad_en_meses, edad_valida
 from grafomotor.webapp.schemas import CorregirFiguraIn, EvaluarOut, SesionResumen
 from grafomotor.webapp.service import ErrorHoja, Servicio
@@ -48,8 +52,22 @@ _servicio: Servicio | None = None
 def servicio() -> Servicio:
     global _servicio
     if _servicio is None:
-        _servicio = Servicio()
+        try:
+            _servicio = Servicio()
+        except FileNotFoundError as e:
+            raise HTTPException(
+                status_code=503,
+                detail="La evaluación no está disponible: faltan archivos del paquete privado "
+                       "(modelo, plantillas o baremos). Instala el paquete antes de evaluar.",
+            ) from e
     return _servicio
+
+
+def base_sesiones() -> Path:
+    """El historial puede consultarse aunque el modelo no esté instalado."""
+    ruta = load_config().ruta("db")
+    db.iniciar_db(ruta)
+    return ruta
 
 
 def _edad(edad_meses: int | None, fecha_nacimiento: str | None, fecha_evaluacion: str | None):
@@ -76,6 +94,8 @@ def salud() -> dict:
         s = servicio()
         return {"ok": True, "modelo": s.manifiesto.get("git_hash"),
                 "baremo": s.manifiesto.get("version_baremo")}
+    except HTTPException as e:
+        return {"ok": False, "error": e.detail}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -127,18 +147,18 @@ async def evaluar_hojas(
 
 @app.get("/api/sesiones", response_model=list[SesionResumen])
 def listar_sesiones() -> list[SesionResumen]:
-    return [SesionResumen(**r) for r in servicio().listar_sesiones()]
+    return [SesionResumen(**r) for r in db.listar_sesiones(base_sesiones())]
 
 
 @app.get("/api/ninos/{child_id}/sesiones", response_model=list[SesionResumen])
 def listar_sesiones_de_nino(child_id: str) -> list[SesionResumen]:
     """Evaluaciones de un niño a lo largo del tiempo (seguimiento longitudinal)."""
-    return [SesionResumen(**r) for r in servicio().listar_sesiones_de_nino(child_id)]
+    return [SesionResumen(**r) for r in db.listar_sesiones_de_nino(base_sesiones(), child_id)]
 
 
 @app.get("/api/sesiones/{sesion_id}", response_model=EvaluarOut)
 def obtener_sesion(sesion_id: int) -> EvaluarOut:
-    res = servicio().obtener_sesion(sesion_id)
+    res = db.obtener_sesion(base_sesiones(), sesion_id)
     if res is None:
         raise HTTPException(404, "sesión no encontrada")
     return EvaluarOut(**res)
@@ -166,6 +186,48 @@ def imagen_plantilla(figura_id: str) -> FileResponse:
     if ruta is None:
         raise HTTPException(404, "plantilla no encontrada")
     return FileResponse(ruta)
+
+
+@app.get("/api/criterios/{figura_id}")
+def criterios_manual(figura_id: str) -> dict:
+    if figura_id not in load_config().figuras:
+        raise HTTPException(404, "Figura desconocida")
+    ruta = REPO_ROOT / "config" / "criterios_manual.json"
+    datos = json.loads(ruta.read_text(encoding="utf-8")) if ruta.exists() else {}
+    return {"figura_id": figura_id, "criterios": datos.get(figura_id, [])}
+
+
+@app.get("/api/sesiones/{sesion_id}/figuras/{figura_id}/observaciones")
+def observar_figura(sesion_id: int, figura_id: str) -> dict:
+    from grafomotor.features.criterios import medir
+    from grafomotor.preprocessing import preprocesar_figura
+    from grafomotor.webapp.observaciones import observaciones
+
+    sesion = db.obtener_sesion(base_sesiones(), sesion_id)
+    if sesion is None or not any(f["figura_id"] == figura_id for f in sesion["figuras"]):
+        raise HTTPException(404, "Sesión o figura no encontrada")
+    s = servicio()
+    ruta = s.ruta_foto(sesion["child_id"], figura_id)
+    plantilla = s.plantillas.get(figura_id)
+    if ruta is None or plantilla is None:
+        raise HTTPException(404, "No está disponible la foto o la plantilla de esta figura")
+    pre = preprocesar_figura(str(ruta), plantilla, s.cfg.get("preprocesamiento", default={}))
+    fiable = pre.registro_ok and pre.calidad >= 0.35 and not pre.sin_trazo
+    medidas = medir(pre.figura_bin) if fiable else {}
+    referencia = medir(plantilla) if fiable else {}
+    return {"figura_id": figura_id,
+            "observaciones": observaciones(figura_id, medidas, referencia, pre.sin_trazo, imagen_fiable=fiable),
+            "aviso_imagen": "No se pudo alinear el dibujo con la referencia. Las medidas automáticas se han omitido." if not pre.registro_ok else pre.aviso}
+
+
+@app.get("/api/guia/hoja-modelo/{formato}")
+def guia_hoja_modelo(formato: str) -> FileResponse:
+    if formato not in {"png", "pdf"}:
+        raise HTTPException(404, "Formato no disponible")
+    ruta = REPO_ROOT / "config" / "guias_privadas" / f"hoja_modelo.{formato}"
+    if not ruta.exists():
+        raise HTTPException(404, "La hoja de ejemplo no está instalada")
+    return FileResponse(ruta, media_type="image/png" if formato == "png" else "application/pdf")
 
 
 if _FRONTEND_DIST.exists():

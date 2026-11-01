@@ -5,38 +5,29 @@ foto(s) -> preprocesar -> extraer indicadores -> modelo (puntaje por figura) ->
 scoring (PD -> T -> nivel) -> SHAP -> explicación en lenguaje natural -> se guarda
 en SQLite (data/app.db) para que el Dashboard Docente tenga historial real.
 
-Modelo: si existe una versión del modelo final (models/final/<versión>/, ver
-scripts/instalar_modelo_final.py) se usa ese Random Forest con revisión por confianza (las figuras
-dudosas quedan "por revisar" para el docente); si no, el XGBoost antiguo de models/actual.
-La versión se elige en config.yaml (modelo_final.version) o con la variable GRAFOMOTOR_MODELO_FINAL.
+Modelo: Random Forest final 103h, cargado desde models/real/actual con config_real.yaml.
+Las plantillas y el baremo se leen de las rutas indicadas por la configuración.
 """
 from __future__ import annotations
 
-import logging
-import os
 from pathlib import Path
 
 import cv2
 import numpy as np
 
 from grafomotor import ORDEN
-from grafomotor.model.columnas import fila
 from grafomotor.artefactos import Artefactos
 from grafomotor.config import load_config
 from grafomotor.explain import construir_informe, explicar_para_docente, shap_por_sesion
 from grafomotor.features.extract import extraer_indicadores
 from grafomotor.io import cargar_plantillas, ruta_plantilla
-from grafomotor.model.final import ModeloFinal
-from grafomotor.model.predict import PrediccionFigura, agregar_sesion, predecir_figura
-from grafomotor.model.registry import cargar_modelo
+from grafomotor.model.final_103h import ModeloFinal
+from grafomotor.model.predict import PrediccionFigura, agregar_sesion
 from grafomotor.preprocessing import preprocesar_figura
 from grafomotor.preprocessing.hoja import normalizar_celda, segmentar_hoja
 from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
 from grafomotor.scoring.niveles import CriterioNiveles, NivelResultado
 from grafomotor.webapp import db
-
-
-log = logging.getLogger(__name__)
 
 
 def _leer_gris(contenido: bytes) -> np.ndarray | None:
@@ -66,17 +57,15 @@ class Servicio:
 
     def __init__(self, config_path: str | None = None):
         self.cfg = load_config(config_path)
-        self.final = self._cargar_final()
-        if self.final:
-            self.modelo = self.final.modelo
-            self.manifiesto = {"git_hash": self.final.version, "feature_names": self.final.nombres,
-                               "version_baremo": str(self.cfg.get("scoring", "version_baremo", default=""))}
-            self.plantillas = self.final.plantillas
-            self.figuras_meta = self.final.figuras_meta
-        else:
-            self.modelo, self.manifiesto = cargar_modelo(Artefactos.de_config(self.cfg).dir_modelo_ml)
-            self.plantillas = cargar_plantillas(self.cfg, estricto=False)
-            self.figuras_meta = self.cfg.figuras
+        self.final = ModeloFinal(Artefactos.de_config(self.cfg).dir_modelo_ml)
+        self.modelo = self.final.modelo
+        self.manifiesto = {
+            **self.final.manifiesto,
+            "git_hash": self.final.manifiesto.get("version", ""),
+            "version_baremo": str(self.cfg.get("scoring", "version_baremo", default="")),
+        }
+        self.plantillas = cargar_plantillas(self.cfg, estricto=False)
+        self.figuras_meta = self.cfg.figuras
         # columnas con que se entrenó el modelo cargado (los modelos antiguos solo tienen las 6)
         self.nombres = list(self.manifiesto.get("feature_names") or ORDEN)
         self.baremo = cargar_baremo(self.cfg.ruta("baremos"))
@@ -86,22 +75,8 @@ class Servicio:
         self.db_path = self.cfg.ruta("db")
         db.iniciar_db(self.db_path)
 
-    def _cargar_final(self) -> ModeloFinal | None:
-        """Versión del modelo final elegida, o None si no está instalada (se usa el modelo antiguo)."""
-        elegida = os.environ.get("GRAFOMOTOR_MODELO_FINAL") or self.cfg.get("modelo_final", "version", default="")
-        if not elegida:
-            return None
-        carpeta = Path(elegida)
-        if not carpeta.is_absolute():
-            carpeta = self.cfg.ruta("models") / "final" / elegida
-        if not (carpeta / "modelo.joblib").exists():
-            log.warning("modelo final %s no instalado en %s: se usa el modelo antiguo", elegida, carpeta)
-            return None
-        return ModeloFinal(carpeta)
-
     def ruta_plantilla(self, figura_id: str) -> Path | None:
-        p = (self.final.dir_plantillas / f"{figura_id}.png" if self.final
-             else ruta_plantilla(self.cfg, figura_id))
+        p = ruta_plantilla(self.cfg, figura_id)
         return p if p.exists() else None
 
     def _nivel(self, pd_total: int, edad_meses: int) -> tuple[dict, NivelResultado]:
@@ -193,18 +168,13 @@ class Servicio:
             )
             if pre.aviso:
                 avisos.append(f"{fid}: {pre.aviso}")
-            if self.final:
-                r = self.final.predecir_figura(pre.figura_bin, fid)
-                preds.append(PrediccionFigura(
-                    figura_id=fid, puntaje=r["nota"], prob=round(r["prob"], 3), decision=r["decision"],
-                    indicadores={k: round(float(r["vec"].valores[k]), 3) for k in ORDEN}))
-                X.append(r["x"])
-                continue
-            vec = extraer_indicadores(
-                pre.figura_bin, self.plantillas[fid], fid, self.figuras_meta.get(fid, {})
-            )
-            preds.append(predecir_figura(self.modelo, vec.valores, fid, vec.raw, self.nombres))
-            X.append(fila(vec.valores, vec.raw, fid, self.nombres))
+            meta = self.figuras_meta.get(fid, {})
+            r = self.final.predecir(pre.figura_bin, fid, self.plantillas[fid], meta, pre.sin_trazo)
+            vec = extraer_indicadores(pre.figura_bin, self.plantillas[fid], fid, meta)
+            preds.append(PrediccionFigura(
+                figura_id=fid, puntaje=r["nota"], prob=r["prob"], decision=r["decision"],
+                indicadores={k: round(float(vec.valores[k]), 3) for k in ORDEN}))
+            X.append(self.final.fila(pre.figura_bin, fid, self.plantillas[fid], meta)[0])
 
         sesion = agregar_sesion(child_id, edad_meses, preds)
         tPc, nivel = self._nivel(sesion.PD, edad_meses)
@@ -238,7 +208,7 @@ class Servicio:
         if self.final:
             panel["revision"] = {
                 "figuras_por_revisar": por_revisar, "n_automaticas": len(preds) - len(por_revisar),
-                "limites": [self.final.li, self.final.ls], "modelo": self.final.version,
+                "limites": [self.final.li, self.final.ls], "modelo": self.final.manifiesto.get("version", ""),
             }
 
         resultado = {

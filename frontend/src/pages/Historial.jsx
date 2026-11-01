@@ -2,26 +2,22 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { Cargando, ErrorConReintento } from '../components/Estado'
-import { IconBuscar } from '../components/icons'
+import { IconBuscar, IconFlechaDer, IconMas, IconReloj } from '../components/icons'
 import { listarSesiones } from '../api'
-
-const AVATAR_COLORES = [
-  { bg: 'var(--peach-light)', color: 'var(--peach-dark)' },
-  { bg: 'var(--sky-light)', color: 'var(--sky-dark)' },
-]
 
 function iniciales(nombre) {
   return nombre.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('')
 }
 
 function fechaCorta(iso) {
-  return new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Lima' })
 }
 
 export default function Historial() {
   const [sesiones, setSesiones] = useState(null)
   const [error, setError] = useState(null)
   const [busqueda, setBusqueda] = useState('')
+  const [orden, setOrden] = useState('recientes')
 
   const cargar = useCallback(() => {
     setError(null)
@@ -33,86 +29,42 @@ export default function Historial() {
   const filtradas = useMemo(() => {
     if (!sesiones) return []
     const q = busqueda.trim().toLowerCase()
-    if (!q) return sesiones
-    return sesiones.filter(
-      (s) => s.child_id.toLowerCase().includes(q) || (s.nombre_nino || '').toLowerCase().includes(q)
+    const resultado = sesiones.filter(
+      (s) => !q || s.child_id.toLowerCase().includes(q) || (s.nombre_nino || '').toLowerCase().includes(q)
     )
-  }, [sesiones, busqueda])
+    return [...resultado].sort((a, b) => orden === 'recientes' ? b.fecha.localeCompare(a.fecha) : a.fecha.localeCompare(b.fecha))
+  }, [sesiones, busqueda, orden])
 
   return (
     <Layout>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <h1 style={{ fontSize: 43 }}>Historial de evaluaciones</h1>
-          <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 23 }}>
-            Vuelve a ver el informe de cualquier evaluación anterior.
-          </p>
-        </div>
-        <div className="historial-busqueda" style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '2px solid var(--border)', borderRadius: 99, padding: '11px 18px' }}>
-          <IconBuscar stroke="var(--text-muted)" aria-hidden="true" />
-          <label htmlFor="busqueda-historial" className="visually-hidden">Buscar por nombre o código</label>
-          <input
-            id="busqueda-historial"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre o código…"
-            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 22, fontWeight: 600, width: '100%' }}
-          />
-        </div>
-      </div>
-
-      {error && <ErrorConReintento mensaje={error} onReintentar={cargar} />}
-      {!error && !sesiones && <Cargando filas={4} />}
-
-      {sesiones && sesiones.length === 0 && (
-        <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-          Todavía no hay evaluaciones. Empieza una desde "Nueva evaluación".
-        </div>
-      )}
-
-      {sesiones && sesiones.length > 0 && (
-        <div className="card no-scroll-x" style={{ padding: '14px 18px' }}>
-          <div className="historial-fila" style={{ color: 'var(--text-muted)', fontSize: 19, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em', padding: '6px 18px 14px' }}>
-            <span />
-            <span>Niño / a</span>
-            <span className="col-edad">Edad</span>
-            <span className="col-fecha">Fecha</span>
-            <span>Nivel</span>
-            <span className="col-accion" />
+      <div className="history-page">
+        <header className="history-header"><div><h1>Historial de evaluaciones</h1><p>Consulta informes y el seguimiento de cada niño o niña.</p></div><Link className="history-new" to="/"><IconMas width={17} height={17} aria-hidden="true" />Nueva evaluación</Link></header>
+        <section className="history-records" aria-label="Evaluaciones guardadas">
+          <div className="history-toolbar">
+            <div className="history-search"><IconBuscar width={17} height={17} aria-hidden="true" /><label htmlFor="busqueda-historial" className="visually-hidden">Buscar por nombre o código</label><input id="busqueda-historial" type="search" placeholder="Buscar por nombre o código" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} /></div>
+            <div className="history-sort"><label htmlFor="history-order">Ordenar</label><select id="history-order" value={orden} onChange={(e) => setOrden(e.target.value)}><option value="recientes">Más recientes primero</option><option value="antiguas">Más antiguas primero</option></select></div>
           </div>
-
-          {filtradas.map((s, i) => {
-            const nombre = s.nombre_nino || s.child_id
-            const av = AVATAR_COLORES[i % 2]
-            const adecuado = s.accion === 'ninguna'
-            return (
-              <div
-                key={s.id}
-                className="historial-fila"
-                style={{ padding: '16px 18px', borderRadius: 'var(--radius-md)', color: 'var(--text)' }}
-              >
-                <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: '50%', background: av.bg, color: av.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontFamily: "'Baloo 2'", fontSize: 19, flexShrink: 0 }}>
-                  {iniciales(nombre)}
-                </div>
-                <Link to={`/ninos/${encodeURIComponent(s.child_id)}`} title="Ver seguimiento de este niño / a" style={{ color: 'var(--text)' }}>
-                  <div style={{ fontWeight: 800, fontSize: 22 }}>{nombre}</div>
-                  <div style={{ fontSize: 19, color: 'var(--text-muted)' }}>{s.child_id} · seguimiento →</div>
-                </Link>
-                <div className="col-edad" style={{ fontSize: 22, color: 'var(--text-muted)', fontWeight: 700 }}>
-                  {Math.floor(s.edad_meses / 12)} a. {s.edad_meses % 12} m.
-                </div>
-                <div className="col-fecha" style={{ fontSize: 22, color: 'var(--text-muted)', fontWeight: 700 }}>{fechaCorta(s.fecha)}</div>
-                <div>
-                  <span className="badge-pill" style={{ background: adecuado ? 'var(--mint-light)' : 'var(--yellow-light)', color: adecuado ? 'var(--mint-dark)' : 'var(--yellow-dark)' }}>
-                    {s.nivel}
-                  </span>
-                </div>
-                <Link to={`/informe/${s.id}`} className="col-accion" style={{ fontWeight: 800, fontSize: 20, textAlign: 'right', color: 'var(--text)' }}>Ver informe →</Link>
-              </div>
-            )
-          })}
-        </div>
-      )}
+          {error && <div className="history-feedback"><ErrorConReintento mensaje={error} onReintentar={cargar} /></div>}
+          {!error && !sesiones && <div className="history-feedback"><Cargando filas={3} /></div>}
+          {!error && sesiones && sesiones.length === 0 && <div className="history-empty"><IconReloj width={28} height={28} aria-hidden="true" /><h2>Aún no hay evaluaciones</h2><p>Las evaluaciones que completes aparecerán aquí.</p><Link to="/">Crear la primera evaluación <IconFlechaDer width={15} height={15} aria-hidden="true" /></Link></div>}
+          {!error && sesiones && sesiones.length > 0 && <>
+            <div className="history-count" role="status">{filtradas.length} {filtradas.length === 1 ? 'evaluación' : 'evaluaciones'}{busqueda.trim() && ` de ${sesiones.length}`}</div>
+            {filtradas.length ? <table className="history-table"><thead><tr><th scope="col">Niño o niña</th><th scope="col">Edad al evaluar</th><th scope="col">Fecha de registro</th><th scope="col">Nivel</th><th scope="col"><span className="visually-hidden">Acciones</span></th></tr></thead><tbody>
+              {filtradas.map((s) => {
+                const nombre = s.nombre_nino || s.child_id
+                const estado = s.accion === 'ninguna' ? 'adequate' : s.accion === 'derivar' ? 'support' : 'review'
+                return <tr key={s.id}>
+                  <td className="history-person-cell"><div className="history-person"><span className="history-avatar" aria-hidden="true">{iniciales(nombre)}</span><div><span className="history-name">{nombre}</span><span className="history-code">Código: {s.child_id}</span></div></div></td>
+                  <td data-label="Edad al evaluar">{Math.floor(s.edad_meses / 12)} años {s.edad_meses % 12} meses</td>
+                  <td data-label="Registro">{fechaCorta(s.fecha)}</td>
+                  <td data-label="Nivel"><span className={`history-level ${estado}`}><span aria-hidden="true" />{s.nivel}</span></td>
+                  <td className="history-actions"><div className="history-action-buttons"><Link className="history-open" to={`/informe/${s.id}`} aria-label={`Ver informe de ${nombre}, evaluación ${s.id}`}>Ver informe<IconFlechaDer width={15} height={15} aria-hidden="true" /></Link></div></td>
+                </tr>
+              })}
+            </tbody></table> : <div className="history-empty"><IconBuscar width={26} height={26} aria-hidden="true" /><h2>No hay coincidencias</h2><p>Prueba con otro nombre o código.</p><button type="button" onClick={() => setBusqueda('')}>Limpiar búsqueda</button></div>}
+          </>}
+        </section>
+      </div>
     </Layout>
   )
 }
