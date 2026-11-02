@@ -57,6 +57,12 @@ class ModeloFinal:
         self.li, self.ls = lim["incorrecta_si_prob_menor_o_igual"], lim["correcta_si_prob_mayor_o_igual"]
         self.ref: dict = self.manifiesto["criterios_plantilla"]
         self.figuras: list[str] = self.manifiesto["figuras"]
+        # columnas que el modelo solo usa en algunas figuras (el error angular solo donde el manual
+        # revisa ángulos, Tabla S1: paso13_error_angular_por_figura.py); en las demás van vacías,
+        # como en el entrenamiento. Los modelos anteriores no traen esta clave y no cambian.
+        solo = self.manifiesto.get("columnas_solo_en_figuras") or {}
+        self.solo_cols = [self.nombres.index(c) for c in solo.get("columnas", []) if c in self.nombres]
+        self.solo_figs: set[str] = set(solo.get("figuras", []))
 
     def shap_entrada(self, X: np.ndarray) -> tuple[object, np.ndarray, list[str]]:
         """(estimador de árboles, X ya imputado, nombres de columna) para `shap.TreeExplainer`:
@@ -79,7 +85,10 @@ class ModeloFinal:
             figura_meta: dict) -> np.ndarray:
         """Vector de entrada de una figura, en el orden de `self.nombres` (para SHAP)."""
         meta = {**figura_meta, "_todas": self.figuras}
-        return _fila_entrada(binaria, figura_id, plantilla, meta, self.ref, self.nombres)
+        x = _fila_entrada(binaria, figura_id, plantilla, meta, self.ref, self.nombres)
+        if self.solo_cols and figura_id not in self.solo_figs:
+            x[0, self.solo_cols] = np.nan
+        return x
 
     def predecir(self, binaria: np.ndarray, figura_id: str, plantilla: np.ndarray,
                 figura_meta: dict, sin_trazo: bool = False) -> dict:

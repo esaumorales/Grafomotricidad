@@ -1,33 +1,45 @@
-"""Observaciones geométricas de apoyo; no explicaciones causales del clasificador."""
+"""Ayudas de lectura por figura, sin atribuir causas al clasificador."""
 import math
 
+GUIAS = {
+ 'F01': ('Forma de la línea', 'Mira si hay una sola línea de arriba hacia abajo, sin cortes, curvas ni esquinas.'),
+ 'F02': ('Las dos líneas', 'Mira si hay dos líneas de lado a lado. No deben juntarse ni formar curvas.'),
+ 'F03': ('El cruce', 'Mira si las dos líneas se cruzan y llegan al punto de encuentro sin quedar separadas.'),
+ 'F04': ('Forma del círculo', 'Recorre el borde: debe estar cerrado, sin lados rectos ni esquinas. Puede ser ovalado.'),
+ 'F05': ('Forma del cuadrado', 'Busca cuatro lados y cuatro esquinas parecidas a las del modelo. Los lados no necesitan medir lo mismo.'),
+ 'F06': ('Forma del triángulo', 'Busca tres lados y tres puntas. Revisa que los lados no sean ondulados.'),
+ 'F07': ('El aspa', 'Mira si dos líneas forman una X y se cruzan por dentro, no por sus extremos.'),
+ 'F08': ('Las ondas', 'Sigue la línea: debe ser continua y tener las dos ondas del modelo, sin ondas adicionales.'),
+ 'F09': ('El rectángulo y su cruce', 'Comprueba que el contorno esté cerrado y que las dos líneas de dentro se crucen. Al menos dos deben llegar a las esquinas.'),
+ 'F10': ('Forma del rombo', 'Busca cuatro lados, el contorno cerrado y una punta abajo. Los lados no necesitan medir lo mismo.'),
+ 'F11': ('El círculo y el triángulo', 'El círculo debe estar arriba y el triángulo abajo. Deben tocarse, sin cruzarse.'),
+ 'F12': ('La curva y la recta', 'Mira si hay una línea recta y una curva que se tocan en un punto, sin quedar una encima de la otra.'),
+ 'F13': ('Las dos curvas', 'Las dos curvas deben tocarse por el centro, por su lado abultado, sin quedar una encima de la otra.'),
+ 'F14': ('Las rectas y las ondas', 'Busca dos rectas que se juntan arriba y una curva de tres ondas que cruza ambas rectas.'),
+ 'F15': ('El cuadrado y el círculo', 'El cuadrado va arriba y el círculo abajo a la derecha. Deben cruzarse en dos puntos; solo una esquina del cuadrado queda dentro del círculo.'),
+}
 
 def observaciones(figura_id, medidas, referencia, sin_trazo=False, imagen_fiable=True):
     if not imagen_fiable:
-        return [{"titulo": "Lectura automática no fiable", "detalle": "No se pueden confirmar medidas de este dibujo con el procesamiento actual. Revisa la fotografía y los criterios del manual; no se atribuye una dificultad al niño.", "revisar": True}]
+        return [{'titulo':'Sin detalle automático de la forma', 'detalle':'No se pudieron obtener medidas adicionales fiables. Esto no cambia el resultado del modelo ni indica que el dibujo esté mal.', 'revisar':False, 'fuente':'limitacion'}]
     if sin_trazo:
-        return [{"titulo": "Trazo no detectado", "detalle": "No se detectó suficiente trazo. Comprueba si el dibujo está en blanco o si la fotografía perdió detalle.", "revisar": True}]
-    salida = []
+        return [{'titulo':'Comprueba la foto', 'detalle':'El sistema no distingue el dibujo. Mira si la casilla está vacía o si el lápiz se ve demasiado claro en la foto.', 'revisar':True, 'fuente':'medicion'}]
+    salida=[]
     def numero(key):
-        v = medidas.get(key)
-        return float(v) if v is not None and math.isfinite(float(v)) else None
-    partes, esperadas = numero('partes'), referencia.get('partes')
-    if partes is not None and esperadas is not None and math.isfinite(float(esperadas)):
-        diferente = partes != esperadas
-        salida.append({"titulo": "Lectura del trazo", "detalle": f"El procesamiento separó la imagen en {int(partes)} componentes; en la referencia, {int(esperadas)}. Son componentes de imagen, no un conteo confirmado de líneas dibujadas. " + ("La diferencia puede deberse a ruido o interrupciones de la foto; compruébala visualmente." if diferente else "La coincidencia no confirma que se cumplan los criterios del manual."), "revisar": diferente})
-    if figura_id in {'F04', 'F05', 'F06', 'F10'}:
-        extremos = numero('extremos')
-        if extremos is not None:
-            salida.append({"titulo": "Cierre de la figura", "detalle": f"Se detectan {int(extremos)} extremos libres. " + ("Comprueba si el contorno quedó abierto o hay prolongaciones del trazo." if extremos else "No se detectan extremos libres; verifica visualmente que el contorno esté cerrado."), "revisar": extremos > 0})
-    if figura_id == 'F01':
-        a = numero('angulo')
-        if a is not None:
-            inclinacion = abs(a - 90)
-            salida.append({"titulo": "Inclinación de la línea", "detalle": f"La inclinación estimada respecto a la vertical es {inclinacion:.1f}°. " + ("Supera los 45° indicados en el manual; comprueba la orientación de la foto." if inclinacion > 45 else "Está dentro del límite de 45°; aún debes comprobar que sea una sola línea recta."), "revisar": inclinacion > 45})
-    if figura_id == 'F02':
-        a = numero('incl_partes')
-        if a is not None:
-            salida.append({"titulo": "Inclinación de las líneas", "detalle": f"La mayor inclinación estimada de las partes principales es {a:.1f}° respecto a la horizontal. " + ("Supera los 45° del manual; revisa la foto y los trazos." if a > 45 else "Está dentro del límite de 45°; comprueba también que no converjan ni sean curvas."), "revisar": a > 45})
+        value=medidas.get(key)
+        return float(value) if value is not None and math.isfinite(float(value)) else None
+    if figura_id in {'F01','F02'}:
+        value=numero('angulo' if figura_id=='F01' else 'incl_partes')
+        if value is not None:
+            angle=abs(value-90) if figura_id=='F01' else value
+            excede=angle>45
+            salida.append({'titulo':'La inclinación supera lo permitido' if excede else 'La inclinación está dentro de lo permitido',
+                'detalle':'Antes de valorar el dibujo, comprueba que la foto no esté girada.' if excede else 'Según la medida automática, no está demasiado inclinada para este criterio del manual.',
+                'detalle_tecnico':f'Estimación: {angle:.1f}° respecto a la '+('vertical' if figura_id=='F01' else 'horizontal')+'. Límite del manual: 45°.',
+                'revisar':excede,'fuente':'medicion'})
+    if figura_id in GUIAS:
+        titulo,detalle=GUIAS[figura_id]
+        salida.append({'titulo':titulo,'detalle':detalle,'revisar':False,'fuente':'guia'})
     if not salida:
-        salida.append({"titulo": "Revisión visual necesaria", "detalle": "No hay medidas suficientes para describir esta figura. Utiliza los criterios del manual y comprueba la fotografía.", "revisar": True})
+        salida.append({'titulo':'Necesita tu revisión','detalle':'Compara el dibujo con el modelo y consulta los criterios del manual.','revisar':True,'fuente':'guia'})
     return salida

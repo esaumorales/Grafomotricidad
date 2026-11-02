@@ -67,6 +67,16 @@ class ModeloFinal:
         # medidas esperadas de cada figura (vértices e intersecciones) de las plantillas del entrenamiento
         self.figuras_meta: dict[str, dict] = self.man.get("figuras_meta", {})
         self._plantillas: dict[str, np.ndarray] | None = None
+        # columnas que el modelo solo usa en algunas figuras (el error angular solo donde el manual
+        # revisa ángulos, Tabla S1); en las demás van vacías, como en el entrenamiento
+        solo = self.man.get("columnas_solo_en_figuras") or {}
+        self.solo_cols = [self.nombres.index(c) for c in solo.get("columnas", []) if c in self.nombres]
+        self.solo_figs: set[str] = set(solo.get("figuras", []))
+
+    def _anular(self, x: np.ndarray, figura_id: str) -> np.ndarray:
+        if self.solo_cols and figura_id not in self.solo_figs:
+            x[0, self.solo_cols] = np.nan
+        return x
 
     # --- plantillas propias del modelo -----------------------------------------------------------
     @property
@@ -87,8 +97,8 @@ class ModeloFinal:
 
     def probabilidad(self, binaria, figura_id, plantilla, figura_meta) -> float:
         meta = {**figura_meta, "_todas": self.man["figuras"]}
-        return float(self.modelo.predict_proba(fila_entrada(binaria, figura_id, plantilla, meta, self.ref,
-                                                            self.nombres))[0, 1])
+        x = self._anular(fila_entrada(binaria, figura_id, plantilla, meta, self.ref, self.nombres), figura_id)
+        return float(self.modelo.predict_proba(x)[0, 1])
 
     def predecir(self, binaria, figura_id, plantilla, figura_meta) -> dict:
         return self._decidir(self.probabilidad(binaria, figura_id, plantilla, figura_meta))
@@ -98,4 +108,5 @@ class ModeloFinal:
         y `vec` (indicadores generales, para mostrarlos)."""
         meta = {**self.figuras_meta[figura_id], "_todas": self.man["figuras"]}
         x, vec = _fila(binaria, figura_id, self.plantillas[figura_id], meta, self.ref, self.nombres)
+        x = self._anular(x, figura_id)
         return {**self._decidir(float(self.modelo.predict_proba(x)[0, 1])), "x": x[0], "vec": vec}

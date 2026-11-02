@@ -38,7 +38,7 @@ export default function Historial() {
   return (
     <Layout>
       <div className="history-page">
-        <header className="history-header"><div><h1>Historial de evaluaciones</h1><p>Consulta informes y el seguimiento de cada niño o niña.</p></div><Link className="history-new" to="/"><IconMas width={17} height={17} aria-hidden="true" />Nueva evaluación</Link></header>
+        <header className="history-header"><div><h1>Historial de evaluaciones</h1><p>Busca una evaluación para consultar sus resultados, informe y seguimiento.</p></div><Link className="history-new" to="/"><IconMas width={17} height={17} aria-hidden="true" />Nueva evaluación</Link></header>
         <section className="history-records" aria-label="Evaluaciones guardadas">
           <div className="history-toolbar">
             <div className="history-search"><IconBuscar width={17} height={17} aria-hidden="true" /><label htmlFor="busqueda-historial" className="visually-hidden">Buscar por nombre o código</label><input id="busqueda-historial" type="search" placeholder="Buscar por nombre o código" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} /></div>

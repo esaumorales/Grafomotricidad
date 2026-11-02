@@ -917,3 +917,178 @@ body, .app-shell { background: white; }
 .evaluation-navigation + .tracking-page .tracking-embedded-top { margin: 0; padding: 0; }
 .evaluation-view-content { display: flex; flex-direction: column; gap: 24px; min-width: 0; width: 100%; }
 .evaluation-view-content > .tracking-page { max-width: none; margin-inline: 0; }
+.observation-group { margin-top: 16px; }
+.observation-group > h3 { font-size: 11px; font-weight: 500; color: var(--text-muted); margin: 0 0 8px; }
+.observation-group .observation-title { font-size: 14px; }
+.observation-group li { padding: 12px 0; }
+.observation-measure { margin-top: 8px; font-size: 11px; color: var(--text-muted); }
+.observation-measure summary { cursor: pointer; padding-block: 4px; }
+.observation-measure p { font-size: 11px; }
+.observation-result { padding: 12px; border-radius: 4px; margin-top: 14px; border-left: 3px solid; }
+.observation-result > span { display: block; font-size: 11px; color: var(--text-muted); }
+.observation-result > strong { display: block; font-size: 16px; font-weight: 600; margin-top: 4px; }
+.observation-result p { font-size: 13px; margin-top: 6px; }
+.observation-result.achieved { background: #EDF7F0; border-color: #3B8155; }
+.observation-result.review { background: var(--yellow-light); border-color: var(--gold-soft); }
+.observation-result.support { background: #FDEFEF; border-color: #B85959; }
+/* Ficha visual por figura, debajo del dibujo original. */
+.figure-reading-card { margin-top: 16px; border: 1px solid var(--border); border-radius: 6px; padding: 16px; background: white; }
+.figure-reading-card > h3 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
+.figure-reading-result { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 4px; }
+.figure-reading-result.achieved { background: #EDF7F0; color: #21623E; }
+.figure-reading-result.review { background: #FFF6D8; color: #785300; }
+.figure-reading-result.support { background: #FDEFEF; color: #9B3030; }
+.reading-symbol { width: 24px; height: 24px; border: 1px solid currentColor; border-radius: 50%; display: grid; place-items: center; font-size: 13px; flex-shrink: 0; }
+.figure-reading-result strong { display: block; font-size: 15px; font-weight: 600; }
+.figure-reading-result div > span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.figure-reading-card h4 { font-size: 12px; font-weight: 500; color: var(--text-muted); margin: 16px 0 8px; }
+.reading-aspects { margin: 0; }
+.reading-aspect { display: grid; grid-template-columns: minmax(70px, .65fr) minmax(0, 1.35fr); align-items: start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 12px; }
+.reading-aspect dt { font-weight: 500; }
+.reading-aspect dd { margin: 0; display: flex; align-items: baseline; gap: 6px; }
+.reading-aspect-status.achieved { color: #21623E; }
+.reading-aspect-status.review { color: #785300; }
+.reading-aspect-status.manual, .reading-aspect-status.unknown { color: var(--text-muted); }
+.reading-note, .reading-pending { font-size: 12px; line-height: 1.6; color: var(--text-muted); margin: 10px 0; }
+.reading-details { font-size: 12px; border-top: 1px solid var(--border); padding-top: 7px; margin-top: 7px; }
+.reading-details summary { cursor: pointer; padding: 5px 0; }
+.reading-details p { color: var(--text-muted); line-height: 1.6; margin: 7px 0; }
+.reading-key { font-size: 11px; line-height: 1.5; color: var(--text-muted); margin: 12px 0 0; }
+@media(max-width:600px) { .figure-reading-card > h3 { font-size: 15px !important; } }
+.teacher-review-card { margin-top: 16px; border: 1px solid var(--border); border-radius: 6px; padding: 16px; background: white; }
+.teacher-review-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.teacher-review-heading h3 { font-size: 15px; font-weight: 600; margin: 0; }
+.teacher-review-state { font-size: 11px; color: var(--text-muted); border: 1px solid var(--border); padding: 3px 7px; border-radius: 4px; }
+.teacher-review-state.is-reviewed { color: #21623E; border-color: #BADAC4; background: #EDF7F0; }
+.teacher-review-card > p { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 12px 0; }
+.teacher-review-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.teacher-choice { min-height: 54px; padding: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 5px; color: var(--navy); font-size: 13px; }
+.teacher-choice > span:first-child { flex-shrink: 0; }
+.teacher-choice.choice-achieved[aria-pressed="true"] { color: #21623E; border: 2px solid #3B8155; background: #EDF7F0; }
+.teacher-choice.choice-support[aria-pressed="true"] { color: #9B3030; border: 2px solid #B85959; background: #FDEFEF; }
+.teacher-choice:hover:not(:disabled) { background: var(--bg); }
+.teacher-review-save { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.teacher-review-save > span { font-size: 11px; color: var(--text-muted); }
+.teacher-review-save button { padding: 10px 13px; min-height: 44px; border-radius: 4px; background: var(--gold); color: var(--navy); font-size: 13px; font-weight: 600; }
+.teacher-review-card .teacher-review-note { font-size: 11px; margin: 14px 0 0; }
+.teacher-review-card .teacher-review-success { font-size: 12px; color: #21623E; }
+.teacher-review-card .teacher-review-error { font-size: 12px; color: #9B3030; }
+@media(max-width:600px) { .teacher-review-heading h3 { font-size: 15px !important; } }
+.comparison-guide-stack > .teacher-review-card { margin-top: 0; }
+.figure-paragraph-card { margin-top: 16px; border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
+.figure-paragraph-card h3 { font-size: 15px; font-weight: 600; margin: 5px 0 12px; }
+.figure-paragraph-card p { font-size: 13px; line-height: 1.7; color: var(--text-muted); margin: 10px 0 0; }
+.figure-paragraph-card .figure-explanation-caution { border-left: 2px solid var(--gold-soft); padding-left: 10px; font-size: 12px; }
+.figure-paragraph-card .figure-explanation-reference { padding-top: 12px; margin-top: 14px; border-top: 1px solid var(--border); font-size: 12px; }
+.figure-explanation-reference strong { color: var(--navy); font-weight: 600; }
+@media(max-width:600px) { .figure-paragraph-card h3 { font-size: 15px !important; } }
+/* Disposición responsive de comparación: primero comparar, luego revisar. */
+.comparison-layout, .comparison-page-heading { grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; }
+.comparison-images { grid-column: 1; grid-row: 1; }
+.comparison-guide-stack { grid-column: 2; grid-row: 1; gap: 16px; }
+.comparison-guide-stack > * { min-width: 0; }
+.comparison-images .comparison-workspace { align-items: start; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.image-review, .image-review-main { min-width: 0; }
+.comparison-images .image-review-main { display: grid; grid-template-rows: auto 48px auto auto; align-content: start; }
+.comparison-images .image-origin { min-height: 0; margin: 0 0 8px; }
+.comparison-images .image-tools { display: grid; grid-template-columns: 32px 40px 32px minmax(64px,auto) auto; gap: 5px; align-items: center; }
+.comparison-images .image-tools button { min-width: 0; padding: 6px; min-height: 36px; white-space: nowrap; }
+.comparison-images .image-review-viewport { height: clamp(260px, 27vw, 410px); }
+.figure-navigation-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: white; border: 1px solid var(--border); border-radius: 5px; padding: 5px 8px; max-width: 100%; }
+.figure-navigation-count { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.comparison-page-heading .comparison-title-row { align-items: center; }
+.comparison-guide-stack > .teacher-review-card { margin: 0; }
+@media(max-width: 1399px) {
+ .comparison-layout, .comparison-page-heading { grid-template-columns: minmax(0,1fr); gap: 18px; }
+ .comparison-images { grid-column: 1; grid-row: 1; }
+ .comparison-guide-stack { grid-column: 1; grid-row: 2; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+ .comparison-page-heading > .figure-navigation-controls { justify-self: start; }
+ .comparison-images .image-review-viewport { height: clamp(280px, 34vw, 400px); }
+ .comparison-guide-stack .criteria-guide.manual-criteria { grid-column: auto; grid-row: auto; }
+ .comparison-guide-stack .criteria-content ol { columns: 1; }
+}
+@media(max-width: 1000px) {
+ .comparison-title-row { gap: 10px 14px; }
+ .comparison-images .image-tools { grid-template-columns: 32px 38px 32px minmax(56px,auto) auto; gap: 4px; }
+ .comparison-images .image-tools button { font-size: 11px; }
+ .comparison-images .image-tools button svg { width: 12px; height: 12px; }
+}
+@media(max-width: 900px) {
+ .comparison-images .comparison-workspace { grid-template-columns: minmax(0,1fr); gap: 18px; }
+ .comparison-images .image-review { display: contents; }
+ .drawing-review > .image-review-main { grid-row: 1; }
+ .reference-review > .image-review-main { grid-row: 2; }
+ .drawing-review > .figure-reading-card { grid-row: 3; margin: 0; }
+ .reference-review > .figure-paragraph-card { grid-row: 4; margin: 0; }
+ .comparison-images .image-review-main { grid-template-rows: auto auto auto auto; }
+ .comparison-images .image-origin { margin-bottom: 10px; }
+ .comparison-images .image-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+ .comparison-images .image-tools button { font-size: 12px; padding: 6px 10px; min-height: 40px; }
+ .comparison-images .image-tools output { min-width: 40px; }
+ .comparison-images .image-review-viewport { height: clamp(260px, 55vw, 370px); }
+ .comparison-guide-stack { grid-template-columns: minmax(0,1fr); }
+ .comparison-page-heading { gap: 14px; }
+ .comparison-page-heading .comparison-title-row { align-items: flex-start; }
+}
+@media(max-width: 600px) {
+ .comparison-page-heading > .figure-navigation-controls { width: 100%; justify-self: stretch; }
+ .comparison-page-heading .comparison-status { font-size: 12px; padding: 5px 8px; }
+ .comparison-images .image-review-main h2 { font-size: 17px !important; }
+ .teacher-review-save { align-items: stretch; flex-direction: column; }
+ .teacher-review-save button { width: 100%; }
+ .teacher-review-options { gap: 8px; }
+ .teacher-choice { min-height: 48px; }
+ .reading-aspect { grid-template-columns: minmax(65px,.7fr) minmax(0,1.3fr); }
+}
+@media(pointer: coarse) {
+ .comparison-images .image-tools button { min-height: 44px; }
+}
+
+/* Historial y sus vistas: jerarquía de lectura compartida. */
+.history-page, .evaluation-view-content, .evaluation-page-header { font-size: 15px; line-height: 1.6; }
+.history-header h1, .evaluation-page-header h1 { font-size: 28px !important; line-height: 1.25; font-weight: 600; }
+.history-header p, .report-person-meta { font-size: 14px; }
+.evaluation-navigation { gap: 8px; padding-bottom: 12px; }
+.evaluation-navigation a { font-size: 14px; min-height: 44px; padding: 9px 16px; }
+.history-table { font-size: 14px; }
+.history-table .history-name { font-size: 15px; font-weight: 600; }
+.history-code, .history-level, .history-count, .history-sort label { font-size: 13px; }
+.history-open, .history-new { font-size: 14px; min-height: 44px; }
+.result-summary-compact { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding: 22px 24px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); }
+.result-summary-label > span { font-size: 14px; color: var(--text-muted); }
+.result-summary-compact h2 { font-size: 28px !important; font-weight: 600; margin-top: 4px; }
+.result-summary-numbers { display: flex; gap: 24px; }
+.result-summary-numbers > div { display: flex; flex-direction: column; padding-left: 24px; border-left: 1px solid var(--border); }
+.result-summary-numbers strong { font-size: 25px; line-height: 1.3; font-weight: 600; }
+.result-summary-numbers small { font-size: 15px; font-weight: 400; }
+.result-summary-numbers span { font-size: 13px; color: var(--text-muted); }
+.figure-results-heading h2, .tracking-embedded-top h2, .tracking-section-head h2 { font-size: 19px !important; font-weight: 600; }
+.figure-results-heading p, .tracking-section-head p, .tracking-embedded-top p { font-size: 14px; }
+.result-figure-caption strong { font-size: 14px; line-height: 1.5; }
+.figure-status, .figure-compare-link { font-size: 13px; }
+.figure-status.is-achieved { color: #21623E; background: #EDF7F0; }
+.figure-status.is-support { color: #9B3030; background: #FDEFEF; }
+.report-review h2, .report-page .report-observation h3 { font-size: 17px !important; }
+.report-outcome h2 { font-size: 26px !important; }
+.report-page .technical-toggle span { font-size: 14px !important; font-weight: 500 !important; }
+.tracking-chart-note, .report-page .report-footnote em, .report-download > span { font-size: 13px; }
+.tracking-selected a { border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; background: white; font-size: 14px; }
+.comparison-page-heading h1 { font-size: 26px !important; }
+.figure-paragraph-card p, .criteria-content ol, .teacher-review-card p { font-size: 14px; line-height: 1.65; }
+.history-page :is(a,button,input,select):focus-visible, .evaluation-navigation a:focus-visible, .evaluation-view-content :is(a,button,summary):focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+@media(max-width:600px) {
+ .history-header h1, .evaluation-page-header h1, .comparison-page-heading h1 { font-size: 24px !important; }
+ .evaluation-navigation { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+ .evaluation-navigation a { padding: 9px 5px; gap: 5px; font-size: 13px; }
+ .evaluation-navigation a svg { width: 15px; height: 15px; flex-shrink: 0; }
+ .result-summary-compact { padding: 18px; gap: 18px; }
+ .result-summary-compact h2 { font-size: 25px !important; }
+ .result-summary-numbers { width: 100%; gap: 20px; border-top: 1px solid var(--border); padding-top: 14px; }
+ .result-summary-numbers > div { padding-left: 0; border: 0; flex: 1; }
+ .results-toolbar .result-report-action button { font-size: 14px !important; }
+ .history-table td[data-label]::before { font-size: 13px; }
+}
+
+@media(max-width:600px) {
+ .evaluation-navigation a { flex-direction: column; white-space: nowrap; min-height: 58px; gap: 3px; padding: 7px 3px; }
+}

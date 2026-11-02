@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { Cargando, ErrorConReintento } from '../components/Estado'
 import { IconFlechaIzq } from '../components/icons'
-import { obtenerSesion, urlImagenNino, urlPlantilla } from '../api'
+import { corregirFigura, obtenerSesion, urlImagenNino, urlPlantilla } from '../api'
 
 export default function Contraste() {
   const { id, figuraId } = useParams()
@@ -44,7 +44,7 @@ export default function Contraste() {
               <span className="status-dot" aria-hidden="true" />{figura.nombre} · {porRevisar ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--surface)', borderRadius: 99, padding: '8px 10px', boxShadow: 'var(--shadow)' }}>
+          <div className="figure-navigation-controls">
             <BotonNav
               disabled={!anterior}
               etiqueta="Figura anterior"
@@ -52,7 +52,7 @@ export default function Contraste() {
             >
               <IconFlechaIzq stroke="var(--peach-dark)" aria-hidden="true" />
             </BotonNav>
-            <div style={{ fontWeight: 800, fontSize: 22 }} aria-live="polite">Figura {idx + 1} de {sesion.figuras.length}</div>
+            <div className="figure-navigation-count" aria-live="polite">Figura {idx + 1} de {sesion.figuras.length}</div>
             <BotonNav
               disabled={!siguiente}
               activo
@@ -66,13 +66,13 @@ export default function Contraste() {
       </div>
 
       <div className="comparison-layout">
-      <div className="comparison-guide-stack"><ObservacionesFigura key={`obs-${figuraId}`} sesionId={id} figuraId={figuraId} /><CriteriosManual key={figuraId} figuraId={figuraId} /></div>
       <div className="comparison-images">
       <div className="comparar-grid comparison-workspace">
-        <ImageReview key={`dibujo-${figuraId}`} title="Dibujo del niño o la niña" src={urlImagenNino(sesion.child_id, figuraId)} alt={`Dibujo: ${figura.nombre}`} />
-        <ImageReview key={`referencia-${figuraId}`} title="Figura de referencia" src={urlPlantilla(figuraId)} alt={`Referencia: ${figura.nombre}`} reference />
+        <ImageReview key={`dibujo-${figuraId}`} title="Dibujo del niño o la niña" src={urlImagenNino(sesion.child_id, figuraId)} alt={`Dibujo: ${figura.nombre}`}><FichaFigura key={`ficha-${figuraId}`} sesionId={id} figuraId={figuraId} figura={figura} /></ImageReview>
+        <ImageReview key={`referencia-${figuraId}`} title="Figura de referencia" src={urlPlantilla(figuraId)} alt={`Referencia: ${figura.nombre}`} reference><ExplicacionFigura key={`explicacion-${figuraId}`} sesionId={sesion.id} figura={figura} /></ImageReview>
       </div>
       </div>
+      <div className="comparison-guide-stack"><CriteriosManual key={figuraId} figuraId={figuraId} /><RevisionDocente key={`revision-${figuraId}`} sesionId={sesion.id} figura={figura} onGuardar={setSesion} /></div>
       </div>
     </Layout>
   )
@@ -94,11 +94,12 @@ function BotonNav({ children, disabled, activo, etiqueta, onClick }) {
   )
 }
 
-function ImageReview({ title, src, alt, reference = false }) {
+function ImageReview({ title, src, alt, reference = false, children }) {
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
   const [failed, setFailed] = useState(false)
-  return <section className="image-review comparar-columna" aria-label={title}>
+  return <section className={`image-review comparar-columna ${reference ? 'reference-review' : 'drawing-review'}`} aria-label={title}>
+    <div className="image-review-main">
     <h2>{title}</h2>
     <p className="image-origin">{reference ? "Modelo de la figura que debía copiar. Es una recreación geométrica del proyecto, no una foto del manual." : "Fotografía del dibujo realizado por el niño o la niña."}</p>
     <div className="image-tools" role="group" aria-label={`Ajustar ${title.toLowerCase()}`}>
@@ -111,6 +112,8 @@ function ImageReview({ title, src, alt, reference = false }) {
     <div className={`image-review-viewport ${zoom === 1 ? 'is-fitted' : 'is-zoomed'}`} tabIndex={0} role="region" aria-label={`${title}, área desplazable`}>
       {failed ? <p role="status">No se pudo cargar la imagen.</p> : <div className="image-review-canvas" style={{width: `${zoom * 100}%`}}><img className={reference ? 'reference-display' : ''} src={src} alt={alt} onError={() => setFailed(true)} style={{transform: `rotate(${rotation}deg)`}} /></div>}
     </div>
+    </div>
+    {children}
   </section>
 }
 
@@ -133,7 +136,7 @@ function CriteriosManual({ figuraId }) {
   </div></details>
 }
 
-function ObservacionesFigura({ sesionId, figuraId }) {
+function FichaFigura({ sesionId, figuraId, figura }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState(false)
   useEffect(() => {
@@ -143,12 +146,116 @@ function ObservacionesFigura({ sesionId, figuraId }) {
       .then(setData).catch((err) => { if (err.name !== 'AbortError') setError(true) })
     return () => controller.abort()
   }, [sesionId, figuraId])
-  return <section className="figure-observations" aria-labelledby="figure-observations-title">
-    <span className="criteria-eyebrow">Apoyo a la revisión</span><h2 id="figure-observations-title">Observaciones de esta figura</h2>
-    <p className="observation-intro">Indicios geométricos de la imagen; requieren confirmación docente. No son la causa demostrada del puntaje.</p>
-    {error ? <p role="alert">No se pudo analizar la imagen. Puedes consultar los criterios del manual.</p> : !data ? <p role="status">Analizando el trazo…</p> : <>
-      {data.aviso_imagen && <p className="observation-photo-warning">Imagen: {data.aviso_imagen}</p>}
-      <ul>{data.observaciones.map((o) => <li key={o.titulo}><div className="observation-title"><strong>{o.titulo}</strong>{o.revisar && <span>Comprobar</span>}</div><p>{o.detalle}</p></li>)}</ul>
+  const pendiente = figura.decision === 'revisar' && figura.puntaje_docente == null
+  const lograda = (figura.puntaje_docente ?? figura.puntaje) === 1
+  const docente = figura.puntaje_docente != null
+  const estado = pendiente ? 'review' : lograda ? 'achieved' : 'support'
+  const medicion = data?.observaciones.find((o) => o.fuente === 'medicion' && o.detalle_tecnico)
+  const cerrada = ['F04','F05','F06','F09','F10','F11','F15'].includes(figuraId)
+  return <section className="figure-reading-card" aria-labelledby="figure-reading-title">
+    <h3 id="figure-reading-title">Lectura de esta figura</h3>
+    <div className={`figure-reading-result ${estado}`}>
+      <span className="reading-symbol" aria-hidden="true">{pendiente ? '?' : lograda ? '✓' : '!'}</span>
+      <div><strong>{pendiente ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'}</strong><span>{docente ? 'Resultado confirmado por la docente' : 'Resultado del modelo'}</span></div>
+    </div>
+    {pendiente && <p className="reading-pending">Confirma el puntaje con los criterios del manual.</p>}
+    <h4>Aspectos del dibujo</h4>
+    {!data && !error ? <p role="status" className="reading-note">Consultando la imagen…</p> : <>
+      <dl className="reading-aspects">
+        {['F01','F02'].includes(figuraId) && <FilaAspecto nombre="Inclinación" estado={medicion ? medicion.revisar ? 'review' : 'achieved' : 'unknown'} texto={medicion ? (medicion.revisar ? 'Conviene comprobarla' : 'Dentro de lo permitido') : 'Sin información suficiente'} falta={!medicion} />}
+        <FilaAspecto nombre="Forma y trazos" estado="manual" texto="Por confirmar por la profesora" />
+        {cerrada && <FilaAspecto nombre="Cierre" estado="unknown" texto="Sin comprobación automática" />}
+      </dl>
+      {(error || data?.observaciones.some((o) => o.fuente === 'limitacion')) && <p className="reading-note">No se pudieron obtener medidas fiables de la foto. Esto no cambia el resultado del modelo.</p>}
+      {medicion?.detalle_tecnico && <details className="reading-details"><summary>Ver medida de inclinación</summary><p>{medicion.detalle_tecnico}</p><p>{medicion.detalle}</p></details>}
     </>}
+    <p className="reading-key"><span aria-hidden="true">○</span> Gris: requiere revisión visual, no significa que esté mal.</p>
+  </section>
+}
+
+function FilaAspecto({ nombre, estado, texto, falta = false }) {
+  return <div className="reading-aspect"><dt>{nombre}</dt><dd className={`reading-aspect-status ${falta ? 'unknown' : estado}`}><span aria-hidden="true">{falta ? '—' : estado === 'achieved' ? '✓' : estado === 'review' ? '!' : '○'}</span>{falta ? 'Sin información suficiente' : texto}</dd></div>
+}
+
+function RevisionDocente({ sesionId, figura, onGuardar }) {
+  const [seleccion, setSeleccion] = useState(figura.puntaje_docente)
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState(null)
+  const [guardado, setGuardado] = useState(false)
+  const revisada = figura.puntaje_docente != null
+  const cambio = seleccion != null && (!revisada || seleccion !== figura.puntaje_docente)
+  async function guardar() {
+    if (!cambio || guardando) return
+    setGuardando(true); setError(null); setGuardado(false)
+    try {
+      const resultado = await corregirFigura(sesionId, figura.figura_id, seleccion)
+      onGuardar(resultado); setGuardado(true)
+    } catch {
+      setError('No se pudo guardar. Tu selección sigue aquí; intenta de nuevo.')
+    } finally { setGuardando(false) }
+  }
+  return <section className="teacher-review-card" aria-labelledby="teacher-review-title">
+    <div className="teacher-review-heading"><h3 id="teacher-review-title">Revisión de la profesora</h3><span className={`teacher-review-state ${revisada ? 'is-reviewed' : ''}`}>{revisada ? 'Revisada' : 'Sin revisar'}</span></div>
+    <p>Compara el dibujo con la referencia y los criterios del manual. Después, confirma tu valoración.</p>
+    <div className="teacher-review-options" role="group" aria-label="Valoración de la profesora">
+      <button type="button" disabled={guardando} aria-pressed={seleccion === 1} className="teacher-choice choice-achieved" onClick={() => { setSeleccion(1);setGuardado(false) }}><span aria-hidden="true">✓</span><span>Lograda</span></button>
+      <button type="button" disabled={guardando} aria-pressed={seleccion === 0} className="teacher-choice choice-support" onClick={() => { setSeleccion(0);setGuardado(false) }}><span aria-hidden="true">!</span><span>Necesita apoyo</span></button>
+    </div>
+    <div className="teacher-review-save"><span>{cambio ? 'Cambio pendiente de guardar' : revisada ? 'Valoración guardada' : 'Selecciona una opción'}</span><button type="button" disabled={!cambio || guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar revisión'}</button></div>
+    {guardado && <p role="status" className="teacher-review-success">Revisión guardada. La puntuación de la sesión se ha actualizado.</p>}
+    {error && <p role="alert" className="teacher-review-error">{error}</p>}
+    <p className="teacher-review-note">Se guarda tu valoración sin borrar la predicción original del modelo.</p>
+  </section>
+}
+
+const FORMAS_ESPERADAS = {
+  F01: 'una sola línea recta en posición vertical',
+  F02: 'dos líneas horizontales que no se juntan ni forman curvas',
+  F03: 'dos líneas que se cruzan sin quedar separadas en el punto de encuentro',
+  F04: 'un contorno cerrado, redondo u ovalado, sin esquinas ni lados rectos',
+  F05: 'un contorno cerrado de cuatro lados, con cuatro esquinas aproximadamente rectas',
+  F06: 'un contorno cerrado de tres lados y tres puntas, sin líneas onduladas',
+  F07: 'dos líneas que forman una X y se cruzan por dentro, no en sus extremos',
+  F08: 'una línea continua con las dos ondulaciones del modelo',
+  F09: 'un contorno cerrado de cuatro lados con dos líneas que se cruzan dentro y llegan a las esquinas según el manual',
+  F10: 'una figura cerrada de cuatro lados apoyada sobre una punta',
+  F11: 'un círculo arriba y un triángulo abajo que se tocan sin cruzarse',
+  F12: 'una línea recta y una curva que se tocan en un punto sin superponerse',
+  F13: 'dos curvas que se tocan por el centro, por su lado convexo, sin superponerse',
+  F14: 'dos rectas que se unen arriba y una curva de tres ondas que cruza ambas rectas',
+  F15: 'un cuadrado arriba y un círculo abajo a la derecha que se cruzan en dos puntos, con una sola esquina del cuadrado dentro del círculo',
+}
+
+function ExplicacionFigura({ sesionId, figura }) {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState(false)
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`/api/sesiones/${encodeURIComponent(sesionId)}/figuras/${encodeURIComponent(figura.figura_id)}/observaciones`, { signal: controller.signal })
+      .then((res) => { if (!res.ok) throw new Error(); return res.json() })
+      .then(setData).catch((err) => { if (err.name !== 'AbortError') setError(true) })
+    return () => controller.abort()
+  }, [sesionId, figura.figura_id])
+  const docente = figura.puntaje_docente != null
+  const pendiente = !docente && figura.decision === 'revisar'
+  const lograda = (figura.puntaje_docente ?? figura.puntaje) === 1
+  const lectura = docente
+    ? `La profesora ha valorado este dibujo como ${lograda ? 'logrado' : 'necesita apoyo'}. Esta valoración se utiliza para calcular el resultado de la sesión.`
+    : pendiente
+      ? 'El modelo ha dejado este dibujo por revisar porque su confianza no es suficiente para decidir. Eso no significa que esté mal: falta que la profesora confirme la valoración.'
+      : lograda
+        ? 'El modelo considera que este dibujo está logrado. Es una valoración global de esta figura; no confirma por separado cada criterio del manual.'
+        : 'El modelo considera que este dibujo necesita apoyo. La puntuación no permite identificar por sí sola qué parte falta o está mal hecha.'
+  const medida = data?.observaciones.find((o) => o.fuente === 'medicion' && o.detalle_tecnico)
+  const limitada = data?.observaciones.some((o) => o.fuente === 'limitacion')
+  return <section className="figure-paragraph-card" aria-labelledby="figure-explanation-title">
+    <span className="criteria-eyebrow">Figura {Number(figura.figura_id.slice(1))} · {figura.nombre}</span>
+    <h3 id="figure-explanation-title">Qué nos dice este dibujo</h3>
+    <p>{lectura}</p>
+    {medida && <p>{medida.titulo}. {medida.detalle}</p>}
+    {limitada && <p className="figure-explanation-caution">No se pudieron obtener medidas adicionales fiables de esta foto; no podemos señalar un defecto concreto.</p>}
+    {!data && !error && <p role="status" className="reading-note">Consultando detalles de esta figura…</p>}
+    {error && <p className="reading-note">No se pudieron cargar las medidas adicionales de esta figura.</p>}
+    <p className="figure-explanation-reference"><strong>En esta figura se espera</strong> {FORMAS_ESPERADAS[figura.figura_id] || 'la forma indicada en el manual'}. Esta descripción sirve como referencia, no como una afirmación de lo que hizo el niño.</p>
   </section>
 }

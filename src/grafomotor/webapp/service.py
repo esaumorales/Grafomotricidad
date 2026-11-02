@@ -20,7 +20,7 @@ from grafomotor.artefactos import Artefactos
 from grafomotor.config import load_config
 from grafomotor.explain import construir_informe, explicar_para_docente, shap_por_sesion
 from grafomotor.features.extract import extraer_indicadores
-from grafomotor.io import cargar_plantillas, ruta_plantilla
+from grafomotor.io import a_binaria, cargar_plantillas, leer_gris, ruta_plantilla
 from grafomotor.model.final_103h import ModeloFinal
 from grafomotor.model.predict import PrediccionFigura, agregar_sesion
 from grafomotor.preprocessing import preprocesar_figura
@@ -57,7 +57,8 @@ class Servicio:
 
     def __init__(self, config_path: str | None = None):
         self.cfg = load_config(config_path)
-        self.final = ModeloFinal(Artefactos.de_config(self.cfg).dir_modelo_ml)
+        carpeta_modelo = Artefactos.de_config(self.cfg).dir_modelo_ml
+        self.final = ModeloFinal(carpeta_modelo)
         self.modelo = self.final.modelo
         self.manifiesto = {
             **self.final.manifiesto,
@@ -66,6 +67,15 @@ class Servicio:
         }
         self.plantillas = cargar_plantillas(self.cfg, estricto=False)
         self.figuras_meta = self.cfg.figuras
+        # Si el modelo trae sus propias plantillas y medidas esperadas (scripts/instalar_modelo_final.py),
+        # se usan para medir los dibujos: son las del entrenamiento. Con las de config/ las medidas
+        # cambian y ~1 de cada 9 figuras recibía otra nota que la del modelo del artículo.
+        propias = carpeta_modelo / "plantillas"
+        for fid in self.final.figuras:
+            if (propias / f"{fid}.png").exists():
+                self.plantillas[fid] = a_binaria(leer_gris(propias / f"{fid}.png"))
+        meta_modelo = self.final.manifiesto.get("figuras_meta") or {}
+        self.figuras_meta = {fid: {**m, **meta_modelo.get(fid, {})} for fid, m in self.cfg.figuras.items()}
         # columnas con que se entrenó el modelo cargado (los modelos antiguos solo tienen las 6)
         self.nombres = list(self.manifiesto.get("feature_names") or ORDEN)
         self.baremo = cargar_baremo(self.cfg.ruta("baremos"))
@@ -76,7 +86,8 @@ class Servicio:
         db.iniciar_db(self.db_path)
 
     def ruta_plantilla(self, figura_id: str) -> Path | None:
-        p = ruta_plantilla(self.cfg, figura_id)
+        propia = Artefactos.de_config(self.cfg).dir_modelo_ml / "plantillas" / f"{figura_id}.png"
+        p = propia if propia.exists() else ruta_plantilla(self.cfg, figura_id)
         return p if p.exists() else None
 
     def _nivel(self, pd_total: int, edad_meses: int) -> tuple[dict, NivelResultado]:
@@ -179,7 +190,8 @@ class Servicio:
         sesion = agregar_sesion(child_id, edad_meses, preds)
         tPc, nivel = self._nivel(sesion.PD, edad_meses)
 
-        shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), self.nombres)
+        shap_out = shap_por_sesion(self.modelo, np.array(X, dtype=float), self.nombres,
+                                   [p.figura_id for p in preds])
         nombres_fig = {fid: m.get("nombre", fid) for fid, m in self.cfg.figuras.items()}
 
         exp = explicar_para_docente(

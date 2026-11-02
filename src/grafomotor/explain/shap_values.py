@@ -4,10 +4,12 @@ from __future__ import annotations
 import numpy as np
 
 from grafomotor import ORDEN
+from grafomotor.explain.tabla_s1 import columnas_fuera_del_manual
 from grafomotor.model.columnas import indicador_de
 
 
-def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str]) -> dict:
+def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str],
+                    figuras: list[str] | None = None) -> dict:
     """
     Devuelve:
       por_figura : list[dict]  contribución de cada indicador a cada figura (con signo)
@@ -40,9 +42,15 @@ def shap_por_sesion(modelo, X_figuras: np.ndarray, feature_names: list[str]) -> 
 
     columnas = [dict(zip(feature_names, row, strict=True)) for row in sv]
     indicadores = [i for i in ORDEN if any(indicador_de(f) == i for f in feature_names)]
+    # Con `figuras` (id de cada fila), solo cuentan como razón las columnas cuyo indicador mide algún
+    # criterio del manual en esa figura (Tabla S1): p. ej. el cierre no explica una línea recta.
+    # El panel técnico (`columnas`) conserva todas las contribuciones.
+    fuera = [columnas_fuera_del_manual(f, feature_names) for f in figuras] if figuras else \
+        [set()] * len(columnas)
     por_figura = [
-        {i: float(sum(v for f, v in c.items() if indicador_de(f) == i)) for i in indicadores}
-        for c in columnas
+        {i: float(sum(v for f, v in c.items() if indicador_de(f) == i and f not in fu))
+         for i in indicadores}
+        for c, fu in zip(columnas, fuera, strict=True)
     ]
     agg_signed = {i: float(np.mean([pf[i] for pf in por_figura])) for i in indicadores}
     agg_abs = {i: float(np.mean([abs(pf[i]) for pf in por_figura])) for i in indicadores}
