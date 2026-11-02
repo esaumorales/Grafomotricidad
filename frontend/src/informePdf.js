@@ -1,3 +1,4 @@
+import { nivelEducativo } from './nivelEducativo'
 import { jsPDF } from 'jspdf'
 import { marked } from 'marked'
 
@@ -52,10 +53,11 @@ export function crearInformePdf(sesion) {
   paragraph(`Código: ${sesion.child_id}    |    Edad: ${Math.floor(sesion.edad_meses/12)} años y ${sesion.edad_meses%12} meses${sesion.fecha_evaluacion?`    |    Fecha: ${sesion.fecha_evaluacion.split('-').reverse().join('/')}`:''}`,{size:8.5,color:C.muted,gap:7})
   const resumen=sesion.panel_tecnico.resumen
   const pendientes=sesion.figuras.filter((f)=>f.decision==='revisar'&&f.puntaje_docente==null)
+  const educativo = nivelEducativo(resumen.percentil)
   ensure(31)
   pdf.setDrawColor(...C.border);pdf.roundedRect(left,y,width,26,2,2,'S')
   drawText(pendientes.length?'RESULTADO PROVISIONAL':'RESULTADO',left+7,y+7,8,false,C.muted)
-  drawText(resumen.nivel,left+7,y+18,17,true)
+  drawText(educativo ? `${educativo.letra} - ${educativo.nivel}` : 'Sin equivalencia',left+7,y+18,14,true)
   pdf.line(119,y+5,119,y+21);pdf.line(155,y+5,155,y+21)
   drawText(`${resumen.PD}/15`,126,y+13,16,true);drawText('Puntos',126,y+20,8,false,C.muted)
   drawText(resumen.percentil??'-',162,y+13,16,true);drawText('Percentil',162,y+20,8,false,C.muted)

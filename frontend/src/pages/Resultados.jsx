@@ -1,3 +1,4 @@
+import NivelEducativo from '../components/NivelEducativo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEvaluacion } from '../components/EvaluacionShell'
@@ -18,10 +19,7 @@ export default function Resultados() {
     <>
       <ComparacionIA sesion={sesion} />
 
-      <section className="result-summary result-summary-compact" aria-label="Resumen del resultado">
-        <div className="result-summary-label"><span>Resultado de la evaluación</span><h2>{tecnico.nivel}</h2></div>
-        <div className="result-summary-numbers"><div><strong>{logradas}<small> / {sesion.figuras.length}</small></strong><span>figuras logradas</span></div>{tecnico.percentil != null && <div><strong>{tecnico.percentil}</strong><span>percentil</span></div>}</div>
-      </section>
+      <NivelEducativo puntos={logradas} total={sesion.figuras.length} percentil={tecnico.percentil} provisional={sesion.figuras.some((f) => f.decision === 'revisar' && f.puntaje_docente == null)} />
 
       <section className="figure-results" aria-labelledby="figure-results-title">
         <div className="figure-results-heading"><div><h2 id="figure-results-title">Revisar los dibujos</h2><p>Selecciona una figura para ver el dibujo y su resultado.</p></div></div>

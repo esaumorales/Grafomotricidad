@@ -1092,3 +1092,69 @@ body, .app-shell { background: white; }
 @media(max-width:600px) {
  .evaluation-navigation a { flex-direction: column; white-space: nowrap; min-height: 58px; gap: 3px; padding: 7px 3px; }
 }
+
+
+.educational-level { border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; background: white; font-size: 14px; }
+.report-body > .educational-level { margin-bottom: 20px; }
+.educational-level-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.educational-level-caption { font-size: 13px; color: var(--text-muted); }
+.educational-level-value { display: flex; gap: 10px; align-items: center; margin-top: 7px; }
+.educational-level-letter { display: inline-flex; justify-content: center; align-items: center; min-width: 38px; height: 34px; padding: 4px 8px; background: var(--surface-alt); border-radius: 4px; font-size: 18px; }
+.educational-level .educational-level-value h3 { font-size: 17px !important; font-weight: 600; }
+.educational-level p { font-size: 13px; margin: 7px 0 0; color: var(--text-muted); }
+.educational-level details { max-width: 360px; }
+.educational-level summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-size: 13px; }
+.educational-level ul { list-style: none; padding: 0; margin: 0; }
+.educational-level li { display: grid; grid-template-columns: 30px minmax(0,1fr) 48px; gap: 10px; border-top: 1px solid var(--border); padding: 8px 0; font-size: 13px; }
+@media(max-width:600px) { .educational-level { padding: 16px; } .educational-level details { width: 100%; max-width: none; } }
+
+/* Letra educativa ligeramente más visible, sin ampliar el texto del nivel. */
+.educational-level-letter { font-size: 22px; min-width: 42px; height: 38px; }
+
+
+/* Letra educativa destacada, con texto descriptivo de tamaño moderado. */
+.educational-level-value { gap: 14px; margin-top: 10px; }
+.educational-level-letter { min-width: 60px; height: 56px; padding: 6px 12px; font-size: 32px; font-weight: 600; line-height: 1; color: white; background: var(--navy); border-radius: 6px; flex-shrink: 0; }
+
+
+/* Un único resultado principal con nivel educativo y puntuación. */
+.educational-level { background: var(--surface-alt); padding: 22px 24px; }
+.educational-level-heading { align-items: center; gap: 18px 24px; }
+.educational-level .educational-level-value h2 { font-size: 24px !important; line-height: 1.3; font-weight: 600; }
+.educational-summary-metrics { display: flex; gap: 24px; margin-left: auto; }
+.educational-summary-metrics > div { display: flex; flex-direction: column; border-left: 1px solid var(--border); padding-left: 24px; }
+.educational-summary-metrics strong { font-size: 25px; font-weight: 600; line-height: 1.4; }
+.educational-summary-metrics small { font-size: 14px; font-weight: 400; }
+.educational-summary-metrics span { font-size: 13px; color: var(--text-muted); }
+.educational-level details { flex-basis: 100%; max-width: none; border-top: 1px solid var(--border); }
+.educational-level details ul, .educational-level details p { max-width: 440px; }
+@media(max-width:600px) {
+ .educational-level { padding: 18px; }
+ .educational-level .educational-level-value h2 { font-size: 21px !important; }
+ .educational-summary-metrics { width: 100%; margin: 0; gap: 20px; }
+ .educational-summary-metrics > div { flex: 1; border: 0; padding: 0; }
+}
+
+/* Ajuste moderado del resultado principal. */
+.educational-level-letter { min-width: 68px; height: 64px; font-size: 36px; }
+.educational-level .educational-level-value h2 { font-size: 27px !important; }
+@media(max-width:600px) {
+ .educational-level-letter { min-width: 60px; height: 58px; font-size: 33px; }
+ .educational-level .educational-level-value h2 { font-size: 23px !important; }
+}
+
+
+.educational-level-letter { min-width: 74px; height: 70px; font-size: 40px; }
+.educational-level .educational-level-value h2 { font-size: 30px !important; }
+@media(max-width:600px) {
+ .educational-level-letter { min-width: 64px; height: 62px; font-size: 36px; }
+ .educational-level .educational-level-value h2 { font-size: 25px !important; }
+}
+
+
+.educational-level-letter { min-width: 80px; height: 76px; font-size: 44px; }
+.educational-level .educational-level-value h2 { font-size: 33px !important; }
+@media(max-width:600px) {
+ .educational-level-letter { min-width: 68px; height: 66px; font-size: 39px; }
+ .educational-level .educational-level-value h2 { font-size: 27px !important; }
+}

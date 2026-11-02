@@ -1,3 +1,4 @@
+import NivelEducativo from '../components/NivelEducativo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEvaluacion } from '../components/EvaluacionShell'
@@ -55,7 +56,7 @@ export default function Informe() {
       <div className="informe-layout">
         <div className="informe-principal">
           <div className="card report-body" style={{ padding: '30px 34px' }}>
-            <div className="report-outcome"><div><span className="report-eyebrow">Resultado{pendientes.length ? ' provisional' : ''}</span><h2>{tecnico.nivel}</h2></div><div className="report-metrics"><span><strong>{tecnico.PD}<small> / 15</small></strong>puntos</span>{tecnico.percentil != null && <span><strong>{tecnico.percentil}</strong>percentil</span>}</div></div>
+            <NivelEducativo puntos={tecnico.PD} total={sesion.figuras.length} percentil={tecnico.percentil} provisional={pendientes.length > 0} />
             <InformeMarkdown markdown={sesion.informe_docente_md} compact separateWarning={pendientes.length > 0} />
           </div>
 
@@ -79,6 +80,7 @@ export default function Informe() {
               <div className="technical-grid" style={{ marginTop: 18, display: 'grid', gap: 24 }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 10 }}>Resumen de la sesión</div>
+                  <FilaTecnica etiqueta="Clasificación original" valor={tecnico.nivel} />
                   <FilaTecnica etiqueta="PD (0-15)" valor={tecnico.PD} />
                   <FilaTecnica etiqueta="Percentil" valor={tecnico.percentil} />
                   <FilaTecnica etiqueta="Tramo de edad" valor={tecnico.tramo_edad} />
