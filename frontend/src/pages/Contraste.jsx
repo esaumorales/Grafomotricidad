@@ -245,7 +245,7 @@ function ExplicacionFigura({ sesionId, figura }) {
       ? 'La profesora confirmó que esta figura está lograda.'
       : 'La profesora indicó que esta figura necesita apoyo.'
     : pendiente
-      ? 'Este trazo está pendiente de revisión: el sistema aún no puede decidir si la figura está lograda.'
+      ? 'Aún no se pudo confirmar si esta figura está lograda. Esto no significa que esté mal. Observa el trazo y compáralo con la figura de referencia.'
       : lograda
         ? 'El sistema valoró esta figura como lograda.'
         : 'El sistema valoró esta figura como «Necesita apoyo».'
@@ -255,7 +255,7 @@ function ExplicacionFigura({ sesionId, figura }) {
     <span className="criteria-eyebrow">Figura {Number(figura.figura_id.slice(1))} · {figura.nombre}</span>
     <h3 id="figure-explanation-title">Qué nos dice este trazo</h3>
     <p>{lectura} Para esta figura se espera {esperada}. {pendiente
-      ? 'Compara el trazo con la referencia para confirmar si cumple con esa forma.'
+      ? 'Después, marca «Lograda» o «Necesita apoyo» según los criterios del manual.'
       : lograda
         ? 'La valoración corresponde al trazo completo; los aspectos de la tabla se revisan por separado.'
         : 'Este resultado señala que conviene revisar cómo se realizó la figura, pero no identifica por sí solo qué parte hay que mejorar.'}</p>
