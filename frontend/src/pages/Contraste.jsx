@@ -68,7 +68,7 @@ export default function Contraste() {
       <div className="comparison-layout">
       <div className="comparison-images">
       <div className="comparar-grid comparison-workspace">
-        <ImageReview key={`dibujo-${figuraId}`} title="Dibujo del niño o la niña" src={urlImagenNino(sesion.child_id, figuraId)} alt={`Dibujo: ${figura.nombre}`}><FichaFigura key={`ficha-${figuraId}`} sesionId={id} figuraId={figuraId} figura={figura} /></ImageReview>
+        <ImageReview key={`dibujo-${figuraId}`} title="Trazo del niño o la niña" src={urlImagenNino(sesion.child_id, figuraId)} alt={`Trazo: ${figura.nombre}`}><FichaFigura key={`ficha-${figuraId}`} sesionId={id} figuraId={figuraId} figura={figura} /></ImageReview>
         <ImageReview key={`referencia-${figuraId}`} title="Figura de referencia" src={urlPlantilla(figuraId)} alt={`Referencia: ${figura.nombre}`} reference><ExplicacionFigura key={`explicacion-${figuraId}`} sesionId={sesion.id} figura={figura} /></ImageReview>
       </div>
       </div>
@@ -101,7 +101,7 @@ function ImageReview({ title, src, alt, reference = false, children }) {
   return <section className={`image-review comparar-columna ${reference ? 'reference-review' : 'drawing-review'}`} aria-label={title}>
     <div className="image-review-main">
     <h2>{title}</h2>
-    <p className="image-origin">{reference ? "Modelo de la figura que debía copiar. Es una recreación geométrica del proyecto, no una foto del manual." : "Fotografía del dibujo realizado por el niño o la niña."}</p>
+    <p className="image-origin">{reference ? "Modelo de la figura que debía copiar. Es una recreación geométrica del proyecto, no una foto del manual." : "Fotografía del trazo realizado por el niño o la niña."}</p>
     <div className="image-tools" role="group" aria-label={`Ajustar ${title.toLowerCase()}`}>
       <button type="button" aria-label={`Alejar ${title.toLowerCase()}`} disabled={zoom <= 1} onClick={() => setZoom((v) => Math.max(1, v - .25))}>−</button>
       <output aria-label="Ampliación">{Math.round(zoom * 100)} %</output>
@@ -159,7 +159,7 @@ function FichaFigura({ sesionId, figuraId, figura }) {
       <div><strong>{pendiente ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'}</strong><span>{docente ? 'Resultado confirmado por la docente' : 'Resultado del modelo'}</span></div>
     </div>
     {pendiente && <p className="reading-pending">Confirma el puntaje con los criterios del manual.</p>}
-    <h4>Aspectos del dibujo</h4>
+    <h4>Aspectos del trazo</h4>
     {!data && !error ? <p role="status" className="reading-note">Consultando la imagen…</p> : <>
       <dl className="reading-aspects">
         {['F01','F02'].includes(figuraId) && <FilaAspecto nombre="Inclinación" estado={medicion ? medicion.revisar ? 'review' : 'achieved' : 'unknown'} texto={medicion ? (medicion.revisar ? 'Conviene comprobarla' : 'Dentro de lo permitido') : 'Sin información suficiente'} falta={!medicion} />}
@@ -196,7 +196,7 @@ function RevisionDocente({ sesionId, figura, onGuardar }) {
   }
   return <section className="teacher-review-card" aria-labelledby="teacher-review-title">
     <div className="teacher-review-heading"><h3 id="teacher-review-title">Revisión de la profesora</h3><span className={`teacher-review-state ${revisada ? 'is-reviewed' : ''}`}>{revisada ? 'Revisada' : 'Sin revisar'}</span></div>
-    <p>Compara el dibujo con la referencia y los criterios del manual. Después, confirma tu valoración.</p>
+    <p>Compara el trazo con la referencia y los criterios del manual. Después, confirma tu valoración.</p>
     <div className="teacher-review-options" role="group" aria-label="Valoración de la profesora">
       <button type="button" disabled={guardando} aria-pressed={seleccion === 1} className="teacher-choice choice-achieved" onClick={() => { setSeleccion(1);setGuardado(false) }}><span aria-hidden="true">✓</span><span>Lograda</span></button>
       <button type="button" disabled={guardando} aria-pressed={seleccion === 0} className="teacher-choice choice-support" onClick={() => { setSeleccion(0);setGuardado(false) }}><span aria-hidden="true">!</span><span>Necesita apoyo</span></button>
@@ -239,23 +239,30 @@ function ExplicacionFigura({ sesionId, figura }) {
   const docente = figura.puntaje_docente != null
   const pendiente = !docente && figura.decision === 'revisar'
   const lograda = (figura.puntaje_docente ?? figura.puntaje) === 1
+  const esperada = FORMAS_ESPERADAS[figura.figura_id] || 'la forma indicada en el manual'
   const lectura = docente
-    ? `La profesora ha valorado este dibujo como ${lograda ? 'logrado' : 'necesita apoyo'}. Esta valoración se utiliza para calcular el resultado de la sesión.`
+    ? lograda
+      ? 'La profesora confirmó que esta figura está lograda.'
+      : 'La profesora indicó que esta figura necesita apoyo.'
     : pendiente
-      ? 'El modelo ha dejado este dibujo por revisar porque su confianza no es suficiente para decidir. Eso no significa que esté mal: falta que la profesora confirme la valoración.'
+      ? 'Este trazo está pendiente de revisión: el sistema aún no puede decidir si la figura está lograda.'
       : lograda
-        ? 'El modelo considera que este dibujo está logrado. Es una valoración global de esta figura; no confirma por separado cada criterio del manual.'
-        : 'El modelo considera que este dibujo necesita apoyo. La puntuación no permite identificar por sí sola qué parte falta o está mal hecha.'
+        ? 'El sistema valoró esta figura como lograda.'
+        : 'El sistema valoró esta figura como «Necesita apoyo».'
   const medida = data?.observaciones.find((o) => o.fuente === 'medicion' && o.detalle_tecnico)
   const limitada = data?.observaciones.some((o) => o.fuente === 'limitacion')
   return <section className="figure-paragraph-card" aria-labelledby="figure-explanation-title">
     <span className="criteria-eyebrow">Figura {Number(figura.figura_id.slice(1))} · {figura.nombre}</span>
-    <h3 id="figure-explanation-title">Qué nos dice este dibujo</h3>
-    <p>{lectura}</p>
+    <h3 id="figure-explanation-title">Qué nos dice este trazo</h3>
+    <p>{lectura} Para esta figura se espera {esperada}. {pendiente
+      ? 'Compara el trazo con la referencia para confirmar si cumple con esa forma.'
+      : lograda
+        ? 'La valoración corresponde al trazo completo; los aspectos de la tabla se revisan por separado.'
+        : 'Este resultado señala que conviene revisar cómo se realizó la figura, pero no identifica por sí solo qué parte hay que mejorar.'}</p>
     {medida && <p>{medida.titulo}. {medida.detalle}</p>}
-    {limitada && <p className="figure-explanation-caution">No se pudieron obtener medidas adicionales fiables de esta foto; no podemos señalar un defecto concreto.</p>}
+    {limitada && <p className="figure-explanation-caution">En esta foto el sistema no pudo comprobar qué parte coincide o se diferencia de la referencia. Esa comparación debe hacerla la profesora.</p>}
     {!data && !error && <p role="status" className="reading-note">Consultando detalles de esta figura…</p>}
-    {error && <p className="reading-note">No se pudieron cargar las medidas adicionales de esta figura.</p>}
-    <p className="figure-explanation-reference"><strong>En esta figura se espera</strong> {FORMAS_ESPERADAS[figura.figura_id] || 'la forma indicada en el manual'}. Esta descripción sirve como referencia, no como una afirmación de lo que hizo el niño.</p>
+    {error && <p className="reading-note">Los detalles automáticos no están disponibles. Puedes comparar las imágenes y consultar los criterios del manual.</p>}
+
   </section>
 }

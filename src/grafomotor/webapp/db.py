@@ -71,10 +71,17 @@ def guardar_sesion(db_path: str | Path, resultado: dict) -> int:
 def listar_sesiones(db_path: str | Path) -> list[dict]:
     with _conectar(db_path) as con:
         filas = con.execute(
-            """SELECT id, child_id, nombre_nino, edad_meses, fecha, pd_total, nivel, accion
+            """SELECT id, child_id, nombre_nino, edad_meses, fecha, pd_total, nivel, accion,
+                      resultado_json
                FROM sesiones ORDER BY fecha DESC"""
         ).fetchall()
-        return [dict(f) for f in filas]
+        out = []
+        for f in filas:
+            fila = dict(f)
+            resultado = json.loads(fila.pop("resultado_json"))
+            fila["percentil"] = resultado.get("panel_tecnico", {}).get("resumen", {}).get("percentil")
+            out.append(fila)
+        return out
 
 
 def listar_sesiones_de_nino(db_path: str | Path, child_id: str) -> list[dict]:

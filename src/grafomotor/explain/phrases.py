@@ -153,10 +153,19 @@ def contraer(texto: str) -> str:
 
 
 def frase_en_figuras(nombres: list[str]) -> str:
-    """'se ve sobre todo en el cuadrado y en el rombo'."""
+    """Nombra las figuras con su artículo, sin alternativas como «el/la»."""
     nombres = [n for n in nombres if n]
     if not nombres:
         return ""
-    if len(nombres) == 1:
-        return f"Se ve sobre todo en el/la {nombres[0]}."
-    return f"Se ve sobre todo en el/la {nombres[0]} y en el/la {nombres[1]}."
+
+    def mencionar(nombre: str) -> str:
+        base = nombre.strip().lower()
+        if base.startswith("dos líneas"):
+            return f"en las {nombre}"
+        if base.startswith(("línea", "cruz", "x (", "u")):
+            return f"en la {nombre}"
+        if base.startswith(("círculo", "cuadrado", "triángulo", "rectángulo", "rombo", "lazo", "doble pico")):
+            return f"en el {nombre}"
+        return f"en la figura {nombre}"
+
+    return "Se ve sobre todo " + " y ".join(mencionar(n) for n in nombres[:2]) + "."

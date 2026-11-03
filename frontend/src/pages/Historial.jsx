@@ -1,3 +1,4 @@
+import NivelEducativoBadge from '../components/NivelEducativoBadge'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
@@ -52,12 +53,11 @@ export default function Historial() {
             {filtradas.length ? <table className="history-table"><thead><tr><th scope="col">Niño o niña</th><th scope="col">Edad al evaluar</th><th scope="col">Fecha de registro</th><th scope="col">Nivel</th><th scope="col"><span className="visually-hidden">Acciones</span></th></tr></thead><tbody>
               {filtradas.map((s) => {
                 const nombre = s.nombre_nino || s.child_id
-                const estado = s.accion === 'ninguna' ? 'adequate' : s.accion === 'derivar' ? 'support' : 'review'
                 return <tr key={s.id}>
                   <td className="history-person-cell"><div className="history-person"><span className="history-avatar" aria-hidden="true">{iniciales(nombre)}</span><div><span className="history-name">{nombre}</span><span className="history-code">Código: {s.child_id}</span></div></div></td>
                   <td data-label="Edad al evaluar">{Math.floor(s.edad_meses / 12)} años {s.edad_meses % 12} meses</td>
                   <td data-label="Registro">{fechaCorta(s.fecha)}</td>
-                  <td data-label="Nivel"><span className={`history-level ${estado}`}><span aria-hidden="true" />{s.nivel}</span></td>
+                  <td data-label="Nivel"><NivelEducativoBadge percentil={s.percentil} /></td>
                   <td className="history-actions"><div className="history-action-buttons"><Link className="history-open" to={`/informe/${s.id}`} aria-label={`Ver informe de ${nombre}, evaluación ${s.id}`}>Ver informe<IconFlechaDer width={15} height={15} aria-hidden="true" /></Link></div></td>
                 </tr>
               })}

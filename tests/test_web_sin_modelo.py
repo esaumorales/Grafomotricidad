@@ -36,3 +36,18 @@ def test_modelo_ausente_da_error_claro(monkeypatch):
     assert error.value.status_code == 503
     assert "paquete privado" in error.value.detail
     assert main.salud()["ok"] is False
+
+
+def test_historial_incluye_percentil_guardado(monkeypatch, tmp_path):
+    from grafomotor.webapp import db
+    ruta = tmp_path / "historial.db"
+    db.iniciar_db(ruta)
+    for codigo, percentil in [("INICIO", 20), ("ESPERADO", 65)]:
+        db.guardar_sesion(ruta, {
+            "child_id": codigo, "edad_meses": 57, "accion": "ninguna",
+            "panel_tecnico": {"resumen": {"PD": 4, "nivel": "Adecuado", "percentil": percentil}},
+        })
+    monkeypatch.setattr(main, "base_sesiones", lambda: ruta)
+    filas = {s.child_id: s.percentil for s in main.listar_sesiones()}
+    assert filas == {"INICIO": 20, "ESPERADO": 65}
+    assert all("resultado_json" not in fila for fila in db.listar_sesiones(ruta))
