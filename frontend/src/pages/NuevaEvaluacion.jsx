@@ -261,7 +261,6 @@ export default function NuevaEvaluacion() {
                 </div>)}
               </div>
             )}
-            <button type="button" className="evaluation-mode" disabled={enviando} onClick={() => { setModo(modo === 'hojas' ? 'figuras' : 'hojas'); setError(null) }}><IconSubir width={18} height={18} aria-hidden="true" />{modo === 'hojas' ? 'Subir figura por figura' : 'Volver a las 3 hojas'}</button>
           </section>
           {error && <div role="alert" className="evaluation-error"><strong>No se pudo completar la evaluación</strong><p>{error}</p></div>}
           <dialog ref={quitarDialogRef} className="photo-confirm-dialog" aria-labelledby="quitar-foto-title" aria-describedby="quitar-foto-description" onClose={() => setFotoAQuitar(null)}>
