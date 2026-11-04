@@ -1185,3 +1185,35 @@ body, .app-shell { background: white; }
 .sheet-capture-selected { display: flex; align-items: center; gap: 6px; color: #21623E; font-size: 13px; margin: 0; }
 .sheet-capture-card .sheet-filename { padding: 0; margin: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media(max-width:760px) { .sheet-capture-grid { grid-template-columns: minmax(0,1fr); } .sheet-capture-image img { height: 280px; } }
+
+.tour-start { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; min-height: 44px; margin-top: 14px; border: 1px solid var(--border); border-radius: 5px; font-size: 14px; color: var(--navy); }
+.tour-start > span:first-child { border: 1px solid currentColor; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+.tour-start:hover { background: var(--surface-alt); }
+.evaluation-tour { position: fixed; inset: 0; z-index: 2000; }
+.tour-shade { position: absolute; inset: 0; }
+.tour-spotlight { position: fixed; border: 2px solid var(--gold); border-radius: 7px; box-shadow: 0 0 0 9999px rgba(6,25,42,.65); pointer-events: none; }
+.tour-panel { position: fixed; right: 24px; bottom: 20px; width: min(380px,calc(100vw - 32px)); padding: 18px; border: 1px solid var(--border); border-radius: 8px; background: white; box-shadow: 0 8px 35px #0003; color: var(--navy); outline: none; }
+.tour-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.tour-top > span { font-size: 12px; color: var(--text-muted); }
+.tour-top button { min-height: 36px; padding: 4px; font-size: 13px; color: var(--text-muted); }
+.tour-top button > span { font-size: 20px; margin-left: 5px; }
+.tour-panel #tour-title { font-size: 18px !important; font-weight: 600; margin: 6px 0 8px; line-height: 1.4; }
+.tour-panel p { font-size: 14px; line-height: 1.6; margin: 0; color: var(--text-muted); }
+.tour-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.tour-actions button { min-height: 44px; padding: 9px 13px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; color: var(--navy); }
+.tour-actions .tour-next { background: var(--gold); border-color: var(--gold); font-weight: 600; }
+.tour-panel button:focus-visible, .tour-start:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+@media(max-width:600px) { .tour-panel { left: 12px; right: 12px; bottom: 12px; width: auto; padding: 14px 16px; } .tour-panel #tour-title { font-size: 17px !important; } .tour-actions { margin-top: 12px; } }
+
+.evaluation-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px 20px; flex-wrap: wrap; }
+.evaluation-title-row h1 { flex: 1; min-width: 0; }
+.evaluation-title-row .tour-start { margin: 0; flex-shrink: 0; }
+@media(max-width:600px) {
+ .evaluation-title-row { flex-wrap: nowrap; gap: 10px; align-items: center; }
+ .evaluation-title-row .tour-start { font-size: 12px; padding: 7px 8px; gap: 5px; min-height: 40px; }
+ .evaluation-title-row .tour-start > span:first-child { width: 16px; height: 16px; }
+}
+
+
+.tour-label-short { display: none; }
+@media(max-width:600px) { .tour-label { display: none; } .tour-label-short { display: inline; } }

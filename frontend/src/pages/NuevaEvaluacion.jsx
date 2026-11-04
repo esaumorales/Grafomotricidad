@@ -1,3 +1,4 @@
+import GuiaEvaluacion from '../components/GuiaEvaluacion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Layout from '../components/Layout'
@@ -188,7 +189,7 @@ export default function NuevaEvaluacion() {
     <Layout>
       <div className="evaluation-page">
         <header className="evaluation-header">
-          <h1>{paraMismoNino ? `Nueva evaluación para ${nombreNino || childId}` : 'Nueva evaluación'}</h1>
+          <div className="evaluation-title-row"><h1>{paraMismoNino ? `Nueva evaluación para ${nombreNino || childId}` : 'Nueva evaluación'}</h1><GuiaEvaluacion /></div>
           <p>Completa los datos y añade las fotografías de la prueba.</p>
         </header>
         {paraMismoNino && <div className="repeat-evaluation-note"><div><strong>Se añadirá al seguimiento de {childId}</strong><p>Confirma la fecha de nacimiento y añade las fotos de esta evaluación.</p></div><Link to={`/ninos/${encodeURIComponent(childId)}`}>Volver al seguimiento</Link></div>}
@@ -203,9 +204,9 @@ export default function NuevaEvaluacion() {
                 <input id="campo-child-id" required readOnly={paraMismoNino} value={childId} onChange={(e) => setChildId(e.target.value)} aria-describedby="codigo-ayuda" />
                 <span id="codigo-ayuda" className="field-help">Por ejemplo: NINO_0034</span>
               </Campo>
-              <Campo id="campo-nombre" label={<>Nombre <span className="optional-label">(opcional)</span></>}>
+              <Campo id="campo-nombre" label={<>Nombre o seudónimo <span className="optional-label">(opcional)</span></>}>
                 <input id="campo-nombre" value={nombreNino} onChange={(e) => setNombreNino(e.target.value)} aria-describedby="nombre-ayuda" />
-                <span id="nombre-ayuda" className="field-help">Solo para tu referencia.</span>
+                <span id="nombre-ayuda" className="field-help">Puedes usar un nombre ficticio para identificarlo.</span>
               </Campo>
               <Campo id="campo-nacimiento" label="Fecha de nacimiento">
                 <input id="campo-nacimiento" type="date" required value={nacimiento} max={evaluacion || undefined} onChange={(e) => setNacimiento(e.target.value)} />
@@ -214,7 +215,7 @@ export default function NuevaEvaluacion() {
                 <input id="campo-evaluacion" type="date" required value={evaluacion} onChange={(e) => setEvaluacion(e.target.value)} />
               </Campo>
               <p className={`evaluation-age ${edadMeses !== null && !edadOk ? 'has-warning' : ''}`} aria-live="polite">{textoEdad}</p>
-              <fieldset className="hand-field">
+              <fieldset className="hand-field" data-guia="mano">
                 <legend>Mano usada</legend>
                 <div className="hand-options">
                   {['D', 'I'].map((v) => (
@@ -238,7 +239,7 @@ export default function NuevaEvaluacion() {
             </div>
             <p className="photo-guidance">Toma una foto de cada hoja en vertical, completa y con sus cuatro bordes visibles. Usa el ejemplo de cada tarjeta para elegir la hoja correspondiente.</p>
             <div className="sheet-capture-grid">
-              {[0, 1, 2].map((i) => <section className={`sheet-capture-card ${hojas[i] ? 'is-selected' : ''}`} key={i} aria-labelledby={`foto-hoja-${i}`}>
+              {[0, 1, 2].map((i) => <section className={`sheet-capture-card ${hojas[i] ? 'is-selected' : ''}`} key={i} data-guia={`foto-${i + 1}`} aria-labelledby={`foto-hoja-${i}`}>
                 <div className="sheet-capture-heading"><h3 id={`foto-hoja-${i}`}>Foto {i + 1}</h3><span>Figuras {i * 5 + 1}–{(i + 1) * 5}</span></div>
                 <div className="sheet-capture-image"><img src={hojas[i] ? previewsHojas[i] : `/guias/foto-${i + 1}.png`} alt={hojas[i] ? `Foto ${i + 1} seleccionada` : `Ejemplo de la hoja para Foto ${i + 1}`} /><span>{hojas[i] ? 'Tu fotografía' : 'Hoja de referencia'}</span></div>
                 {hojas[i] && <><p className="sheet-capture-selected"><IconCheck width={14} height={14} aria-hidden="true" />Foto seleccionada</p><p className="sheet-filename" title={hojas[i].name}>{hojas[i].name}</p></>}
@@ -258,7 +259,7 @@ export default function NuevaEvaluacion() {
               <button type="button" className="photo-confirm-remove" onClick={() => { setHojas((prev) => prev.map((foto, i) => i === fotoAQuitar.indice ? null : foto)); quitarDialogRef.current.close() }}><IconPapelera />Sí, quitar foto</button>
             </div>
           </dialog>
-          <footer className="evaluation-actions">
+          <footer className="evaluation-actions" data-guia="evaluar">
             <p role="status">{enviando ? 'Evaluando las fotografías. Espera un momento.' : pendiente}</p>
             <button type="submit" className="btn-primary" disabled={!listoParaEnviar}>{enviando ? 'Evaluando…' : 'Evaluar ahora'}</button>
           </footer>
@@ -269,7 +270,7 @@ export default function NuevaEvaluacion() {
 }
 
 function Campo({ id, label, children }) {
-  return <div className="evaluation-field"><label htmlFor={id}>{label}</label>{children}</div>
+  return <div className="evaluation-field" data-guia={{'campo-child-id': 'codigo', 'campo-nombre': 'nombre', 'campo-nacimiento': 'nacimiento', 'campo-evaluacion': 'evaluacion'}[id]}><label htmlFor={id}>{label}</label>{children}</div>
 }
 
 function IconPapelera() {
