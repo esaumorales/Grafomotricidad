@@ -1,0 +1,105 @@
+{
+  "F01": [
+    "Una sola línea recta dibujada en posición vertical.",
+    "Inclinación igual o menor a 45° sobre el eje vertical.",
+    "No se admiten líneas con ángulos o curvas."
+  ],
+  "F02": [
+    "Deben estar dibujadas dos líneas horizontales.",
+    "No deben tener ningún punto de convergencia.",
+    "Su inclinación debe ser igual o menor a 45° sobre el eje horizontal.",
+    "No es imprescindible que las líneas sean completamente paralelas.",
+    "Ninguna de las dos líneas tiene que ser curva."
+  ],
+  "F03": [
+    "Deben estar dibujadas dos líneas entrecruzadas.",
+    "No se tiene en cuenta la longitud de las líneas.",
+    "No tienen que existir líneas entrecortadas o separadas.",
+    "Se admiten ligeras irregularidades en los trazos aunque no líneas curvas."
+  ],
+  "F04": [
+    "La figura tiene que estar cerrada.",
+    "No se exige que sea estrictamente circular, pudiendo ser ovalada.",
+    "No se admiten líneas rectas o ángulos."
+  ],
+  "F05": [
+    "La figura tiene que estar formada por 4 lados y 4 ángulos.",
+    "Tiene que estar cerrada.",
+    "Los 4 ángulos tienen que ser aproximadamente rectos.",
+    "No se tiene en cuenta la equilateralidad.",
+    "No tiene que existir ondulación en las líneas.",
+    "La rotación del dibujo debe ser aproximadamente horizontal."
+  ],
+  "F06": [
+    "La figura debe tener 3 lados y 3 vértices.",
+    "Debe estar cerrada.",
+    "No debe existir ondulación de líneas.",
+    "La dimensión de los lados no se tiene en cuenta."
+  ],
+  "F07": [
+    "Deben estar dibujadas dos líneas entrecruzadas.",
+    "La intersección no tiene que estar situada en uno de los extremos.",
+    "Inclinación inferior a 45°.",
+    "No se tiene en cuenta la longitud de las líneas."
+  ],
+  "F08": [
+    "Debe estar dibujada una sola línea con dos ondulaciones.",
+    "La ondulación izquierda debe ser convexa y la derecha cóncava.",
+    "No se admiten más de dos ondulaciones.",
+    "Inclinación menor de 45° sobre el eje horizontal.",
+    "No se tiene en cuenta el tamaño de las ondulaciones.",
+    "Es incorrecta la reproducción de las dos ondulaciones separadas entre sí."
+  ],
+  "F09": [
+    "Tiene que estar dibujada una figura cerrada, con 4 lados y 4 ángulos.",
+    "En su interior debe estar dibujada una figura de 2 líneas que se entrecruzan en el interior del dibujo.",
+    "Al menos dos de las líneas tienen que finalizar en los vértices.",
+    "Se admite que una de las dos líneas o ambas sobresalgan al exterior del rectángulo.",
+    "No es imprescindible que el entrecruzamiento se produzca en el centro del rectángulo.",
+    "No se tiene en cuenta la longitud de los lados del rectángulo (se admite un cuadrado)."
+  ],
+  "F10": [
+    "Tiene que estar dibujada una figura con 4 lados y 4 ángulos.",
+    "Tiene que estar cerrada.",
+    "Debe estar apoyada por su parte inferior sobre uno de sus vértices.",
+    "No se tiene en cuenta la equilateralidad ni la igualdad de los ángulos."
+  ],
+  "F11": [
+    "Deben estar dibujados un círculo y un triángulo, que se valorarán siguiendo los criterios expuestos en las Figuras 4 y 6 respectivamente.",
+    "Ambas figuras tienen que ser tangentes.",
+    "El círculo tiene que estar situado en la parte superior y el triángulo en la parte inferior.",
+    "Inclinación menor a 45° sobre el eje vertical."
+  ],
+  "F12": [
+    "Tienen que estar dibujadas dos líneas, una recta y otra curva.",
+    "La línea curva tiene que ser cóncava.",
+    "Ambas líneas tienen que ser tangentes en un punto.",
+    "No deben estar superpuestas.",
+    "La inclinación tiene que ser inferior a 45° sobre el eje horizontal."
+  ],
+  "F13": [
+    "Deben estar dibujadas dos líneas curvas.",
+    "Tienen que ser tangentes en su parte media.",
+    "La zona de contacto tiene que realizarse por su zona convexa.",
+    "No debe existir superposición.",
+    "La inclinación tiene que ser menor a 45° sobre el eje horizontal."
+  ],
+  "F15": [
+    "Deben estar dibujados un círculo y un cuadrado, que se corregirán siguiendo los criterios expuestos para las Figuras 4 y 5 respectivamente.",
+    "El cuadrado tiene que estar dibujado en la parte superior y el círculo en la parte inferior derecha del cuadrado.",
+    "Ambas figuras tienen que ser secantes, con dos puntos de contacto.",
+    "Un solo vértice del cuadrado debe estar incluido en el interior del círculo.",
+    "La inclinación debe ser inferior a 45° con respecto al eje vertical.",
+    "Se acepta que exista desproporción entre el tamaño de ambas figuras."
+  ],
+  "F14": [
+    "Tienen que estar dibujadas dos líneas rectas convergentes en su parte superior.",
+    "Tiene que estar dibujada una línea curva formada por tres ondulaciones.",
+    "Las dos ondulaciones laterales tienen que ser convexas y la central cóncava.",
+    "La figura recta y curva tienen que ser secantes en dos puntos, uno en cada una de las dos líneas rectas.",
+    "No se admiten más de tres ondulaciones.",
+    "Inclinación menor a 45° sobre el eje horizontal.",
+    "Se admiten reproducciones realizadas fragmentariamente.",
+    "No se tiene en cuenta la longitud de las líneas rectas."
+  ]
+}
