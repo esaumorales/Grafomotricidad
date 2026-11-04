@@ -60,14 +60,14 @@ export default function NuevaEvaluacion() {
   const [mano, setMano] = useState('D')
   const [archivos, setArchivos] = useState({}) // { F01: File, ... } (modo figura por figura)
   const [modo, setModo] = useState('hojas') // 'hojas' (3 fotos de hojas) | 'figuras' (15 fotos)
-  const [hojas, setHojas] = useState([]) // File[] (modo hojas, en cualquier orden)
+  const [hojas, setHojas] = useState([null, null, null]) // File[] (modo hojas, en cualquier orden)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
   const [fotoAQuitar, setFotoAQuitar] = useState(null)
   const quitarDialogRef = useRef(null)
   const inputMasivoRef = useRef(null)
   const inputIndividualRef = useRef({})
-  const inputHojasRef = useRef(null)
+  const inputHojasRef = useRef([])
 
   useEffect(() => {
     if (!paraMismoNino || !childId) return
@@ -80,11 +80,17 @@ export default function NuevaEvaluacion() {
   }, [paraMismoNino, childId])
 
   const subidas = Object.keys(archivos).length
-  const previewsHojas = useMemo(() => hojas.map((f) => URL.createObjectURL(f)), [hojas])
+  const previewsHojas = useMemo(() => hojas.map((f) => f ? URL.createObjectURL(f) : null), [hojas])
 
-  function agregarHojas(fileList) {
-    setHojas((prev) => [...prev, ...fileList.filter(esFoto)].slice(0, 3))
+  function elegirHoja(indice, event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!esFoto(file)) { setError('Selecciona una fotografía JPG, PNG o HEIC.'); return }
+    setHojas((prev) => prev.map((foto, i) => i === indice ? file : foto))
+    setError(null)
   }
+  useEffect(() => () => previewsHojas.forEach((url) => { if (url) URL.revokeObjectURL(url) }), [previewsHojas])
   const previews = useMemo(() => {
     const out = {}
     for (const [fid, file] of Object.entries(archivos)) out[fid] = URL.createObjectURL(file)
@@ -142,7 +148,7 @@ export default function NuevaEvaluacion() {
       + (edadOk ? '' : '. Fuera del rango de la prueba: de 3 años a 6 años y 6 meses.')
   }
   const listoParaEnviar = childId.trim() && edadOk && !enviando
-    && (modo === 'hojas' ? hojas.length === 3 : subidas === 15)
+    && (modo === 'hojas' ? hojas.filter(Boolean).length === 3 : subidas === 15)
 
   async function onSubmit(e) {
     e.preventDefault()
@@ -172,7 +178,7 @@ export default function NuevaEvaluacion() {
   }
 
   const total = modo === 'hojas' ? 3 : 15
-  const cantidad = modo === 'hojas' ? hojas.length : subidas
+  const cantidad = modo === 'hojas' ? hojas.filter(Boolean).length : subidas
   const pendiente = !childId.trim() ? 'Completa el código del niño o la niña.'
     : !edadOk ? 'Completa las fechas y comprueba la edad.'
     : cantidad < total ? `Selecciona ${total - cantidad} ${modo === 'hojas' ? 'foto(s) de las hojas' : 'foto(s) de las figuras'} para continuar.`
@@ -230,47 +236,17 @@ export default function NuevaEvaluacion() {
               </div>
               <span className="photo-count" role="status">{cantidad} de {total} seleccionadas</span>
             </div>
-            <details className="upload-sheet-guide">
-              <summary><svg width="17" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 12h6M9 17h4"/></svg><span>Ejemplos · Así deben verse las 3 fotos</span><span className="sheet-guide-orientation">Vertical</span></summary>
-              <div className="upload-photo-guide"><p>Una foto por hoja, en vertical y con los cuatro bordes visibles. Las figuras de referencia quedan a la izquierda y los trazos del niño o la niña, a la derecha.</p>
-                <div className="upload-photo-guide-grid">{[1, 2, 3].map((numero) => <a key={numero} href={`/guias/foto-${numero}.png`} target="_blank" rel="noreferrer" aria-label={`Ampliar ejemplo de Foto ${numero}`}><div><strong>Foto {numero}</strong><span>Figuras {(numero - 1) * 5 + 1}–{numero * 5}</span></div><img src={`/guias/foto-${numero}.png`} alt={`Ejemplo de Foto ${numero}: hoja vertical con las figuras ${(numero - 1) * 5 + 1} a ${numero * 5}`} loading="lazy" /><span className="upload-photo-guide-open">Ampliar foto ↗</span></a>)}</div>
-              </div>
-            </details>
-            {cantidad < total && <div className="evaluation-upload" onDragOver={(e) => e.preventDefault()} onDrop={modo === 'hojas' ? (e) => { e.preventDefault(); agregarHojas(Array.from(e.dataTransfer.files)) } : onDrop}>
-              <IconSubir width={28} height={28} aria-hidden="true" />
-              <div className="evaluation-upload-copy"><strong>{cantidad === 0 ? (modo === 'hojas' ? 'Sube las 3 fotos de las hojas' : 'Sube las fotos de las 15 figuras') : `Sube ${total - cantidad === 1 ? 'la foto que falta' : `las ${total - cantidad} fotos que faltan`}`}</strong>
-                <p>Arrástralas aquí o selecciónalas desde tu dispositivo.</p>
-              </div>
-              <button type="button" className="evaluation-select" disabled={enviando || (modo === 'hojas' && hojas.length >= 3)} onClick={() => (modo === 'hojas' ? inputHojasRef : inputMasivoRef).current.click()}>Subir fotos</button>
-            </div>}
-            <input aria-label="Subir fotos de las hojas" ref={inputHojasRef} type="file" accept="image/*,.heic,.heif" multiple hidden onChange={(e) => { agregarHojas(Array.from(e.target.files)); e.target.value = '' }} />
-            <input aria-label="Subir fotos de las figuras" ref={inputMasivoRef} type="file" accept="image/*" multiple hidden onChange={onElegirMasivo} />
-            <p className="photo-guidance">{modo === 'hojas' ? 'Puedes elegirlas en cualquier orden. Al evaluar, el sistema identifica las hojas y recorta las figuras.' : 'Los nombres como F01 o figura_1 ayudan a ordenar las fotos. Revisa su ubicación antes de evaluar.'}</p>
-
-            {modo === 'hojas' ? (hojas.length > 0 &&
-              <div className="sheet-previews">
-                {[0, 1, 2].map((i) => (
-                  <div className={`sheet-preview ${hojas[i] ? 'is-selected' : ''}`} key={i}>
-                    <div className="sheet-preview-heading"><span>Foto {i + 1}</span>{hojas[i] ? <span className="photo-state"><IconCheck width={14} height={14} aria-hidden="true" /> Seleccionada</span> : <span className="photo-state">Pendiente</span>}</div>
-                    {hojas[i] ? <>
-                      <div className="sheet-image"><span className="preview-fallback">Vista previa no disponible</span><img src={previewsHojas[i]} alt={`Vista previa de la foto ${i + 1}`} onError={(e) => { e.currentTarget.style.display = 'none' }} /></div>
-                      <div className="sheet-filename" title={hojas[i].name}>{hojas[i].name}</div>
-                      <button className="photo-remove" type="button" disabled={enviando} aria-label={`Quitar foto ${i + 1}`} onClick={() => { setFotoAQuitar(hojas[i]); quitarDialogRef.current.showModal() }}><IconPapelera />Quitar foto</button>
-                    </> : <div className="sheet-empty"><svg width="36" height="44" viewBox="0 0 36 44" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="5" y="2" width="26" height="40" rx="3"/><path d="M12 14h12M12 21h12M12 28h7"/></svg><span>Aún no has subido una foto</span></div>}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="evaluation-figures">
-                {FIGURAS.map((f) => <div className="figure-preview" key={f.id}>
-                  <button className="figure-photo" type="button" disabled={enviando} onClick={() => inputIndividualRef.current[f.id]?.click()} aria-label={`${f.nombre}: ${archivos[f.id] ? 'cambiar' : 'subir'} foto`}>
-                    {archivos[f.id] ? <img src={previews[f.id]} alt={`Figura ${f.numero}`} /> : <IconSubir width={24} height={24} aria-hidden="true" />}
-                    <strong>{f.numero} · {f.nombre}</strong><span>{archivos[f.id] ? 'Seleccionada · Cambiar foto' : 'Subir foto'}</span>
-                  </button>
-                  <input ref={(el) => { inputIndividualRef.current[f.id] = el }} type="file" accept="image/*" hidden aria-label={`Foto de ${f.nombre}`} onChange={(e) => onElegirIndividual(f.id, e)} />
-                </div>)}
-              </div>
-            )}
+            <p className="photo-guidance">Toma una foto de cada hoja en vertical, completa y con sus cuatro bordes visibles. Usa el ejemplo de cada tarjeta para elegir la hoja correspondiente.</p>
+            <div className="sheet-capture-grid">
+              {[0, 1, 2].map((i) => <section className={`sheet-capture-card ${hojas[i] ? 'is-selected' : ''}`} key={i} aria-labelledby={`foto-hoja-${i}`}>
+                <div className="sheet-capture-heading"><h3 id={`foto-hoja-${i}`}>Foto {i + 1}</h3><span>Figuras {i * 5 + 1}–{(i + 1) * 5}</span></div>
+                <div className="sheet-capture-image"><img src={hojas[i] ? previewsHojas[i] : `/guias/foto-${i + 1}.png`} alt={hojas[i] ? `Foto ${i + 1} seleccionada` : `Ejemplo de la hoja para Foto ${i + 1}`} /><span>{hojas[i] ? 'Tu fotografía' : 'Hoja de referencia'}</span></div>
+                {hojas[i] && <><p className="sheet-capture-selected"><IconCheck width={14} height={14} aria-hidden="true" />Foto seleccionada</p><p className="sheet-filename" title={hojas[i].name}>{hojas[i].name}</p></>}
+                <input ref={(el) => { inputHojasRef.current[i] = el }} type="file" accept="image/*,.heic,.heif" capture="environment" hidden aria-label={`Tomar una foto de la hoja ${i + 1}`} onChange={(event) => elegirHoja(i, event)} />
+                <button type="button" className="sheet-capture-button" disabled={enviando} onClick={() => inputHojasRef.current[i]?.click()}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 6h4l2-3h4l2 3h4v14H4z"/><circle cx="12" cy="12" r="4"/></svg>{hojas[i] ? 'Cambiar foto' : 'Tomar una foto'}</button>
+                {hojas[i] && <button className="photo-remove" type="button" disabled={enviando} aria-label={`Quitar foto ${i + 1}`} onClick={() => { setFotoAQuitar({indice: i, name: hojas[i].name}); quitarDialogRef.current.showModal() }}><IconPapelera />Quitar foto</button>}
+              </section>)}
+            </div>
           </section>
           {error && <div role="alert" className="evaluation-error"><strong>No se pudo completar la evaluación</strong><p>{error}</p></div>}
           <dialog ref={quitarDialogRef} className="photo-confirm-dialog" aria-labelledby="quitar-foto-title" aria-describedby="quitar-foto-description" onClose={() => setFotoAQuitar(null)}>
@@ -279,7 +255,7 @@ export default function NuevaEvaluacion() {
             {fotoAQuitar && <p className="photo-confirm-filename">{fotoAQuitar.name}</p>}
             <div className="photo-confirm-actions">
               <button type="button" className="photo-cancel" autoFocus onClick={() => quitarDialogRef.current.close()}>Conservar foto</button>
-              <button type="button" className="photo-confirm-remove" onClick={() => { setHojas((prev) => prev.filter((foto) => foto !== fotoAQuitar)); quitarDialogRef.current.close() }}><IconPapelera />Sí, quitar foto</button>
+              <button type="button" className="photo-confirm-remove" onClick={() => { setHojas((prev) => prev.map((foto, i) => i === fotoAQuitar.indice ? null : foto)); quitarDialogRef.current.close() }}><IconPapelera />Sí, quitar foto</button>
             </div>
           </dialog>
           <footer className="evaluation-actions">
