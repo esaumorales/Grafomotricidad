@@ -221,18 +221,20 @@ export default function NuevaEvaluacion() {
               <span className="photo-count" role="status">{cantidad} de {total} seleccionadas</span>
             </div>
             <details className="upload-sheet-guide">
-              <summary><svg width="17" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 12h6M9 17h4"/></svg><span>Plantilla de ejemplo · Así debe verse la hoja</span><span className="sheet-guide-orientation">Vertical</span></summary>
-              <div className="upload-sheet-guide-body"><div><p>Coloca la hoja en vertical, con el título arriba, los modelos a la izquierda y los dibujos a la derecha.</p><p>Fotografía la hoja completa, de frente y con sus cuatro bordes visibles.</p><a href="/api/guia/hoja-modelo/pdf" target="_blank" rel="noreferrer">Abrir plantilla de ejemplo ↗</a></div><a href="/api/guia/hoja-modelo/png" target="_blank" rel="noreferrer" aria-label="Ampliar hoja de ejemplo"><img src="/api/guia/hoja-modelo/png" alt="Hoja vertical: figuras 1 a 5 a la izquierda y espacio de copia a la derecha" loading="lazy" /></a></div>
+              <summary><svg width="17" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 12h6M9 17h4"/></svg><span>Ejemplos · Así deben verse las 3 fotos</span><span className="sheet-guide-orientation">Vertical</span></summary>
+              <div className="upload-photo-guide"><p>Una foto por hoja, en vertical y con los cuatro bordes visibles. Las figuras de referencia quedan a la izquierda y los trazos del niño o la niña, a la derecha.</p>
+                <div className="upload-photo-guide-grid">{[1, 2, 3].map((numero) => <a key={numero} href={`/guias/foto-${numero}.png`} target="_blank" rel="noreferrer" aria-label={`Ampliar ejemplo de Foto ${numero}`}><div><strong>Foto {numero}</strong><span>Figuras {(numero - 1) * 5 + 1}–{numero * 5}</span></div><img src={`/guias/foto-${numero}.png`} alt={`Ejemplo de Foto ${numero}: hoja vertical con las figuras ${(numero - 1) * 5 + 1} a ${numero * 5}`} loading="lazy" /><span className="upload-photo-guide-open">Ampliar foto ↗</span></a>)}</div>
+              </div>
             </details>
             {cantidad < total && <div className="evaluation-upload" onDragOver={(e) => e.preventDefault()} onDrop={modo === 'hojas' ? (e) => { e.preventDefault(); agregarHojas(Array.from(e.dataTransfer.files)) } : onDrop}>
               <IconSubir width={28} height={28} aria-hidden="true" />
-              <div className="evaluation-upload-copy"><strong>{cantidad === 0 ? (modo === 'hojas' ? 'Añade las 3 fotos de las hojas' : 'Añade las fotos de las 15 figuras') : `Añade ${total - cantidad === 1 ? 'la foto que falta' : `las ${total - cantidad} fotos que faltan`}`}</strong>
+              <div className="evaluation-upload-copy"><strong>{cantidad === 0 ? (modo === 'hojas' ? 'Sube las 3 fotos de las hojas' : 'Sube las fotos de las 15 figuras') : `Sube ${total - cantidad === 1 ? 'la foto que falta' : `las ${total - cantidad} fotos que faltan`}`}</strong>
                 <p>Arrástralas aquí o selecciónalas desde tu dispositivo.</p>
               </div>
-              <button type="button" className="evaluation-select" disabled={enviando || (modo === 'hojas' && hojas.length >= 3)} onClick={() => (modo === 'hojas' ? inputHojasRef : inputMasivoRef).current.click()}>Elegir fotos</button>
+              <button type="button" className="evaluation-select" disabled={enviando || (modo === 'hojas' && hojas.length >= 3)} onClick={() => (modo === 'hojas' ? inputHojasRef : inputMasivoRef).current.click()}>Subir fotos</button>
             </div>}
-            <input aria-label="Elegir fotos de las hojas" ref={inputHojasRef} type="file" accept="image/*,.heic,.heif" multiple hidden onChange={(e) => { agregarHojas(Array.from(e.target.files)); e.target.value = '' }} />
-            <input aria-label="Elegir fotos de las figuras" ref={inputMasivoRef} type="file" accept="image/*" multiple hidden onChange={onElegirMasivo} />
+            <input aria-label="Subir fotos de las hojas" ref={inputHojasRef} type="file" accept="image/*,.heic,.heif" multiple hidden onChange={(e) => { agregarHojas(Array.from(e.target.files)); e.target.value = '' }} />
+            <input aria-label="Subir fotos de las figuras" ref={inputMasivoRef} type="file" accept="image/*" multiple hidden onChange={onElegirMasivo} />
             <p className="photo-guidance">{modo === 'hojas' ? 'Puedes elegirlas en cualquier orden. Al evaluar, el sistema identifica las hojas y recorta las figuras.' : 'Los nombres como F01 o figura_1 ayudan a ordenar las fotos. Revisa su ubicación antes de evaluar.'}</p>
 
             {modo === 'hojas' ? (hojas.length > 0 &&
@@ -244,16 +246,16 @@ export default function NuevaEvaluacion() {
                       <div className="sheet-image"><span className="preview-fallback">Vista previa no disponible</span><img src={previewsHojas[i]} alt={`Vista previa de la foto ${i + 1}`} onError={(e) => { e.currentTarget.style.display = 'none' }} /></div>
                       <div className="sheet-filename" title={hojas[i].name}>{hojas[i].name}</div>
                       <button className="photo-remove" type="button" disabled={enviando} aria-label={`Quitar foto ${i + 1}`} onClick={() => { setFotoAQuitar(hojas[i]); quitarDialogRef.current.showModal() }}><IconPapelera />Quitar foto</button>
-                    </> : <div className="sheet-empty"><svg width="36" height="44" viewBox="0 0 36 44" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="5" y="2" width="26" height="40" rx="3"/><path d="M12 14h12M12 21h12M12 28h7"/></svg><span>Aún no has añadido una foto</span></div>}
+                    </> : <div className="sheet-empty"><svg width="36" height="44" viewBox="0 0 36 44" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="5" y="2" width="26" height="40" rx="3"/><path d="M12 14h12M12 21h12M12 28h7"/></svg><span>Aún no has subido una foto</span></div>}
                   </div>
                 ))}
               </div>
             ) : (
               <div className="evaluation-figures">
                 {FIGURAS.map((f) => <div className="figure-preview" key={f.id}>
-                  <button className="figure-photo" type="button" disabled={enviando} onClick={() => inputIndividualRef.current[f.id]?.click()} aria-label={`${f.nombre}: ${archivos[f.id] ? 'cambiar' : 'añadir'} foto`}>
+                  <button className="figure-photo" type="button" disabled={enviando} onClick={() => inputIndividualRef.current[f.id]?.click()} aria-label={`${f.nombre}: ${archivos[f.id] ? 'cambiar' : 'subir'} foto`}>
                     {archivos[f.id] ? <img src={previews[f.id]} alt={`Figura ${f.numero}`} /> : <IconSubir width={24} height={24} aria-hidden="true" />}
-                    <strong>{f.numero} · {f.nombre}</strong><span>{archivos[f.id] ? 'Seleccionada · Cambiar foto' : 'Añadir foto'}</span>
+                    <strong>{f.numero} · {f.nombre}</strong><span>{archivos[f.id] ? 'Seleccionada · Cambiar foto' : 'Subir foto'}</span>
                   </button>
                   <input ref={(el) => { inputIndividualRef.current[f.id] = el }} type="file" accept="image/*" hidden aria-label={`Foto de ${f.nombre}`} onChange={(e) => onElegirIndividual(f.id, e)} />
                 </div>)}

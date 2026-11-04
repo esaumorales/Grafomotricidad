@@ -1158,3 +1158,15 @@ body, .app-shell { background: white; }
  .educational-level-letter { min-width: 68px; height: 66px; font-size: 39px; }
  .educational-level .educational-level-value h2 { font-size: 27px !important; }
 }
+
+
+.upload-photo-guide { padding: 16px; }
+.upload-photo-guide > p { margin: 0 0 16px; font-size: 14px; color: var(--text-muted); max-width: 85ch; }
+.upload-photo-guide-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.upload-photo-guide-grid > a { display: flex; flex-direction: column; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 5px; background: white; }
+.upload-photo-guide-grid > a:hover { border-color: var(--navy); background: var(--bg); }
+.upload-photo-guide-grid > a > div { display: flex; width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 4px; font-size: 14px; }
+.upload-photo-guide-grid > a > div > span { font-size: 12px; color: var(--text-muted); }
+.upload-photo-guide-grid img { width: 100%; height: 230px; object-fit: contain; margin-top: 10px; }
+.upload-photo-guide-open { font-size: 13px; padding-top: 8px; }
+@media(max-width:600px) { .upload-photo-guide-grid { grid-template-columns: minmax(0,1fr); } .upload-photo-guide-grid img { height: 260px; } }
