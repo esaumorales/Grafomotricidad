@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { IconCheck, IconSubir } from '../components/icons'
 import { FIGURAS } from '../figuras'
-import { evaluar, evaluarHojas } from '../api'
+import { evaluar, evaluarHojas, sesionesDeNino } from '../api'
 
 /**
  * Intenta leer el número de figura SOLO cuando el nombre del archivo lo dice de forma
@@ -68,6 +68,16 @@ export default function NuevaEvaluacion() {
   const inputMasivoRef = useRef(null)
   const inputIndividualRef = useRef({})
   const inputHojasRef = useRef(null)
+
+  useEffect(() => {
+    if (!paraMismoNino || !childId) return
+    let activo = true
+    sesionesDeNino(childId).then((sesiones) => {
+      const guardada = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha)).find((s) => s.fecha_nacimiento)
+      if (activo && guardada) setNacimiento((actual) => actual || guardada.fecha_nacimiento)
+    }).catch(() => { /* Las fechas siguen disponibles para completarlas manualmente. */ })
+    return () => { activo = false }
+  }, [paraMismoNino, childId])
 
   const subidas = Object.keys(archivos).length
   const previewsHojas = useMemo(() => hojas.map((f) => URL.createObjectURL(f)), [hojas])

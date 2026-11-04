@@ -79,6 +79,7 @@ def listar_sesiones(db_path: str | Path) -> list[dict]:
         for f in filas:
             fila = dict(f)
             resultado = json.loads(fila.pop("resultado_json"))
+            fila["fecha_nacimiento"] = resultado.get("fecha_nacimiento")
             fila["percentil"] = resultado.get("panel_tecnico", {}).get("resumen", {}).get("percentil")
             out.append(fila)
         return out
@@ -100,6 +101,7 @@ def listar_sesiones_de_nino(db_path: str | Path, child_id: str) -> list[dict]:
             fila = dict(f)
             resultado = json.loads(fila.pop("resultado_json"))
             resumen = resultado.get("panel_tecnico", {}).get("resumen", {})
+            fila["fecha_nacimiento"] = resultado.get("fecha_nacimiento")
             fila["percentil"] = resumen.get("percentil")
             out.append(fila)
         return out

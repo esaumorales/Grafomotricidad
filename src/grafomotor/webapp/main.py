@@ -27,7 +27,7 @@ from pathlib import Path
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from grafomotor.webapp.frontend import FrontendSPA
 
 from grafomotor.config import REPO_ROOT, load_config
 from grafomotor.webapp import db
@@ -121,7 +121,7 @@ async def evaluar(
         sufijo = Path(up.filename or "").suffix or ".jpg"
         destino = s.guardar_foto(child_id, fid, await up.read(), sufijo)
         rutas[fid] = str(destino)
-    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, fecha_evaluacion=f_eval)
+    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, fecha_evaluacion=f_eval, fecha_nacimiento=fecha_nacimiento)
     return EvaluarOut(**res)
 
 
@@ -141,7 +141,7 @@ async def evaluar_hojas(
         rutas, avisos = s.recortar_hojas(child_id, contenidos)
     except ErrorHoja as e:
         raise HTTPException(422, str(e)) from None
-    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, avisos, f_eval)
+    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, avisos, f_eval, fecha_nacimiento=fecha_nacimiento)
     return EvaluarOut(**res)
 
 
@@ -231,7 +231,7 @@ def guia_hoja_modelo(formato: str) -> FileResponse:
 
 
 if _FRONTEND_DIST.exists():
-    app.mount("/", StaticFiles(directory=_FRONTEND_DIST, html=True), name="frontend")
+    app.mount("/", FrontendSPA(directory=_FRONTEND_DIST, html=True), name="frontend")
 else:
     @app.get("/")
     def _sin_build() -> dict:

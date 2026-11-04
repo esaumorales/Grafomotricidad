@@ -20,6 +20,7 @@ class EvaluarOut(BaseModel):
     child_id: str
     nombre_nino: str | None = None
     edad_meses: int
+    fecha_nacimiento: str | None = None
     fecha_evaluacion: str | None = None   # AAAA-MM-DD; la edad se calculó a esta fecha
     # --- para el docente ---
     informe_docente_md: str
@@ -41,6 +42,7 @@ class SesionResumen(BaseModel):
     child_id: str
     nombre_nino: str | None = None
     edad_meses: int
+    fecha_nacimiento: str | None = None
     fecha: str
     pd_total: int
     nivel: str

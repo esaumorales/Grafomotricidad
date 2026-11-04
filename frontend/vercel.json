@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/historial",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/resultados/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/informe/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/seguimiento/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/comparar/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ninos/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}

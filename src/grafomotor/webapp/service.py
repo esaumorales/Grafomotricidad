@@ -167,6 +167,7 @@ class Servicio:
         self, child_id: str, edad_meses: int, fotos: dict[str, str | Path],
         nombre_nino: str | None = None, avisos_previos: list[str] | None = None,
         fecha_evaluacion: str | None = None,
+        fecha_nacimiento: str | None = None,
     ) -> dict:
         preds, X, avisos = [], [], list(avisos_previos or [])
         for fid, ruta in fotos.items():
@@ -228,6 +229,7 @@ class Servicio:
             "nombre_nino": nombre_nino,
             "edad_meses": edad_meses,
             "fecha_evaluacion": fecha_evaluacion,
+            "fecha_nacimiento": fecha_nacimiento,
             "informe_docente_md": informe.informe_docente_md,
             "accion": exp.accion,
             "accion_ia": exp.accion,  # instantánea, no se toca al corregir

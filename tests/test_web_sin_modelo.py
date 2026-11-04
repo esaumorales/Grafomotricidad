@@ -51,3 +51,20 @@ def test_historial_incluye_percentil_guardado(monkeypatch, tmp_path):
     filas = {s.child_id: s.percentil for s in main.listar_sesiones()}
     assert filas == {"INICIO": 20, "ESPERADO": 65}
     assert all("resultado_json" not in fila for fila in db.listar_sesiones(ruta))
+
+
+def test_fecha_nacimiento_se_conserva_en_historial_y_seguimiento(tmp_path):
+    from grafomotor.webapp import db
+    from grafomotor.webapp.schemas import SesionResumen
+    ruta = tmp_path / "fechas.db"
+    db.iniciar_db(ruta)
+    resultado = {"child_id": "MISMO", "edad_meses": 57, "fecha_nacimiento": "2022-02-03",
+                 "accion": "ninguna", "panel_tecnico": {"resumen": {"PD": 4, "nivel": "Adecuado"}}}
+    sid = db.guardar_sesion(ruta, resultado)
+    assert db.obtener_sesion(ruta, sid)["fecha_nacimiento"] == "2022-02-03"
+    for listar in [lambda: db.listar_sesiones(ruta), lambda: db.listar_sesiones_de_nino(ruta, "MISMO")]:
+        assert SesionResumen(**listar()[0]).fecha_nacimiento == "2022-02-03"
+    resultado.pop("fecha_nacimiento")
+    antigua_id = db.guardar_sesion(ruta, resultado)
+    antigua = next(f for f in db.listar_sesiones(ruta) if f["id"] == antigua_id)
+    assert antigua["fecha_nacimiento"] is None
