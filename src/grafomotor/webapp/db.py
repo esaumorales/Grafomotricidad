@@ -103,6 +103,10 @@ def listar_sesiones_de_nino(db_path: str | Path, child_id: str) -> list[dict]:
             resumen = resultado.get("panel_tecnico", {}).get("resumen", {})
             fila["fecha_nacimiento"] = resultado.get("fecha_nacimiento")
             fila["percentil"] = resumen.get("percentil")
+            fila["figuras"] = [
+                {k: figura[k] for k in ("figura_id", "nombre", "puntaje", "puntaje_docente", "decision") if k in figura}
+                for figura in resultado.get("figuras", [])
+            ]
             out.append(fila)
         return out
 

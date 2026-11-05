@@ -68,3 +68,21 @@ def test_fecha_nacimiento_se_conserva_en_historial_y_seguimiento(tmp_path):
     antigua_id = db.guardar_sesion(ruta, resultado)
     antigua = next(f for f in db.listar_sesiones(ruta) if f["id"] == antigua_id)
     assert antigua["fecha_nacimiento"] is None
+
+
+def test_seguimiento_conserva_estado_por_figura_sin_metricas(tmp_path):
+    from grafomotor.webapp import db
+    from grafomotor.webapp.schemas import SesionResumen
+    ruta = tmp_path / "figuras.db"
+    db.iniciar_db(ruta)
+    for docente in [None, 1]:
+        db.guardar_sesion(ruta, {"child_id": "NINO", "edad_meses": 57, "accion": "ninguna",
+            "panel_tecnico": {"resumen": {"PD": 4, "nivel": "Adecuado"}},
+            "figuras": [{"figura_id": "F01", "nombre": "línea recta", "puntaje": 0,
+                         "puntaje_docente": docente, "decision": "revisar", "indicadores": {"interno": 0.2}}]})
+    datos = [SesionResumen(**fila) for fila in db.listar_sesiones_de_nino(ruta, "NINO")]
+    assert len(datos) == 2
+    assert {fila.figuras[0].puntaje_docente for fila in datos} == {None, 1}
+    assert all(fila.figuras[0].decision == "revisar" for fila in datos)
+    assert all("indicadores" not in figura for fila in db.listar_sesiones_de_nino(ruta, "NINO") for figura in fila["figuras"])
+    assert db.listar_sesiones_de_nino(ruta, "OTRO") == []

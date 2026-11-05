@@ -37,6 +37,14 @@ class EvaluarOut(BaseModel):
     modelo_git_hash: str
 
 
+class FiguraSeguimiento(BaseModel):
+    figura_id: str
+    nombre: str = ""
+    puntaje: int
+    puntaje_docente: int | None = None
+    decision: str | None = None
+
+
 class SesionResumen(BaseModel):
     id: int
     child_id: str
@@ -48,6 +56,7 @@ class SesionResumen(BaseModel):
     nivel: str
     accion: str
     percentil: float | None = None
+    figuras: list[FiguraSeguimiento] = Field(default_factory=list)
 
 
 class CorregirFiguraIn(BaseModel):

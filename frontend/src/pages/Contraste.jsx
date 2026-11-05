@@ -68,8 +68,8 @@ export default function Contraste() {
       <div className="comparison-layout">
       <div className="comparison-images">
       <div className="comparar-grid comparison-workspace">
-        <ImageReview key={`dibujo-${figuraId}`} title="Trazo del niño o la niña" src={urlImagenNino(sesion.child_id, figuraId)} alt={`Trazo: ${figura.nombre}`}><FichaFigura key={`ficha-${figuraId}`} sesionId={id} figuraId={figuraId} figura={figura} /></ImageReview>
-        <ImageReview key={`referencia-${figuraId}`} title="Figura de referencia" src={urlPlantilla(figuraId)} alt={`Referencia: ${figura.nombre}`} reference><ExplicacionFigura key={`explicacion-${figuraId}`} sesionId={sesion.id} figura={figura} /></ImageReview>
+        <ImageReview key={`dibujo-${figuraId}`} title="Trazo del niño o la niña" src={urlImagenNino(sesion.child_id, figuraId)} alt={`Trazo: ${figura.nombre}`}></ImageReview>
+        <ImageReview key={`referencia-${figuraId}`} title="Figura de referencia" src={urlPlantilla(figuraId)} alt={`Referencia: ${figura.nombre}`} reference><div className="reference-reading-details"><ExplicacionFigura key={`explicacion-${figuraId}`} sesionId={sesion.id} figura={figura} /><FichaFigura key={`ficha-${figuraId}`} sesionId={id} figuraId={figuraId} figura={figura} /></div></ImageReview>
       </div>
       </div>
       <div className="comparison-guide-stack"><CriteriosManual key={figuraId} figuraId={figuraId} /><RevisionDocente key={`revision-${figuraId}`} sesionId={sesion.id} figura={figura} onGuardar={setSesion} /></div>
@@ -152,13 +152,10 @@ function FichaFigura({ sesionId, figuraId, figura }) {
   const estado = pendiente ? 'review' : lograda ? 'achieved' : 'support'
   const medicion = data?.observaciones.find((o) => o.fuente === 'medicion' && o.detalle_tecnico)
   const cerrada = ['F04','F05','F06','F09','F10','F11','F15'].includes(figuraId)
-  return <section className="figure-reading-card" aria-labelledby="figure-reading-title">
-    <h3 id="figure-reading-title">Lectura de esta figura</h3>
-    <div className={`figure-reading-result ${estado}`}>
-      <span className="reading-symbol" aria-hidden="true">{pendiente ? '?' : lograda ? '✓' : '!'}</span>
-      <div><strong>{pendiente ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'}</strong><span>{docente ? 'Resultado confirmado por la docente' : 'Resultado del modelo'}</span></div>
-    </div>
-    {pendiente && <p className="reading-pending">Confirma el puntaje con los criterios del manual.</p>}
+  return <details className="figure-reading-card compact-reading">
+    <summary><span>Lectura de esta figura</span><span className={`compact-reading-status ${estado}`}>{pendiente ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'}</span><span className="compact-reading-chevron" aria-hidden="true">⌄</span></summary>
+    <div className="compact-reading-body">
+    <p className="reading-source">{docente ? 'Valoración confirmada por la profesora.' : 'Resultado del modelo.'}</p>
     <h4>Aspectos del trazo</h4>
     {!data && !error ? <p role="status" className="reading-note">Consultando la imagen…</p> : <>
       <dl className="reading-aspects">
@@ -170,7 +167,8 @@ function FichaFigura({ sesionId, figuraId, figura }) {
       {medicion?.detalle_tecnico && <details className="reading-details"><summary>Ver medida de inclinación</summary><p>{medicion.detalle_tecnico}</p><p>{medicion.detalle}</p></details>}
     </>}
     <p className="reading-key"><span aria-hidden="true">○</span> Gris: requiere revisión visual, no significa que esté mal.</p>
-  </section>
+    </div>
+  </details>
 }
 
 function FilaAspecto({ nombre, estado, texto, falta = false }) {
@@ -252,7 +250,6 @@ function ExplicacionFigura({ sesionId, figura }) {
   const medida = data?.observaciones.find((o) => o.fuente === 'medicion' && o.detalle_tecnico)
   const limitada = data?.observaciones.some((o) => o.fuente === 'limitacion')
   return <section className="figure-paragraph-card" aria-labelledby="figure-explanation-title">
-    <span className="criteria-eyebrow">Figura {Number(figura.figura_id.slice(1))} · {figura.nombre}</span>
     <h3 id="figure-explanation-title">Qué nos dice este trazo</h3>
     <p>{lectura} Para esta figura se espera {esperada}. {pendiente
       ? 'Después, marca «Lograda» o «Necesita apoyo» según los criterios del manual.'

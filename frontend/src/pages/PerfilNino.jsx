@@ -1,3 +1,4 @@
+import EvolucionFigura from '../components/EvolucionFigura'
 import NivelEducativoBadge from '../components/NivelEducativoBadge'
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
@@ -59,7 +60,7 @@ export default function PerfilNino({ childId: childIdProp, embedded = false }) {
     {!error && ultima && <>
       {embedded && <div className="tracking-embedded-top"><div><h2>Seguimiento de {nombre}</h2><p>Evaluaciones del mismo niño o niña.</p></div><Link className="history-new" to={`/?${new URLSearchParams({childId, nombre: ultima?.nombre_nino || ordenadas.find((s) => s.nombre_nino)?.nombre_nino || ''}).toString()}`}>+ Evaluar de nuevo</Link></div>}
       <div className="tracking-summary"><div><span>Evaluaciones registradas</span><strong>{ordenadas.length}</strong></div><div><span>Último registro</span><strong>{fechaCorta(ultima.fecha)}</strong></div><div><span>Último nivel registrado</span><NivelEducativoBadge percentil={ultima.percentil} /></div></div>
-      <GraficoEvolucion sesiones={ordenadas} />
+      <div className="tracking-evolution-grid"><GraficoEvolucion sesiones={ordenadas} /><EvolucionFigura sesiones={ordenadas} /></div>
       <section className="tracking-records" aria-labelledby="tracking-records-title"><div className="tracking-section-head"><div><h2 id="tracking-records-title">Evaluaciones registradas</h2><p>De la más reciente a la más antigua.</p></div><span className="tracking-scale">{ordenadas.length} registros</span></div>
         <ol>{[...ordenadas].reverse().map((s) => <li key={s.id}><div className="tracking-record-date"><strong>{fechaCorta(s.fecha)}</strong><span>{edadTexto(s.edad_meses)}</span></div><div className="tracking-record-score"><strong>{s.pd_total}<small> / 15</small></strong><span>puntos</span></div><div className="tracking-record-score"><strong>{s.percentil ?? '—'}</strong><span>percentil</span></div><NivelEducativoBadge percentil={s.percentil} /><div className="tracking-record-actions"><Link className="history-open" to={`/resultados/${s.id}`}>Resultados</Link><Link className="history-open" to={`/informe/${s.id}`}>Ver informe <IconFlechaDer width={15} height={15} aria-hidden="true" /></Link></div></li>)}</ol>
       </section>
