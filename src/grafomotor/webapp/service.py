@@ -132,20 +132,24 @@ class Servicio:
         plantillas = self._plantillas_gris()
         por_pagina: dict[int, tuple[str, object]] = {}
         avisos: list[str] = []
-        for nombre, contenido in hojas:
+        for numero, (nombre, contenido) in enumerate(hojas, start=1):
+            etiqueta = f"Foto {numero} («{nombre}»)"
             gris = _leer_gris(contenido)
             if gris is None:
-                raise ErrorHoja(f"No pude abrir el archivo «{nombre}». Sube una foto (JPG o PNG).")
+                raise ErrorHoja(f"No se pudo abrir la {etiqueta}. Sube una foto (JPG o PNG).")
             try:
                 h = segmentar_hoja(gris, plantillas, None, imagen_completa_si_falla=True)
             except ValueError:
                 raise ErrorHoja(
-                    f"No encontré la hoja en la foto «{nombre}». Toma la foto con toda la hoja a la vista, "
+                    f"No se encontró la hoja en la {etiqueta}. Toma la foto con toda la hoja a la vista, "
                     "sobre una mesa lisa y con buena luz.") from None
             if h.pagina in por_pagina:
-                raise ErrorHoja(f"Las fotos «{por_pagina[h.pagina][0]}» y «{nombre}» parecen ser la misma "
-                                f"hoja (la de las figuras {(h.pagina - 1) * 5 + 1} a {h.pagina * 5}).")
-            por_pagina[h.pagina] = (nombre, h)
+                raise ErrorHoja(
+                    f"La {por_pagina[h.pagina][0]} y la {etiqueta} fueron reconocidas "
+                    f"como la misma hoja: figuras {(h.pagina - 1) * 5 + 1} a {h.pagina * 5}. "
+                    "Revisa esas dos fotos. Si muestran hojas distintas, el sistema pudo "
+                    "confundirlas; vuelve a fotografiarlas completas, de frente y con buena luz.")
+            por_pagina[h.pagina] = (etiqueta, h)
         faltan = [p for p in (1, 2, 3) if p not in por_pagina]
         if faltan:
             rangos = ", ".join(f"figuras {(p - 1) * 5 + 1} a {p * 5}" for p in faltan)
