@@ -321,8 +321,8 @@ button svg, a > svg { flex-shrink: 0; }
 .evaluation-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .evaluation-field label, .hand-field legend { font-size: 15px; font-weight: 600; color: var(--navy); }
 .optional-label { color: var(--text-muted); font-weight: 400; }
-.evaluation-field input { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid #9DB0C1; border-radius: 6px; font-size: 16px; color: var(--navy); background: white; color-scheme: light; }
-.evaluation-field input:hover { border-color: var(--navy); }
+.evaluation-field input, .evaluation-field select { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid #9DB0C1; border-radius: 6px; font-size: 16px; color: var(--navy); background: white; color-scheme: light; }
+.evaluation-field input:hover, .evaluation-field select:hover { border-color: var(--navy); }
 .field-help { font-size: 13px; color: var(--text-muted); }
 .evaluation-age { grid-column: 1 / -1; margin: -6px 0 0; padding: 10px 12px; border-left: 3px solid var(--border); background: var(--bg); font-size: 14px; color: var(--text-muted); }
 .evaluation-age.has-warning { background: var(--yellow-light); border-color: var(--gold-soft); color: var(--navy); }
@@ -1222,6 +1222,7 @@ body, .app-shell { background: white; }
 .evaluation-child-heading { display: flex; align-items: center; gap: 12px; }
 .evaluation-child-heading h1 { min-width: 0; overflow-wrap: anywhere; }
 .child-avatar { width: 52px; height: 52px; flex-shrink: 0; }
+.child-avatar-photo { object-fit: cover; border-radius: 28%; }
 .child-avatar-face { transform-origin: 32px 38px; animation: avatar-balance 8s ease-in-out var(--avatar-delay) infinite; }
 .child-avatar-eyes { transform-origin: 32px 31px; animation: avatar-blink 7s var(--avatar-delay) infinite; }
 @keyframes avatar-balance { 0%,40%,100% { transform: rotate(0); } 55%,65% { transform: rotate(2deg); } }

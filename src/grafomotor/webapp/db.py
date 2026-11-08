@@ -26,6 +26,13 @@ CREATE TABLE IF NOT EXISTS sesiones (
     resultado_json  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_sesiones_child ON sesiones(child_id);
+CREATE TABLE IF NOT EXISTS avatares (
+    child_id TEXT NOT NULL,
+    tipo TEXT NOT NULL CHECK (tipo IN ('nino', 'nina')),
+    numero INTEGER NOT NULL,
+    PRIMARY KEY (child_id, tipo),
+    UNIQUE (tipo, numero)
+);
 """
 
 
@@ -50,6 +57,19 @@ def guardar_sesion(db_path: str | Path, resultado: dict) -> int:
     """Guarda el resultado completo de evaluar_sesion() y devuelve el id asignado."""
     tecnico = resultado["panel_tecnico"]["resumen"]
     with _conectar(db_path) as con:
+        tipo = resultado.get("tipo_avatar")
+        if tipo is not None:
+            con.execute(
+                """INSERT INTO avatares (child_id, tipo, numero)
+                   SELECT ?, ?, COALESCE(MAX(numero), 0) + 1 FROM avatares WHERE tipo = ?
+                   ON CONFLICT(child_id, tipo) DO NOTHING""",
+                (resultado["child_id"], tipo, tipo),
+            )
+            fila = con.execute(
+                "SELECT numero FROM avatares WHERE child_id = ? AND tipo = ?",
+                (resultado["child_id"], tipo),
+            ).fetchone()
+            resultado["numero_avatar"] = fila["numero"]
         cur = con.execute(
             """INSERT INTO sesiones
                (child_id, nombre_nino, edad_meses, fecha, pd_total, nivel, accion, resultado_json)
@@ -102,6 +122,7 @@ def listar_sesiones_de_nino(db_path: str | Path, child_id: str) -> list[dict]:
             resultado = json.loads(fila.pop("resultado_json"))
             resumen = resultado.get("panel_tecnico", {}).get("resumen", {})
             fila["fecha_nacimiento"] = resultado.get("fecha_nacimiento")
+            fila["tipo_avatar"] = resultado.get("tipo_avatar")
             fila["percentil"] = resumen.get("percentil")
             fila["figuras"] = [
                 {k: figura[k] for k in ("figura_id", "nombre", "puntaje", "puntaje_docente", "decision") if k in figura}

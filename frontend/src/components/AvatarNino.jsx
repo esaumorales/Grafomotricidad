@@ -1,10 +1,20 @@
+import retratoEj01 from './retrato-ej-01.webp'
+
+const retratos = import.meta.glob('./retratos/*.webp', { eager: true, import: 'default' })
+
 function semilla(codigo) {
   let h = 2166136261
   for (const c of String(codigo)) h = Math.imul(h ^ c.charCodeAt(0), 16777619)
   return h >>> 0
 }
 
-export default function AvatarNino({ codigo }) {
+export default function AvatarNino({ codigo, tipo, numero }) {
+  const retrato = tipo ? retratos[`./retratos/${tipo}-${numero}.webp`]
+    : codigo === 'EJEMPLO-NIN-01' ? retratoEj01 : null
+  if (retrato) {
+    return <img className="child-avatar child-avatar-photo" src={retrato} alt="" title="Retrato ficticio" />
+  }
+
   const h = semilla(codigo)
   const piel = ['#F4C9A8', '#DFA47C', '#BC805A', '#986144', '#EAC4AD', '#C68E71'][(h >>> 3) % 6]
   const pelo = ['#382F2B', '#594334', '#292D35', '#794D32'][(h >>> 7) % 4]

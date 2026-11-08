@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 const PASOS = [
   ['[data-guia="codigo"]', 'Identifica al niño o la niña', 'Escribe un código propio, por ejemplo NINO_0034. Usa siempre ese mismo código para añadir evaluaciones a su seguimiento.'],
   ['[data-guia="nombre"]', 'Nombre o seudónimo', 'Puedes escribir un nombre o uno ficticio para reconocerlo. Este campo es opcional; el código identifica su seguimiento.'],
+  ['[data-guia="avatar"]', 'Género', 'Elige Niño o Niña para asignar un retrato ficticio al perfil.'],
   ['[data-guia="nacimiento"]', 'Fecha de nacimiento', 'Indica el día, mes y año de nacimiento. Con esta fecha se calcula la edad para la evaluación.'],
   ['[data-guia="evaluacion"]', 'Fecha de evaluación', 'Comprueba que sea la fecha en que se realizó la prueba. La edad se calcula con respecto a este día.'],
   ['[data-guia="mano"]', 'Mano usada', 'Selecciona la mano con la que realizó los trazos: derecha o izquierda.'],

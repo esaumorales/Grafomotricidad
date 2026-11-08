@@ -1,7 +1,12 @@
 """Contratos de la API."""
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+
+TipoAvatar = Literal["nino", "nina"]
 
 
 class FiguraOut(BaseModel):
@@ -21,6 +26,8 @@ class EvaluarOut(BaseModel):
     nombre_nino: str | None = None
     edad_meses: int
     fecha_nacimiento: str | None = None
+    tipo_avatar: TipoAvatar | None = None
+    numero_avatar: int | None = None
     fecha_evaluacion: str | None = None   # AAAA-MM-DD; la edad se calculó a esta fecha
     # --- para el docente ---
     informe_docente_md: str
@@ -51,6 +58,7 @@ class SesionResumen(BaseModel):
     nombre_nino: str | None = None
     edad_meses: int
     fecha_nacimiento: str | None = None
+    tipo_avatar: TipoAvatar | None = None
     fecha: str
     pd_total: int
     nivel: str

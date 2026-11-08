@@ -56,6 +56,7 @@ export default function NuevaEvaluacion() {
   const paraMismoNino = Boolean(parametros.get('childId'))
   const [childId, setChildId] = useState(() => parametros.get('childId') || '')
   const [nombreNino, setNombreNino] = useState(() => parametros.get('nombre') || '')
+  const [tipoAvatar, setTipoAvatar] = useState('')
   const [nacimiento, setNacimiento] = useState('')
   const [evaluacion, setEvaluacion] = useState(hoyISO())
   const [mano, setMano] = useState('D')
@@ -74,8 +75,12 @@ export default function NuevaEvaluacion() {
     if (!paraMismoNino || !childId) return
     let activo = true
     sesionesDeNino(childId).then((sesiones) => {
-      const guardada = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha)).find((s) => s.fecha_nacimiento)
-      if (activo && guardada) setNacimiento((actual) => actual || guardada.fecha_nacimiento)
+      if (!activo) return
+      const recientes = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha))
+      const guardada = recientes.find((s) => s.fecha_nacimiento)
+      const avatarGuardado = recientes.find((s) => s.tipo_avatar)
+      if (guardada) setNacimiento((actual) => actual || guardada.fecha_nacimiento)
+      if (avatarGuardado) setTipoAvatar((actual) => actual || avatarGuardado.tipo_avatar)
     }).catch(() => { /* Las fechas siguen disponibles para completarlas manualmente. */ })
     return () => { activo = false }
   }, [paraMismoNino, childId])
@@ -148,7 +153,7 @@ export default function NuevaEvaluacion() {
       : `Edad: ${Math.floor(edadMeses / 12)} años y ${edadMeses % 12} meses (${edadMeses} meses)`
       + (edadOk ? '' : '. Fuera del rango de la prueba: de 3 años a 6 años y 6 meses.')
   }
-  const listoParaEnviar = childId.trim() && edadOk && !enviando
+  const listoParaEnviar = childId.trim() && tipoAvatar && edadOk && !enviando
     && (modo === 'hojas' ? hojas.filter(Boolean).length === 3 : subidas === 15)
 
   async function onSubmit(e) {
@@ -162,6 +167,7 @@ export default function NuevaEvaluacion() {
       fd.append('fecha_nacimiento', nacimiento)
       fd.append('fecha_evaluacion', evaluacion)
       fd.append('nombre_nino', nombreNino.trim())
+      fd.append('tipo_avatar', tipoAvatar)
       let res
       if (modo === 'hojas') {
         for (const h of hojas) fd.append('hojas', h)
@@ -181,6 +187,7 @@ export default function NuevaEvaluacion() {
   const total = modo === 'hojas' ? 3 : 15
   const cantidad = modo === 'hojas' ? hojas.filter(Boolean).length : subidas
   const pendiente = !childId.trim() ? 'Completa el código del niño o la niña.'
+    : !tipoAvatar ? 'Elige Niño o Niña para el avatar.'
     : !edadOk ? 'Completa las fechas y comprueba la edad.'
     : cantidad < total ? `Selecciona ${total - cantidad} ${modo === 'hojas' ? 'foto(s) de las hojas' : 'foto(s) de las figuras'} para continuar.`
     : 'Todo listo para evaluar.'
@@ -191,6 +198,7 @@ export default function NuevaEvaluacion() {
         <header className="evaluation-header">
           <div className="evaluation-title-row"><h1>{paraMismoNino ? `Nueva evaluación para ${nombreNino || childId}` : 'Nueva evaluación'}</h1><GuiaEvaluacion /></div>
           <p>Completa los datos y añade las fotografías de la prueba.</p>
+
         </header>
         {paraMismoNino && <div className="repeat-evaluation-note"><div><strong>Se añadirá al seguimiento de {childId}</strong><p>Confirma la fecha de nacimiento y añade las fotos de esta evaluación.</p></div><Link to={`/ninos/${encodeURIComponent(childId)}`}>Volver al seguimiento</Link></div>}
         <form className="evaluation-form" onSubmit={onSubmit} aria-busy={enviando}>
@@ -207,6 +215,13 @@ export default function NuevaEvaluacion() {
               <Campo id="campo-nombre" label={<>Nombre o seudónimo <span className="optional-label">(opcional)</span></>}>
                 <input id="campo-nombre" value={nombreNino} onChange={(e) => setNombreNino(e.target.value)} aria-describedby="nombre-ayuda" />
                 <span id="nombre-ayuda" className="field-help">Puedes usar un nombre ficticio para identificarlo.</span>
+              </Campo>
+              <Campo id="campo-avatar" label="Género">
+                <select id="campo-avatar" required value={tipoAvatar} onChange={(e) => setTipoAvatar(e.target.value)}>
+                  <option value="" disabled>Selecciona una opción</option>
+                  <option value="nino">Niño</option>
+                  <option value="nina">Niña</option>
+                </select>
               </Campo>
               <Campo id="campo-nacimiento" label="Fecha de nacimiento">
                 <input id="campo-nacimiento" type="date" required value={nacimiento} max={evaluacion || undefined} onChange={(e) => setNacimiento(e.target.value)} />
@@ -270,7 +285,7 @@ export default function NuevaEvaluacion() {
 }
 
 function Campo({ id, label, children }) {
-  return <div className="evaluation-field" data-guia={{'campo-child-id': 'codigo', 'campo-nombre': 'nombre', 'campo-nacimiento': 'nacimiento', 'campo-evaluacion': 'evaluacion'}[id]}><label htmlFor={id}>{label}</label>{children}</div>
+  return <div className="evaluation-field" data-guia={{'campo-child-id': 'codigo', 'campo-nombre': 'nombre', 'campo-avatar': 'avatar', 'campo-nacimiento': 'nacimiento', 'campo-evaluacion': 'evaluacion'}[id]}><label htmlFor={id}>{label}</label>{children}</div>
 }
 
 function IconPapelera() {

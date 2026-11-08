@@ -32,7 +32,7 @@ from grafomotor.webapp.frontend import FrontendSPA
 from grafomotor.config import REPO_ROOT, load_config
 from grafomotor.webapp import db
 from grafomotor.scoring.edad import edad_en_meses, edad_valida
-from grafomotor.webapp.schemas import CorregirFiguraIn, EvaluarOut, SesionResumen
+from grafomotor.webapp.schemas import CorregirFiguraIn, EvaluarOut, SesionResumen, TipoAvatar
 from grafomotor.webapp.service import ErrorHoja, Servicio
 
 app = FastAPI(title="Evaluación grafomotora infantil", version="0.2.0")
@@ -107,6 +107,7 @@ async def evaluar(
     fecha_nacimiento: str | None = Form(None, description="AAAA-MM-DD"),
     fecha_evaluacion: str | None = Form(None, description="AAAA-MM-DD"),
     nombre_nino: str | None = Form(None),
+    tipo_avatar: TipoAvatar | None = Form(None),
     figura_ids: str = Form(
         ..., description="ids separados por coma, en el mismo orden que los archivos"),
     fotos: list[UploadFile] = File(...),
@@ -121,7 +122,7 @@ async def evaluar(
         sufijo = Path(up.filename or "").suffix or ".jpg"
         destino = s.guardar_foto(child_id, fid, await up.read(), sufijo)
         rutas[fid] = str(destino)
-    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, fecha_evaluacion=f_eval, fecha_nacimiento=fecha_nacimiento)
+    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, fecha_evaluacion=f_eval, fecha_nacimiento=fecha_nacimiento, tipo_avatar=tipo_avatar)
     return EvaluarOut(**res)
 
 
@@ -132,6 +133,7 @@ async def evaluar_hojas(
     fecha_nacimiento: str | None = Form(None, description="AAAA-MM-DD"),
     fecha_evaluacion: str | None = Form(None, description="AAAA-MM-DD"),
     nombre_nino: str | None = Form(None),
+    tipo_avatar: TipoAvatar | None = Form(None),
     hojas: list[UploadFile] = File(..., description="las 3 fotos de las hojas, en cualquier orden"),
 ) -> EvaluarOut:
     edad, f_eval = _edad(edad_meses, fecha_nacimiento, fecha_evaluacion)
@@ -141,7 +143,7 @@ async def evaluar_hojas(
         rutas, avisos = s.recortar_hojas(child_id, contenidos)
     except ErrorHoja as e:
         raise HTTPException(422, str(e)) from None
-    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, avisos, f_eval, fecha_nacimiento=fecha_nacimiento)
+    res = s.evaluar_sesion(child_id, edad, rutas, nombre_nino, avisos, f_eval, fecha_nacimiento=fecha_nacimiento, tipo_avatar=tipo_avatar)
     return EvaluarOut(**res)
 
 
