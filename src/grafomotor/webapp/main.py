@@ -203,6 +203,7 @@ def criterios_manual(figura_id: str) -> dict:
 def observar_figura(sesion_id: int, figura_id: str) -> dict:
     from grafomotor.features.criterios import medir
     from grafomotor.preprocessing import preprocesar_figura
+    from grafomotor.webapp.lectura_trazo import describir_trazo
     from grafomotor.webapp.observaciones import observaciones
 
     sesion = db.obtener_sesion(base_sesiones(), sesion_id)
@@ -218,6 +219,7 @@ def observar_figura(sesion_id: int, figura_id: str) -> dict:
     medidas = medir(pre.figura_bin) if fiable else {}
     referencia = medir(plantilla) if fiable else {}
     return {"figura_id": figura_id,
+            "lectura_trazo": describir_trazo(figura_id, ruta, plantilla),
             "observaciones": observaciones(figura_id, medidas, referencia, pre.sin_trazo, imagen_fiable=fiable),
             "aviso_imagen": "No se pudo alinear el dibujo con la referencia. Las medidas automáticas se han omitido." if not pre.registro_ok else pre.aviso}
 

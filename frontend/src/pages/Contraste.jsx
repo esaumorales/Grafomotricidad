@@ -69,7 +69,7 @@ export default function Contraste() {
       <div className="comparison-images">
       <div className="comparar-grid comparison-workspace">
         <ImageReview key={`dibujo-${figuraId}`} title="Trazo del niño o la niña" src={urlImagenNino(sesion.child_id, figuraId)} alt={`Trazo: ${figura.nombre}`}></ImageReview>
-        <ImageReview key={`referencia-${figuraId}`} title="Figura de referencia" src={urlPlantilla(figuraId)} alt={`Referencia: ${figura.nombre}`} reference><div className="reference-reading-details"><ExplicacionFigura key={`explicacion-${figuraId}`} sesionId={sesion.id} figura={figura} /><FichaFigura key={`ficha-${figuraId}`} sesionId={id} figuraId={figuraId} figura={figura} /></div></ImageReview>
+        <ImageReview key={`referencia-${figuraId}`} title="Figura de referencia" src={urlPlantilla(figuraId)} alt={`Referencia: ${figura.nombre}`} reference><LecturaComparada key={`${sesion.id}-${figuraId}`} sesionId={sesion.id} figura={figura} /></ImageReview>
       </div>
       </div>
       <div className="comparison-guide-stack"><CriteriosManual key={figuraId} figuraId={figuraId} /><RevisionDocente key={`revision-${figuraId}`} sesionId={sesion.id} figura={figura} onGuardar={setSesion} /></div>
@@ -136,7 +136,8 @@ function CriteriosManual({ figuraId }) {
   </div></details>
 }
 
-function FichaFigura({ sesionId, figuraId, figura }) {
+function LecturaComparada({ sesionId, figura }) {
+  const figuraId = figura.figura_id
   const [data, setData] = useState(null)
   const [error, setError] = useState(false)
   useEffect(() => {
@@ -146,6 +147,13 @@ function FichaFigura({ sesionId, figuraId, figura }) {
       .then(setData).catch((err) => { if (err.name !== 'AbortError') setError(true) })
     return () => controller.abort()
   }, [sesionId, figuraId])
+  return <div className="reference-reading-details">
+    <ExplicacionFigura figura={figura} data={data} error={error} />
+    <FichaFigura figuraId={figuraId} figura={figura} data={data} error={error} />
+  </div>
+}
+
+function FichaFigura({ figuraId, figura, data, error }) {
   const pendiente = figura.decision === 'revisar' && figura.puntaje_docente == null
   const lograda = (figura.puntaje_docente ?? figura.puntaje) === 1
   const docente = figura.puntaje_docente != null
@@ -224,42 +232,41 @@ const FORMAS_ESPERADAS = {
   F15: 'un cuadrado arriba y un círculo abajo a la derecha que se cruzan en dos puntos, con una sola esquina del cuadrado dentro del círculo',
 }
 
-function ExplicacionFigura({ sesionId, figura }) {
-  const [data, setData] = useState(null)
-  const [error, setError] = useState(false)
-  useEffect(() => {
-    const controller = new AbortController()
-    fetch(`/api/sesiones/${encodeURIComponent(sesionId)}/figuras/${encodeURIComponent(figura.figura_id)}/observaciones`, { signal: controller.signal })
-      .then((res) => { if (!res.ok) throw new Error(); return res.json() })
-      .then(setData).catch((err) => { if (err.name !== 'AbortError') setError(true) })
-    return () => controller.abort()
-  }, [sesionId, figura.figura_id])
-  const docente = figura.puntaje_docente != null
-  const pendiente = !docente && figura.decision === 'revisar'
-  const lograda = (figura.puntaje_docente ?? figura.puntaje) === 1
+function ExplicacionFigura({ figura, data, error }) {
+  const pendiente = figura.decision === 'revisar' && figura.puntaje_docente == null
+  const lograda = !pendiente && (figura.puntaje_docente ?? figura.puntaje) === 1
+  const lectura = data?.lectura_trazo
   const esperada = FORMAS_ESPERADAS[figura.figura_id] || 'la forma indicada en el manual'
-  const lectura = docente
-    ? lograda
-      ? 'La profesora confirmó que esta figura está lograda.'
-      : 'La profesora indicó que esta figura necesita apoyo.'
-    : pendiente
-      ? 'Aún no se pudo confirmar si esta figura está lograda. Esto no significa que esté mal. Observa el trazo y compáralo con la figura de referencia.'
-      : lograda
-        ? 'El sistema valoró esta figura como lograda.'
-        : 'El sistema valoró esta figura como «Necesita apoyo».'
-  const medida = data?.observaciones.find((o) => o.fuente === 'medicion' && o.detalle_tecnico)
-  const limitada = data?.observaciones.some((o) => o.fuente === 'limitacion')
+  const criterio = lectura?.criterio
+    ? (lectura.estado === 'recorte' ? `En la hoja original, ${lectura.criterio}` : lectura.criterio)
+    : ''
+  const indicacion = criterio ? `${criterio.charAt(0).toUpperCase()}${criterio.slice(1)}.` : ''
+
+  let texto
+  if (lograda) {
+    const valoracion = figura.puntaje_docente != null
+      ? 'La revisión docente confirmó que la figura está lograda.'
+      : 'La figura está valorada como lograda.'
+    if (lectura?.estado === 'coincidencia') {
+      texto = `${valoracion} ${lectura.texto}`
+    } else if (lectura?.estado === 'diferencia') {
+      const detalle = lectura.texto.match(/^.+?[.!?](?=\s|$)/)?.[0] || lectura.texto
+      texto = `${valoracion} ${detalle}`
+    } else {
+      texto = `${valoracion} La referencia muestra ${esperada}.`
+    }
+  } else if (pendiente) {
+    const detalle = lectura?.texto || `La referencia muestra ${esperada}.`
+    texto = `${detalle} ${indicacion} Después, marca «Lograda» o «Necesita apoyo» según los criterios del manual.`
+  } else {
+    const detalle = lectura?.estado === 'coincidencia'
+      ? `${lectura.texto} Para reforzar esta figura, ${lectura.criterio}.`
+      : [lectura?.texto, indicacion].filter(Boolean).join(' ')
+    texto = detalle || `Para practicar esta figura, toma como referencia ${esperada}.`
+  }
+
   return <section className="figure-paragraph-card" aria-labelledby="figure-explanation-title">
     <h3 id="figure-explanation-title">Qué nos dice este trazo</h3>
-    <p>{lectura} Para esta figura se espera {esperada}. {pendiente
-      ? 'Después, marca «Lograda» o «Necesita apoyo» según los criterios del manual.'
-      : lograda
-        ? 'La valoración corresponde al trazo completo; los aspectos de la tabla se revisan por separado.'
-        : 'Este resultado señala que conviene revisar cómo se realizó la figura, pero no identifica por sí solo qué parte hay que mejorar.'}</p>
-    {medida && <p>{medida.titulo}. {medida.detalle}</p>}
-    {limitada && <p className="figure-explanation-caution">En esta foto el sistema no pudo comprobar qué parte coincide o se diferencia de la referencia. Esa comparación debe hacerla la profesora.</p>}
-    {!data && !error && <p role="status" className="reading-note">Consultando detalles de esta figura…</p>}
-    {error && <p className="reading-note">Los detalles automáticos no están disponibles. Puedes comparar las imágenes y consultar los criterios del manual.</p>}
-
+    {!data && !error ? <p role="status">Consultando la foto de esta figura…</p> : <p>{texto}</p>}
   </section>
 }
