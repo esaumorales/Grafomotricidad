@@ -1,0 +1,16 @@
+.scanner-dialog { box-sizing: border-box; width: min(calc(100vw - 24px), 34rem); max-height: 94dvh; margin: auto; padding: clamp(12px, 4vw, 20px); border: 0; border-radius: 16px; background: #fff; color: #0a365b; }
+.scanner-dialog::backdrop { background: #081b2ad9; }
+.scanner-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.scanner-header h2 { margin: 0; font-size: clamp(18px, 5vw, 23px); }
+.scanner-dialog .scanner-close { flex: 0 0 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; color: #0a365b; background: #edf2f6; font-size: 24px; line-height: 1; }
+.scanner-status { margin: 4px 0 12px; font-size: .875rem; line-height: 1.4; }
+.scanner-camera { position: relative; width: fit-content; margin: auto; border-radius: 10px; overflow: hidden; background: #101827; }
+.scanner-camera video, .scanner-preview { display: block; max-width: 100%; max-height: 62dvh; margin: auto; border-radius: 10px; }
+.scanner-camera svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.scanner-camera polygon { fill: #16a34a26; stroke: #22c55e; stroke-width: 3px; }
+.scanner-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.scanner-dialog .scanner-actions button { min-height: 48px; padding: 8px; border: 1px solid #becedb; border-radius: 9px; color: #0a365b; background: #fff; font-size: .875rem; font-weight: 600; }
+.scanner-dialog .scanner-actions .scanner-primary { background: #ffc000; border-color: #ffc000; }
+.scanner-dialog .scanner-actions button:disabled { opacity: .55; }
+.scanner-frame-guide { position: absolute; inset: 5%; border: 2px dashed #fff; border-radius: 8px; box-shadow: 0 0 0 1px #0008; pointer-events: none; }
+.sheet-capture-card .sheet-gallery-button { background: #fff; color: #0a365b; border: 1px solid #becedb; } .sheet-capture-card .sheet-gallery-button:hover { background: #edf2f6; }

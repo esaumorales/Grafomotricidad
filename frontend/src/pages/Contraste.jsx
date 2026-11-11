@@ -40,8 +40,8 @@ export default function Contraste() {
         <div className="comparison-page-heading">
           <div className="comparison-title-row">
             <h1 style={{ fontSize: 37 }}>Comparar figura · {sesion.nombre_nino || sesion.child_id}</h1>
-            <span className={`comparison-status ${porRevisar ? 'status-review' : lograda ? 'status-achieved' : 'status-support'}`}>
-              <span className="status-dot" aria-hidden="true" />{figura.nombre} · {porRevisar ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'}
+            <span key={`${sesion.id}-${figura.figura_id}`} className={`comparison-status ${porRevisar ? 'status-review' : lograda ? 'status-achieved' : 'status-support'}`}>
+              <span className="status-dot" aria-hidden="true" /><span>{figura.nombre} · {porRevisar ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'}</span>
             </span>
           </div>
           <div className="figure-navigation-controls">

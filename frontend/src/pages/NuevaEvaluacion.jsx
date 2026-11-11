@@ -1,3 +1,5 @@
+import EscanerHoja from '../components/EscanerHoja'
+import '../components/escaner.css'
 import GuiaEvaluacion from '../components/GuiaEvaluacion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -70,6 +72,8 @@ export default function NuevaEvaluacion() {
   const inputMasivoRef = useRef(null)
   const inputIndividualRef = useRef({})
   const inputHojasRef = useRef([])
+  const galeriaHojasRef = useRef([])
+  const [escaner, setEscaner] = useState(null)
 
   useEffect(() => {
     if (!paraMismoNino || !childId) return
@@ -91,6 +95,10 @@ export default function NuevaEvaluacion() {
   function elegirHoja(indice, event) {
     const file = event.target.files?.[0]
     event.target.value = ''
+    guardarHoja(indice, file)
+  }
+
+  function guardarHoja(indice, file) {
     if (!file) return
     if (!esFoto(file)) { setError('Selecciona una fotografía JPG, PNG o HEIC.'); return }
     setHojas((prev) => prev.map((foto, i) => i === indice ? file : foto))
@@ -259,12 +267,18 @@ export default function NuevaEvaluacion() {
                 <div className="sheet-capture-image"><img src={hojas[i] ? previewsHojas[i] : `/guias/foto-${i + 1}.png`} alt={hojas[i] ? `Foto ${i + 1} seleccionada` : `Ejemplo de la hoja para Foto ${i + 1}`} /><span>{hojas[i] ? 'Tu fotografía' : 'Hoja de referencia'}</span></div>
                 {hojas[i] && <><p className="sheet-capture-selected"><IconCheck width={14} height={14} aria-hidden="true" />Foto seleccionada</p><p className="sheet-filename" title={hojas[i].name}>{hojas[i].name}</p></>}
                 <input ref={(el) => { inputHojasRef.current[i] = el }} type="file" accept="image/*,.heic,.heif" capture="environment" hidden aria-label={`Tomar una foto de la hoja ${i + 1}`} onChange={(event) => elegirHoja(i, event)} />
-                <button type="button" className="sheet-capture-button" disabled={enviando} onClick={() => inputHojasRef.current[i]?.click()}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 6h4l2-3h4l2 3h4v14H4z"/><circle cx="12" cy="12" r="4"/></svg>{hojas[i] ? 'Cambiar foto' : 'Tomar una foto'}</button>
+                <button type="button" className="sheet-capture-button" disabled={enviando} onClick={() => navigator.mediaDevices?.getUserMedia ? setEscaner(i) : inputHojasRef.current[i]?.click()}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 6h4l2-3h4l2 3h4v14H4z"/><circle cx="12" cy="12" r="4"/></svg>{hojas[i] ? 'Volver a tomar' : 'Tomar una foto'}</button>
+                <input ref={(el) => { galeriaHojasRef.current[i] = el }} type="file" accept="image/*,.heic,.heif" hidden aria-label={`Elegir foto de la hoja ${i + 1}`} onChange={(event) => elegirHoja(i, event)} />
+                <button type="button" className="sheet-capture-button sheet-gallery-button" disabled={enviando} onClick={() => galeriaHojasRef.current[i]?.click()}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m3 17 5-4 3 3 4-5 6 6"/></svg>
+                  Elegir de la galería
+                </button>
                 {hojas[i] && <button className="photo-remove" type="button" disabled={enviando} aria-label={`Quitar foto ${i + 1}`} onClick={() => { setFotoAQuitar({indice: i, name: hojas[i].name}); quitarDialogRef.current.showModal() }}><IconPapelera />Quitar foto</button>}
               </section>)}
             </div>
           </section>
           {error && <div role="alert" className="evaluation-error"><strong>No se pudo completar la evaluación</strong><p>{error}</p></div>}
+          {escaner !== null && <EscanerHoja numero={escaner + 1} onClose={() => setEscaner(null)} onFile={(file) => { guardarHoja(escaner, file); setEscaner(null) }} onNative={() => { inputHojasRef.current[escaner]?.click(); setEscaner(null) }} />}
           <dialog ref={quitarDialogRef} className="photo-confirm-dialog" aria-labelledby="quitar-foto-title" aria-describedby="quitar-foto-description" onClose={() => setFotoAQuitar(null)}>
             <div className="photo-confirm-heading"><IconPapelera /><h2 id="quitar-foto-title">¿Quitar esta foto?</h2></div>
             <p id="quitar-foto-description">La foto se quitará de esta evaluación. El archivo original seguirá en tu dispositivo.</p>
