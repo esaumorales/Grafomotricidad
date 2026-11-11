@@ -28,7 +28,7 @@ from grafomotor.preprocessing import preprocesar_figura
 from grafomotor.preprocessing.hoja import normalizar_celda, segmentar_hoja
 from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
 from grafomotor.scoring.niveles import CriterioNiveles, NivelResultado
-from grafomotor.webapp import db
+from grafomotor.webapp import cuentas, db
 
 
 PAGINAS = (1, 2, 3)
@@ -107,8 +107,13 @@ class Servicio:
         self.exp_cfg = self.cfg.get("explicacion", default={})
         self.sco_cfg = self.cfg.get("scoring", default={})
         self.criterio = CriterioNiveles.de_config(self.cfg)
-        self.db_path = self.cfg.ruta("db")
-        db.iniciar_db(self.db_path)
+        db.iniciar_db(self.cfg.ruta("db"))
+
+    @property
+    def db_path(self):
+        ruta = cuentas.ruta_privada(self.cfg.ruta("db"))
+        db.iniciar_db(ruta)
+        return ruta
 
     def ruta_plantilla(self, figura_id: str) -> Path | None:
         propia = Artefactos.de_config(self.cfg).dir_modelo_ml / "plantillas" / f"{figura_id}.png"
@@ -123,14 +128,14 @@ class Servicio:
     def guardar_foto(self, child_id: str, figura_id: str, contenido: bytes, sufijo: str) -> Path:
         """Guarda la foto subida en data/raw/<child_id>/<figura_id>.<sufijo> (persistente,
         a diferencia de un directorio temporal) para poder mostrarla luego en 'Comparar figura'."""
-        carpeta = self.cfg.ruta("raw") / child_id
+        carpeta = cuentas.ruta_privada(self.cfg.ruta("raw")) / child_id
         carpeta.mkdir(parents=True, exist_ok=True)
         destino = carpeta / f"{figura_id}{sufijo}"
         destino.write_bytes(contenido)
         return destino
 
     def ruta_foto(self, child_id: str, figura_id: str) -> Path | None:
-        carpeta = self.cfg.ruta("raw") / child_id
+        carpeta = cuentas.ruta_privada(self.cfg.ruta("raw")) / child_id
         if not carpeta.exists():
             return None
         coincidencias = list(carpeta.glob(f"{figura_id}.*"))

@@ -1293,3 +1293,66 @@ body, .app-shell { background: white; }
 .compact-reading .reading-note, .compact-reading .reading-key { font-size: 12px; line-height: 1.6; margin-top: 10px; }
 .compact-reading > summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 @media(max-width:600px) { .compact-reading > summary { font-size: 13px; padding: 10px; gap: 6px; } .compact-reading-status { font-size: 12px; } }
+
+.result-status-summary { margin: 0 0 14px; }
+.result-status-bar { display: flex; overflow: hidden; min-height: 8px; border-radius: 4px; }
+.result-status-bar .logradas { background: #40775e; }
+.result-status-bar .revisar { background: #d7a523; }
+.result-status-bar .apoyo { background: #ad6666; }
+.result-status-summary ul { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 0; margin: 6px 0 0; list-style: none; font-size: .875rem; }
+.teacher-review-card .teacher-review-success { color: #151c24; font-weight: 700; background: #eef5ef; padding: 8px 10px; border-radius: 5px; }
+.teacher-review-card .teacher-review-progress { font-weight: 600; margin-bottom: 4px; }
+.teacher-review-next { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: underline; }
+
+.comparison-guide-stack > .teacher-review-card {
+  padding: 14px;
+  border-radius: 9px;
+  border-top: 3px solid #0a365b;
+}
+.teacher-review-card .teacher-review-progress {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #eef3f7;
+  color: #0a365b;
+  font-size: .8125rem;
+}
+.teacher-review-card .teacher-review-options { grid-template-columns: repeat(auto-fit, minmax(min(100%, 118px), 1fr)); }
+.teacher-review-card .teacher-choice { min-height: 46px; padding: 7px; background: #fff; }
+.teacher-review-card .teacher-review-save { display: grid; gap: 5px; margin-top: 10px; }
+.teacher-review-card .teacher-review-save button { width: 100%; }
+.teacher-review-card .teacher-review-success { margin: 8px 0 0; }
+.teacher-review-card .teacher-review-next {
+  justify-content: center;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: #0a365b;
+  text-align: center;
+  text-decoration: none;
+  font-size: .875rem;
+}
+.teacher-review-card .teacher-review-next:hover { background: #eef3f7; }
+.figure-evolution-dates.is-single { justify-content: center; }
+
+.report-sheet-summary { margin: 18px 0; padding: 14px 0; border-block: 1px solid var(--border); }
+.report-sheet-summary h2 { margin: 0 0 6px; font-size: 1rem; }
+.report-sheet-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 10px; padding: 0; list-style: none; font-size: .8125rem; }
+.report-sheet-legend li { display: inline-flex; align-items: center; gap: 5px; }
+.report-sheet-legend i { width: 9px; height: 9px; border-radius: 2px; }
+.report-sheet-row { display: grid; grid-template-columns: minmax(82px, auto) minmax(0, 1fr); align-items: center; gap: 10px; padding-block: 5px; font-size: .875rem; }
+.report-sheet-row small { display: block; color: var(--text-muted); }
+.report-sheet-track { display: flex; min-height: 22px; overflow: hidden; border-radius: 4px; background: #edf1f4; }
+.report-sheet-track span { display: grid; place-items: center; color: white; font-size: .8125rem; font-weight: 700; }
+.report-sheet-summary .logradas { background: #40775e; }
+.report-sheet-summary .revisar { background: #d7a523; color: #20252a; }
+.report-sheet-summary .apoyo { background: #9b5656; }
+
+.report-sheet-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 8px; }
+.report-sheet-heading h2 { margin: 0; }
+.report-sheet-heading label { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; max-width: 100%; font-size: .8125rem; }
+.report-sheet-heading select { max-width: 100%; min-height: 36px; color: var(--navy); }
+.report-sheet-open { display: inline-block; margin-bottom: 8px; text-decoration: underline; font-size: .875rem; }

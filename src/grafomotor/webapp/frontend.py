@@ -7,7 +7,7 @@ class FrontendSPA(StaticFiles):
     async def get_response(self, path, scope):
         ruta = path.replace(chr(92), "/").strip("/")
         es_vista = bool(re.fullmatch(
-            r"historial|(?:resultados|informe|seguimiento)/[^/]+|comparar/[^/]+/[^/]+|ninos/[^/]+", ruta
+            r"acceso|historial|(?:resultados|informe|seguimiento)/[^/]+|comparar/[^/]+/[^/]+|ninos/[^/]+", ruta
         ))
         if scope["method"] in {"GET", "HEAD"} and es_vista:
             return await super().get_response("index.html", scope)

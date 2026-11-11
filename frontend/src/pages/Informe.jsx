@@ -1,11 +1,11 @@
 import NivelEducativo from '../components/NivelEducativo'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEvaluacion } from '../components/EvaluacionShell'
 import InformeMarkdown from '../components/InformeMarkdown'
 import ComparacionIA from '../components/ComparacionIA'
 import { IconBarras, IconChevronAbajo, IconChevronArriba, IconComparar, IconDescargar, IconLapiz } from '../components/icons'
-import { corregirFigura, urlImagenNino } from '../api'
+import { corregirFigura, sesionesDeNino, urlImagenNino } from '../api'
 
 const SUGERENCIA_POR_ACCION = {
   ninguna: 'No hace falta ninguna acción específica por ahora.',
@@ -57,6 +57,7 @@ export default function Informe() {
         <div className="informe-principal">
           <div className="card report-body" style={{ padding: '30px 34px' }}>
             <NivelEducativo puntos={tecnico.PD} total={sesion.figuras.length} percentil={tecnico.percentil} provisional={pendientes.length > 0} />
+            <ResumenPorHoja key={sesion.id} sesion={sesion} />
             <InformeMarkdown markdown={sesion.informe_docente_md} compact separateWarning={pendientes.length > 0} />
           </div>
 
@@ -166,4 +167,68 @@ function FilaTecnica({ etiqueta, valor }) {
       <span style={{ fontWeight: 700 }}>{valor ?? '—'}</span>
     </div>
   )
+}
+
+const fechaHoja = new Intl.DateTimeFormat('es-PE', {
+  dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Lima',
+})
+
+function ResumenPorHoja({ sesion }) {
+  const [historial, setHistorial] = useState([])
+  const [seleccion, setSeleccion] = useState('')
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let activo = true
+    sesionesDeNino(sesion.child_id).then((evaluaciones) => {
+      if (activo) setHistorial(evaluaciones.filter((item) => item.id !== sesion.id && item.figuras?.length))
+    }).catch(() => { if (activo) setError(true) })
+    return () => { activo = false }
+  }, [sesion.child_id, sesion.id])
+
+  const anterior = historial.find((item) => String(item.id) === seleccion)
+  const figuras = (anterior ?? sesion).figuras
+
+  const estados = [
+    { id: 'logradas', etiqueta: 'Logradas' },
+    { id: 'revisar', etiqueta: 'Por revisar' },
+    { id: 'apoyo', etiqueta: 'Necesitan apoyo' },
+  ]
+
+  return <section className="report-sheet-summary" aria-labelledby="report-sheet-title">
+    <div className="report-sheet-heading">
+      <h2 id="report-sheet-title">Resultado por hoja</h2>
+      {historial.length > 0 && <label>Evaluación
+        <select value={seleccion} onChange={(event) => setSeleccion(event.target.value)}>
+          <option value="">Este informe · {fechaHoja.format(new Date(sesion.fecha))}</option>
+          {historial.map((item) => <option key={item.id} value={item.id}>
+            {fechaHoja.format(new Date(item.fecha))}
+          </option>)}
+        </select>
+      </label>}
+    </div>
+    {error && <p role="status">No se pudo cargar el historial de evaluaciones.</p>}
+    {anterior && <Link className="report-sheet-open" to={`/informe/${anterior.id}`}>Abrir informe de esta evaluación →</Link>}
+    <ul className="report-sheet-legend">
+      {estados.map(({ id, etiqueta }) => <li key={id}><i className={id} aria-hidden="true" />{etiqueta}</li>)}
+    </ul>
+    <div aria-live="polite">{[1, 6, 11].map((primera, i) => {
+      const conteos = { logradas: 0, revisar: 0, apoyo: 0 }
+      figuras.forEach((figura) => {
+        const numero = Number(figura.figura_id.slice(1))
+        if (numero < primera || numero > primera + 4) return
+        if (figura.decision === 'revisar' && figura.puntaje_docente == null) conteos.revisar++
+        else if ((figura.puntaje_docente ?? figura.puntaje) === 1) conteos.logradas++
+        else conteos.apoyo++
+      })
+      return <div className="report-sheet-row" key={primera}>
+        <div><strong>Hoja {i + 1}</strong><small>Figuras {primera}–{primera + 4}</small></div>
+        <div className="report-sheet-track" role="img"
+          aria-label={estados.map(({ id, etiqueta }) => `${conteos[id]} ${etiqueta.toLowerCase()}`).join(', ')}>
+          {estados.map(({ id }) => conteos[id] > 0 && <span key={id} className={id}
+            style={{ width: `${conteos[id] * 20}%` }} aria-hidden="true">{conteos[id]}</span>)}
+        </div>
+      </div>
+    })}</div>
+  </section>
 }

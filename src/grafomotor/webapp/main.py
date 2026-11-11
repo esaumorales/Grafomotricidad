@@ -24,13 +24,13 @@ import json
 from datetime import date
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from grafomotor.webapp.frontend import FrontendSPA
 
 from grafomotor.config import REPO_ROOT, load_config
-from grafomotor.webapp import db
+from grafomotor.webapp import cuentas, db
 from grafomotor.scoring.edad import edad_en_meses, edad_valida
 from grafomotor.webapp.schemas import CorregirFiguraIn, EvaluarOut, SesionResumen, TipoAvatar
 from grafomotor.webapp.service import ErrorHoja, Servicio
@@ -43,6 +43,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.post("/api/acceso")(cuentas.canjear)
+app.post("/api/acceso/demo")(cuentas.acceso_demo)
+app.get("/api/acceso/admin")(cuentas.acceso_admin)
+
+
+@app.middleware("http")
+async def separar_cuentas(request: Request, call_next):
+    ruta = request.url.path
+    if not cuentas.archivo() or not ruta.startswith("/api/") or ruta in {"/api/acceso", "/api/acceso/admin", "/api/acceso/demo", "/api/salud"}:
+        return await call_next(request)
+    usuario = cuentas.autenticar(request)
+    if usuario is None:
+        return JSONResponse({"detail": "Abre tu enlace de acceso para continuar."}, status_code=401)
+    token = cuentas.cuenta.set(usuario)
+    try:
+        respuesta = await call_next(request)
+        respuesta.headers["Cache-Control"] = "private, no-store"
+        return respuesta
+    finally:
+        cuentas.cuenta.reset(token)
+
+
+@app.get("/api/cuenta")
+def cuenta_actual():
+    return {"usuario": cuentas.cuenta.get()}
+
 
 _FRONTEND_DIST = Path(__file__).parents[3] / "frontend" / "dist"
 
@@ -65,9 +92,14 @@ def servicio() -> Servicio:
 
 def base_sesiones() -> Path:
     """El historial puede consultarse aunque el modelo no esté instalado."""
-    ruta = load_config().ruta("db")
+    ruta = cuentas.ruta_privada(load_config().ruta("db"))
     db.iniciar_db(ruta)
     return ruta
+
+
+def _validar_codigo(codigo: str):
+    if not codigo or codigo in {".", ".."} or any(c in codigo for c in '/\\:\x00'):
+        raise HTTPException(422, "El código del niño contiene caracteres no permitidos.")
 
 
 def _edad(edad_meses: int | None, fecha_nacimiento: str | None, fecha_evaluacion: str | None):
@@ -112,8 +144,11 @@ async def evaluar(
         ..., description="ids separados por coma, en el mismo orden que los archivos"),
     fotos: list[UploadFile] = File(...),
 ) -> EvaluarOut:
+    _validar_codigo(child_id)
     edad, f_eval = _edad(edad_meses, fecha_nacimiento, fecha_evaluacion)
     ids = [x.strip() for x in figura_ids.split(",") if x.strip()]
+    for fid in ids:
+        _validar_codigo(fid)
     if len(ids) != len(fotos):
         raise HTTPException(400, f"llegaron {len(fotos)} fotos pero {len(ids)} ids de figura")
     s = servicio()
@@ -136,6 +171,7 @@ async def evaluar_hojas(
     tipo_avatar: TipoAvatar | None = Form(None),
     hojas: list[UploadFile] = File(..., description="las 3 fotos de las hojas, en cualquier orden"),
 ) -> EvaluarOut:
+    _validar_codigo(child_id)
     edad, f_eval = _edad(edad_meses, fecha_nacimiento, fecha_evaluacion)
     s = servicio()
     try:
@@ -176,6 +212,7 @@ def corregir_figura(sesion_id: int, figura_id: str, body: CorregirFiguraIn) -> E
 
 @app.get("/api/imagenes/{child_id}/{figura_id}")
 def imagen_nino(child_id: str, figura_id: str) -> FileResponse:
+    _validar_codigo(child_id)
     ruta = servicio().ruta_foto(child_id, figura_id)
     if ruta is None:
         raise HTTPException(404, "foto no encontrada")

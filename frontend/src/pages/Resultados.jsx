@@ -11,9 +11,14 @@ export default function Resultados() {
   const { sesion } = useEvaluacion()
   const [filtro, setFiltro] = useState('todas')
 
-  const adecuado = sesion.accion === 'ninguna'
   const tecnico = sesion.panel_tecnico.resumen
   const logradas = sesion.figuras.filter((f) => (f.puntaje_docente ?? f.puntaje) === 1).length
+
+  const estadoDe = (f) => f.decision === 'revisar' && f.puntaje_docente == null
+    ? 'revisar' : (f.puntaje_docente ?? f.puntaje) === 1 ? 'logradas' : 'apoyo'
+  const estados = [['logradas', 'Logradas'], ['revisar', 'Por revisar'], ['apoyo', 'Necesitan apoyo']]
+    .map(([id, texto]) => ({ id, texto, cantidad: sesion.figuras.filter((f) => estadoDe(f) === id).length }))
+  const visibles = sesion.figuras.filter((f) => filtro === 'todas' || estadoDe(f) === filtro)
 
   return (
     <>
@@ -23,17 +28,25 @@ export default function Resultados() {
 
       <section className="figure-results" aria-labelledby="figure-results-title">
         <div className="figure-results-heading"><div><h2 id="figure-results-title">Revisar los dibujos</h2><p>Selecciona una figura para ver el dibujo y su resultado.</p></div></div>
+        {sesion.figuras.length > 0 && <div className="result-status-summary">
+          <div className="result-status-bar" aria-hidden="true">
+            {estados.filter(({ cantidad }) => cantidad).map(({ id, cantidad }) =>
+              <span key={id} className={id} style={{ flex: cantidad }} />)}
+          </div>
+          <ul>{estados.map(({ id, texto, cantidad }) =>
+            <li key={id} className={id}><strong>{cantidad}</strong> {texto}</li>)}</ul>
+        </div>}
         <div className="results-toolbar">
         <div className="figure-filters" role="group" aria-label="Filtrar figuras">
           {[['todas', 'Todas'], ['revisar', 'Por revisar'], ['apoyo', 'Necesita apoyo'], ['logradas', 'Logradas']].map(([valor, etiqueta]) => {
-            const contar = sesion.figuras.filter((f) => valor === 'todas' || (valor === 'revisar' ? f.decision === 'revisar' && f.puntaje_docente == null : valor === 'logradas' ? (f.puntaje_docente ?? f.puntaje) === 1 : (f.puntaje_docente ?? f.puntaje) === 0)).length
+            const contar = valor === 'todas' ? sesion.figuras.length : estados.find(({ id }) => id === valor).cantidad
             return <button type="button" key={valor} aria-pressed={filtro === valor} onClick={() => setFiltro(valor)}>{etiqueta}<span>{contar}</span></button>
           })}
         </div>
         <div className="result-report-action"><button className="btn-primary" onClick={() => navigate(`/informe/${sesion.id}`)}>Ver informe detallado <IconFlechaDer aria-hidden="true" /></button></div>
         </div>
         <div className="result-figure-grid">
-          {sesion.figuras.filter((f) => filtro === 'todas' || (filtro === 'revisar' ? f.decision === 'revisar' && f.puntaje_docente == null : filtro === 'logradas' ? (f.puntaje_docente ?? f.puntaje) === 1 : (f.puntaje_docente ?? f.puntaje) === 0)).map((f) => {
+          {visibles.map((f) => {
             const revisar = f.decision === 'revisar' && f.puntaje_docente == null
             const lograda = (f.puntaje_docente ?? f.puntaje) === 1
             const estado = revisar ? 'Por revisar' : lograda ? 'Lograda' : 'Necesita apoyo'
@@ -43,7 +56,7 @@ export default function Resultados() {
             </Link>
           })}
         </div>
-        {sesion.figuras.filter((f) => filtro === 'todas' || (filtro === 'revisar' ? f.decision === 'revisar' && f.puntaje_docente == null : filtro === 'logradas' ? (f.puntaje_docente ?? f.puntaje) === 1 : (f.puntaje_docente ?? f.puntaje) === 0)).length === 0 && <p role="status" className="result-empty">No hay figuras en este grupo.</p>}
+        {visibles.length === 0 && <p role="status" className="result-empty">No hay figuras en este grupo.</p>}
 
       </section>
     </>

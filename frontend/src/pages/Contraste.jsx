@@ -1,3 +1,5 @@
+import tonoLograda from '../components/revision-lograda.wav'
+import tonoApoyo from '../components/revision-apoyo.wav'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Layout from '../components/Layout'
@@ -30,6 +32,10 @@ export default function Contraste() {
   const porRevisar = figura.decision === 'revisar' && figura.puntaje_docente == null
   const anterior = sesion.figuras[idx - 1]
   const siguiente = sesion.figuras[idx + 1]
+  const candidatas = sesion.figuras.filter((f) => f.decision === 'revisar')
+  const revisadas = candidatas.filter((f) => f.puntaje_docente != null).length
+  const siguientePendiente = [...sesion.figuras.slice(idx + 1), ...sesion.figuras.slice(0, idx)]
+    .find((f) => f.decision === 'revisar' && f.puntaje_docente == null)
 
   return (
     <Layout>
@@ -72,7 +78,9 @@ export default function Contraste() {
         <ImageReview key={`referencia-${figuraId}`} title="Figura de referencia" src={urlPlantilla(figuraId)} alt={`Referencia: ${figura.nombre}`} reference><LecturaComparada key={`${sesion.id}-${figuraId}`} sesionId={sesion.id} figura={figura} /></ImageReview>
       </div>
       </div>
-      <div className="comparison-guide-stack"><CriteriosManual key={figuraId} figuraId={figuraId} /><RevisionDocente key={`revision-${figuraId}`} sesionId={sesion.id} figura={figura} onGuardar={setSesion} /></div>
+      <div className="comparison-guide-stack"><CriteriosManual key={figuraId} figuraId={figuraId} /><RevisionDocente key={`revision-${figuraId}`} sesionId={sesion.id} figura={figura} onGuardar={setSesion}
+        progreso={candidatas.length ? `${revisadas} de ${candidatas.length} revisadas` : ''}
+        siguientePendiente={siguientePendiente && `/comparar/${id}/${siguientePendiente.figura_id}`} /></div>
       </div>
     </Layout>
   )
@@ -183,7 +191,15 @@ function FilaAspecto({ nombre, estado, texto, falta = false }) {
   return <div className="reading-aspect"><dt>{nombre}</dt><dd className={`reading-aspect-status ${falta ? 'unknown' : estado}`}><span aria-hidden="true">{falta ? '—' : estado === 'achieved' ? '✓' : estado === 'review' ? '!' : '○'}</span>{falta ? 'Sin información suficiente' : texto}</dd></div>
 }
 
-function RevisionDocente({ sesionId, figura, onGuardar }) {
+function RevisionDocente({ sesionId, figura, onGuardar, progreso, siguientePendiente }) {
+  function elegir(puntaje) {
+    setSeleccion(puntaje)
+    setGuardado(false)
+    const sonido = new Audio(puntaje === 1 ? tonoLograda : tonoApoyo)
+    sonido.play().then(() => setAudioBloqueado(false)).catch(() => setAudioBloqueado(true))
+  }
+
+  const [audioBloqueado, setAudioBloqueado] = useState(false)
   const [seleccion, setSeleccion] = useState(figura.puntaje_docente)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState(null)
@@ -202,15 +218,18 @@ function RevisionDocente({ sesionId, figura, onGuardar }) {
   }
   return <section className="teacher-review-card" aria-labelledby="teacher-review-title">
     <div className="teacher-review-heading"><h3 id="teacher-review-title">Revisión de la profesora</h3><span className={`teacher-review-state ${revisada ? 'is-reviewed' : ''}`}>{revisada ? 'Revisada' : 'Sin revisar'}</span></div>
-    <p>Compara el trazo con la referencia y los criterios del manual. Después, confirma tu valoración.</p>
+    {progreso && <p className="teacher-review-progress">{progreso}</p>}
+    <p>Compara el trazo con la referencia y elige una calificación.</p>
     <div className="teacher-review-options" role="group" aria-label="Valoración de la profesora">
-      <button type="button" disabled={guardando} aria-pressed={seleccion === 1} className="teacher-choice choice-achieved" onClick={() => { setSeleccion(1);setGuardado(false) }}><span aria-hidden="true">✓</span><span>Lograda</span></button>
-      <button type="button" disabled={guardando} aria-pressed={seleccion === 0} className="teacher-choice choice-support" onClick={() => { setSeleccion(0);setGuardado(false) }}><span aria-hidden="true">!</span><span>Necesita apoyo</span></button>
+      <button type="button" disabled={guardando} aria-pressed={seleccion === 1} className="teacher-choice choice-achieved" onClick={() => elegir(1)}><span aria-hidden="true">✓</span><span>Lograda</span></button>
+      <button type="button" disabled={guardando} aria-pressed={seleccion === 0} className="teacher-choice choice-support" onClick={() => elegir(0)}><span aria-hidden="true">!</span><span>Necesita apoyo</span></button>
     </div>
-    <div className="teacher-review-save"><span>{cambio ? 'Cambio pendiente de guardar' : revisada ? 'Valoración guardada' : 'Selecciona una opción'}</span><button type="button" disabled={!cambio || guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar revisión'}</button></div>
-    {guardado && <p role="status" className="teacher-review-success">Revisión guardada. La puntuación de la sesión se ha actualizado.</p>}
+    {audioBloqueado && <p role="status">El navegador no pudo reproducir el sonido.</p>}
+    <div className="teacher-review-save">{cambio && <span>Cambio pendiente de guardar</span>}<button type="button" disabled={!cambio || guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar revisión'}</button></div>
+    {guardado && <p role="status" className="teacher-review-success">✓ Calificación guardada</p>}
+    {guardado && siguientePendiente && <Link className="teacher-review-next" to={siguientePendiente}>Siguiente figura por revisar</Link>}
     {error && <p role="alert" className="teacher-review-error">{error}</p>}
-    <p className="teacher-review-note">Se guarda tu valoración sin borrar la predicción original del modelo.</p>
+
   </section>
 }
 
