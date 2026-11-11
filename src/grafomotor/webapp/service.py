@@ -10,6 +10,7 @@ Las plantillas y el baremo se leen de las rutas indicadas por la configuración.
 """
 from __future__ import annotations
 
+from itertools import permutations
 from pathlib import Path
 
 import cv2
@@ -28,6 +29,30 @@ from grafomotor.preprocessing.hoja import normalizar_celda, segmentar_hoja
 from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
 from grafomotor.scoring.niveles import CriterioNiveles, NivelResultado
 from grafomotor.webapp import db
+
+
+PAGINAS = (1, 2, 3)
+
+
+def asignar_paginas(puntajes: list[dict[int, float]], tolerancia: float = 0.05) -> list[int]:
+    """Página (1, 2 o 3) de cada foto, sin repetir ninguna.
+
+    `puntajes[i]` es el parecido de la foto i con cada página. Con 3 fotos se prueban los 6 repartos
+    posibles y gana el de mayor parecido total. Si el orden en que la docente puso las fotos
+    (Foto 1 = figuras 1-5, Foto 2 = 6-10, Foto 3 = 11-15) queda a menos de `tolerancia` del mejor,
+    se respeta ese orden: así una foto dudosa no se confunde con otra hoja. Con otra cantidad de
+    fotos, cada una toma su página más parecida (y luego se avisa si faltan o se repiten)."""
+    elegidas = [max(p, key=p.get) if p else None for p in puntajes]
+    if len(puntajes) != len(PAGINAS) or not all(puntajes):
+        return elegidas
+
+    def total(reparto: tuple[int, ...]) -> float:
+        return sum(puntajes[i].get(pag, 0.0) for i, pag in enumerate(reparto))
+
+    mejor = max(permutations(PAGINAS), key=total)
+    if total(PAGINAS) >= total(mejor) - tolerancia:
+        return list(PAGINAS)
+    return list(mejor)
 
 
 def _leer_gris(contenido: bytes) -> np.ndarray | None:
@@ -132,6 +157,7 @@ class Servicio:
         plantillas = self._plantillas_gris()
         por_pagina: dict[int, tuple[str, object]] = {}
         avisos: list[str] = []
+        segmentadas = []
         for numero, (nombre, contenido) in enumerate(hojas, start=1):
             etiqueta = f"Foto {numero} («{nombre}»)"
             gris = _leer_gris(contenido)
@@ -143,13 +169,21 @@ class Servicio:
                 raise ErrorHoja(
                     f"No se encontró la hoja en la {etiqueta}. Toma la foto con toda la hoja a la vista, "
                     "sobre una mesa lisa y con buena luz.") from None
-            if h.pagina in por_pagina:
+            segmentadas.append((etiqueta, h))
+        # cada foto recibe una página distinta (si una foto es dudosa, decide el orden en que se subió)
+        puntajes = [getattr(h, "puntajes_pagina", None) or {h.pagina: 1.0} for _, h in segmentadas]
+        asignadas = asignar_paginas(puntajes)
+        for (etiqueta, h), pag in zip(segmentadas, asignadas):
+            if pag != h.pagina:
+                avisos.append(f"{etiqueta}: se tomó como la hoja de las figuras {(pag - 1) * 5 + 1} "
+                              f"a {pag * 5} (la comparación con las figuras modelo era dudosa)")
+            if pag in por_pagina:
                 raise ErrorHoja(
-                    f"La {por_pagina[h.pagina][0]} y la {etiqueta} fueron reconocidas "
-                    f"como la misma hoja: figuras {(h.pagina - 1) * 5 + 1} a {h.pagina * 5}. "
+                    f"La {por_pagina[pag][0]} y la {etiqueta} fueron reconocidas "
+                    f"como la misma hoja: figuras {(pag - 1) * 5 + 1} a {pag * 5}. "
                     "Revisa esas dos fotos. Si muestran hojas distintas, el sistema pudo "
                     "confundirlas; vuelve a fotografiarlas completas, de frente y con buena luz.")
-            por_pagina[h.pagina] = (etiqueta, h)
+            por_pagina[pag] = (etiqueta, h)
         faltan = [p for p in (1, 2, 3) if p not in por_pagina]
         if faltan:
             rangos = ", ".join(f"figuras {(p - 1) * 5 + 1} a {p * 5}" for p in faltan)

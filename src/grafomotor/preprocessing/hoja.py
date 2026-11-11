@@ -45,6 +45,9 @@ class HojaSegmentada:
     margen_orientacion: float               # diferencia entre la mejor y la 2.ª opción
     avisos: list[str] = field(default_factory=list)
     toca_borde: list[bool] = field(default_factory=list)   # el trazo sale de la celda
+    # parecido de la columna del modelo con cada página (1, 2, 3), con la orientación final;
+    # sirve para repartir las páginas entre varias fotos sin que dos queden con la misma
+    puntajes_pagina: dict[int, float] = field(default_factory=dict)
 
 
 # --------------------------------------------------------------------------- #
@@ -283,12 +286,20 @@ def segmentar_hoja(gris: np.ndarray, plantillas: dict[str, np.ndarray],
     xs, _ = _lineas(vertical, p, False, N_COLS)
 
     # la página sale del orden de las fotos (1.ª, 2.ª, 3.ª hoja); las plantillas solo deciden 0/180
-    giro, pag, punt, margen, _ = decidir_orientacion(
+    giro, pag, punt, margen, todos = decidir_orientacion(
         vertical, plantillas, p, ys, xs, pagina_esperada)
     giro_trazo, dif = orientacion_por_trazo(vertical, ys, xs, p)
     if giro_trazo != giro and margen > 0.1:
         avisos.append("la orientación por trazo y por plantilla no coinciden")
     giro = giro_trazo                            # el trazo es la señal más fiable (60 de 60)
+    # la página se elige con la orientación final: si el trazo corrigió el giro, la página que
+    # ganó con la hoja "de cabeza" no vale (comparaba cada figura con la que no le corresponde)
+    puntajes_pagina = {pg: s for (g, pg), s in todos.items() if g == giro}
+    if puntajes_pagina:
+        pag = max(puntajes_pagina, key=puntajes_pagina.get)
+        punt = puntajes_pagina[pag]
+        resto = sorted(puntajes_pagina.values(), reverse=True)
+        margen = resto[0] - resto[1] if len(resto) > 1 else resto[0]
     if dif < p.dif_oscuridad_min:
         avisos.append(f"orientación dudosa (diferencia de oscuridad {dif:.0f})")
     if giro == 180:
@@ -309,7 +320,8 @@ def segmentar_hoja(gris: np.ndarray, plantillas: dict[str, np.ndarray],
         franja = np.concatenate([b[:3].ravel(), b[-3:].ravel(),
                                  b[:, :3].ravel(), b[:, -3:].ravel()])
         toca.append(bool((franja > 0).mean() > 0.02))
-    return HojaSegmentada(vertical, ys, xs, modelos, copias, pag, punt, margen, avisos, toca)
+    return HojaSegmentada(vertical, ys, xs, modelos, copias, pag, punt, margen, avisos, toca,
+                          puntajes_pagina)
 
 
 def normalizar_celda(celda: np.ndarray) -> np.ndarray:
