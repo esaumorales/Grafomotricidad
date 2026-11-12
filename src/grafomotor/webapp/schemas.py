@@ -22,6 +22,7 @@ class FiguraOut(BaseModel):
 
 class EvaluarOut(BaseModel):
     id: int
+    fecha: str | None = None
     child_id: str
     nombre_nino: str | None = None
     edad_meses: int

@@ -169,9 +169,14 @@ function FilaTecnica({ etiqueta, valor }) {
   )
 }
 
-const fechaHoja = new Intl.DateTimeFormat('es-PE', {
+const formatoFechaHoja = new Intl.DateTimeFormat('es-PE', {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Lima',
 })
+
+function fechaHoja(valor, alternativa) {
+  const fecha = new Date(valor || '')
+  return Number.isNaN(fecha.getTime()) ? alternativa : formatoFechaHoja.format(fecha)
+}
 
 function ResumenPorHoja({ sesion }) {
   const [historial, setHistorial] = useState([])
@@ -200,9 +205,9 @@ function ResumenPorHoja({ sesion }) {
       <h2 id="report-sheet-title">Resultado por hoja</h2>
       {historial.length > 0 && <label>Evaluación
         <select value={seleccion} onChange={(event) => setSeleccion(event.target.value)}>
-          <option value="">Este informe · {fechaHoja.format(new Date(sesion.fecha))}</option>
+          <option value="">Este informe · {fechaHoja(sesion.fecha, 'Fecha no disponible')}</option>
           {historial.map((item) => <option key={item.id} value={item.id}>
-            {fechaHoja.format(new Date(item.fecha))}
+            {fechaHoja(item.fecha, `Evaluación ${item.id}`)}
           </option>)}
         </select>
       </label>}
