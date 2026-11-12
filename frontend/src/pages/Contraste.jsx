@@ -79,6 +79,7 @@ export default function Contraste() {
       </div>
       </div>
       <div className="comparison-guide-stack"><CriteriosManual key={figuraId} figuraId={figuraId} /><RevisionDocente key={`revision-${figuraId}`} sesionId={sesion.id} figura={figura} onGuardar={setSesion}
+        motivo={porRevisar ? sesion.panel_tecnico?.revision_previa?.[figuraId] : null}
         progreso={candidatas.length ? `${revisadas} de ${candidatas.length} revisadas` : ''}
         siguientePendiente={siguientePendiente && `/comparar/${id}/${siguientePendiente.figura_id}`} /></div>
       </div>
@@ -191,7 +192,7 @@ function FilaAspecto({ nombre, estado, texto, falta = false }) {
   return <div className="reading-aspect"><dt>{nombre}</dt><dd className={`reading-aspect-status ${falta ? 'unknown' : estado}`}><span aria-hidden="true">{falta ? '—' : estado === 'achieved' ? '✓' : estado === 'review' ? '!' : '○'}</span>{falta ? 'Sin información suficiente' : texto}</dd></div>
 }
 
-function RevisionDocente({ sesionId, figura, onGuardar, progreso, siguientePendiente }) {
+function RevisionDocente({ sesionId, figura, onGuardar, motivo, progreso, siguientePendiente }) {
   function elegir(puntaje) {
     setSeleccion(puntaje)
     setGuardado(false)
@@ -218,6 +219,7 @@ function RevisionDocente({ sesionId, figura, onGuardar, progreso, siguientePendi
   }
   return <section className="teacher-review-card" aria-labelledby="teacher-review-title">
     <div className="teacher-review-heading"><h3 id="teacher-review-title">Revisión de la profesora</h3><span className={`teacher-review-state ${revisada ? 'is-reviewed' : ''}`}>{revisada ? 'Revisada' : 'Sin revisar'}</span></div>
+    {motivo && <p className="teacher-review-progress">{motivo}</p>}
     {progreso && <p className="teacher-review-progress">{progreso}</p>}
     <p>Compara el trazo con la referencia y elige una calificación.</p>
     <div className="teacher-review-options" role="group" aria-label="Valoración de la profesora">

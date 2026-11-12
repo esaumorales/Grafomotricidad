@@ -28,6 +28,7 @@ from grafomotor.preprocessing import preprocesar_figura
 from grafomotor.preprocessing.hoja import normalizar_celda, segmentar_hoja
 from grafomotor.scoring.baremo import cargar_baremo, pd_a_percentil
 from grafomotor.scoring.niveles import CriterioNiveles, NivelResultado
+from grafomotor.webapp.revision_previa import posible_repeticion
 from grafomotor.webapp import cuentas, db
 
 
@@ -179,6 +180,12 @@ class Servicio:
         puntajes = [getattr(h, "puntajes_pagina", None) or {h.pagina: 1.0} for _, h in segmentadas]
         asignadas = asignar_paginas(puntajes)
         for (etiqueta, h), pag in zip(segmentadas, asignadas):
+            puntajes_hoja = getattr(h, "puntajes_pagina", None)
+            if puntajes_hoja and puntajes_hoja.get(pag, 0) < 0.25:
+                raise ErrorHoja(
+                    f"La {etiqueta} no coincide con la hoja de las figuras {(pag - 1) * 5 + 1} a {pag * 5}. "
+                    "Comprueba que sea la hoja del test y reemplaza esa foto."
+                )
             if pag != h.pagina:
                 avisos.append(f"{etiqueta}: se tomó como la hoja de las figuras {(pag - 1) * 5 + 1} "
                               f"a {pag * 5} (la comparación con las figuras modelo era dudosa)")
@@ -214,6 +221,9 @@ class Servicio:
         tipo_avatar: str | None = None,
     ) -> dict:
         preds, X, avisos = [], [], list(avisos_previos or [])
+        revision_previa = {}
+        bordes = {aviso.split(":", 1)[0] for aviso in avisos
+                  if "el trazo toca el borde de la casilla" in aviso}
         for fid, ruta in fotos.items():
             if fid not in self.plantillas:
                 avisos.append(f"sin plantilla para {fid}, figura omitida")
@@ -225,10 +235,17 @@ class Servicio:
             if pre.aviso:
                 avisos.append(f"{fid}: {pre.aviso}")
             meta = self.figuras_meta.get(fid, {})
+            if fid in bordes:
+                revision_previa[fid] = "El trazo llega al borde de la casilla. Comprueba la hoja original."
+            elif not pre.sin_trazo:
+                motivo = posible_repeticion(pre.figura_bin, fid)
+                if motivo:
+                    revision_previa[fid] = motivo
             r = self.final.predecir(pre.figura_bin, fid, self.plantillas[fid], meta, pre.sin_trazo)
             vec = extraer_indicadores(pre.figura_bin, self.plantillas[fid], fid, meta)
             preds.append(PrediccionFigura(
-                figura_id=fid, puntaje=r["nota"], prob=r["prob"], decision=r["decision"],
+                figura_id=fid, puntaje=r["nota"], prob=r["prob"],
+                decision="revisar" if fid in revision_previa else r["decision"],
                 indicadores={k: round(float(vec.valores[k]), 3) for k in ORDEN}))
             X.append(self.final.fila(pre.figura_bin, fid, self.plantillas[fid], meta)[0])
 
@@ -262,6 +279,7 @@ class Servicio:
             "PD_ia": sesion.PD, "nivel_ia": nivel.nivel,
         })
         panel["avisos_preprocesamiento"] = avisos
+        panel["revision_previa"] = revision_previa
         if self.final:
             panel["revision"] = {
                 "figuras_por_revisar": por_revisar, "n_automaticas": len(preds) - len(por_revisar),
